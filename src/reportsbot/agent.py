@@ -17,8 +17,7 @@ from typing import TYPE_CHECKING, Any, Literal
 
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, ModelRetry, RunContext, ToolOutput
-from pydantic_ai.models.openrouter import OpenRouterModel, OpenRouterModelSettings
-from pydantic_ai.providers.openrouter import OpenRouterProvider
+from pydantic_ai.models import Model
 
 from .safety import GuardError, guard
 from .target import QueryResult
@@ -108,17 +107,14 @@ general rule behind the correction in learnable.
 """
 
 
-def build_agent(model_name: str, api_key: str) -> Agent[Deps, Outcome]:
-    model = OpenRouterModel(model_name, provider=OpenRouterProvider(api_key=api_key, app_title="reportsbot"))
-    settings = OpenRouterModelSettings(max_tokens=4096, openrouter_cache_instructions=True,
-                                       openrouter_cache_tool_definitions=True)
+def build_agent(model: Model) -> Agent[Deps, Outcome]:
+    """`model` comes from llm.build_model (any provider; settings such as caching travel with it)."""
     agent: Agent[Deps, Outcome] = Agent(
         model,
         deps_type=Deps,
         output_type=[ToolOutput(Report, name="present_report"), ToolOutput(Clarify, name="ask_clarifying_question"),
                      ToolOutput(Reply, name="reply")],
         instructions=INSTRUCTIONS,
-        model_settings=settings,
         retries=2,
         name="reportsbot",
     )

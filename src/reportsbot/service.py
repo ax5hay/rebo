@@ -22,6 +22,7 @@ from . import messages as msg
 from .agent import Clarify, Deps, Report, Reply, build_agent
 from .catalog import Catalog, bootstrap
 from .knowledge import Knowledge, User
+from .llm import build_model, credentials_present
 from .observability import setup_tracing
 from .retrieval import Index, get_embedder
 from .safety import canonical_hash, guard
@@ -59,9 +60,10 @@ class App:
 
     @cached_property
     def agent(self) -> Agent:
-        if not self.settings.openrouter_api_key:
-            raise RuntimeError("REPORTSBOT_OPENROUTER_API_KEY is not set")
-        return build_agent(self.settings.model, self.settings.openrouter_api_key)
+        s = self.settings
+        if not credentials_present(s.model, s):
+            raise RuntimeError(f"No API key in the environment for model '{s.model}' (see .env.example)")
+        return build_agent(build_model(s.model, s, s.fallback_models))
 
     # ---- bootstrap / maintenance ----------------------------------------------------------
     def bootstrap(self, *, describe: bool = False, progress=print) -> dict[str, int]:
@@ -73,12 +75,8 @@ class App:
         return counts
 
     def _describe_table(self, payload: dict[str, Any]) -> dict[str, Any]:
-        from pydantic_ai.models.openrouter import OpenRouterModel
-        from pydantic_ai.providers.openrouter import OpenRouterProvider
-
         async def go() -> TableDoc:
-            model = OpenRouterModel(self.settings.fast_model,
-                                    provider=OpenRouterProvider(api_key=self.settings.openrouter_api_key))
+            model = build_model(self.settings.fast_model, self.settings)  # per call: one event loop per thread
             agent = Agent(model, output_type=TableDoc, retries=2, instructions=(
                 "You document a database table for analysts from its structure and statistics. Be factual: "
                 "describe only what the column names, types, foreign keys and sample values support. If unsure, "
