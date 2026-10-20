@@ -1,0 +1,20 @@
+{
+  "source_database": "staging",
+  "server_version": "8.0.44",
+  "charset": "utf8mb4",
+  "collation": "utf8mb4_0900_ai_ci",
+  "sql_mode": "NO_ENGINE_SUBSTITUTION",
+  "captured_at": "2026-10-20T20:48:42+00:00",
+  "objects": {
+    "tables": 207,
+    "views": 0,
+    "triggers": 0,
+    "routines": 0
+  },
+  "rows_total": 1014560,
+  "columns_total": 2769,
+  "foreign_keys_total": 440,
+  "catalogued_columns": 554,
+  "implicit_refs": 51,
+  "row_data_copied": false
+}

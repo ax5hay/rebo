@@ -1,0 +1,116 @@
+# 10 · API, UI and MCP
+
+## 1. Identity
+
+The bot has no login of its own. It trusts three headers set by the host application's gateway:
+
+| Header | Required | Values |
+|---|---|---|
+| `X-User-Id` | yes | Stable user id from the host (JMS: admin id) |
+| `X-User-Role` | no (`member`) | `member` or `curator` (JMS: map an admin permission to curator) |
+| `X-User-Team` | no | Team/agency id for team-scoped sharing |
+
+**Never expose `/api` directly to browsers.** Put it behind the host's authenticated proxy, which
+overwrites these headers. The dev UI takes the same values from the URL query
+(`/?user=alice&role=curator&team=ops`) and is for local use only.
+
+## 2. Routes (`api.py`)
+
+All responses are JSON. Errors: 400 bad input, 403 not allowed, 404 unknown id.
+
+### `POST /api/ask`
+```json
+// request
+{"text": "active surrogates in screening with sub-stage", "conversation_id": null}
+// response: report
+{"turn_id": "turn_…", "conversation_id": "conv_…", "kind": "report",
+ "title": "Active surrogates in Screening with current substage",
+ "message": "Here is Active surrogates in Screening with current substage. 3 rows.",
+ "columns": ["case_number", "surrogate_case", "current_substage"],
+ "rows": [[12, "Smith GC", "Background check"], …],  // illustrative values
+ "truncated": false, "elapsed_ms": 41,
+ "sql": "SELECT …",
+ "assumptions": ["Surrogates are cases of type surrogate; active means …", "…"],
+ "provenance": {"label": "new", "item_ids": [], "text": "New report · not checked by anyone yet"},
+ "suggestions": [{"id": "sg_…", "kind": "term", "title": "in intake", "body": "…", "sql": "…"}],
+ "trace": [{"tool": "search_knowledge", "query": "…", "hits": 0}, {"tool": "describe_table", "table": "gc_case", "found": true}, …]}
+// response: clarify
+{"turn_id": "…", "conversation_id": "…", "kind": "clarify", "intro": "Quick check before I run this:",
+ "question": "…", "options": ["…", "…"], "why": "…", "trace": […]}
+// response: answer / error
+{"kind": "answer", "text": "…", "suggestions": […]}   |   {"kind": "error", "message": "…"}
+```
+Pass the returned `conversation_id` on the next call to keep context, including corrections.
+
+### `POST /api/turns/{turn_id}/feedback`
+```json
+{"verdict": "correct"}                    → {"message": "Thanks, saved. … only tunes the bot for you …", "item": {…}}
+{"verdict": "wrong", "note": "optional"} → {"message": "… What should be different? …", "items": [...], "next": "correction"}
+```
+After `"next": "correction"`, send the user's text to `/api/ask` with the same `conversation_id`,
+prefixed `"Correction to the previous report: "`.
+
+### `POST /api/suggestions/{suggestion_id}`  `{"accept": true|false}` → `{"message", "item"?}`
+
+### Knowledge
+| Route | Who | Response |
+|---|---|---|
+| `GET /api/knowledge` | anyone | `{"mine": [...], "shared": [...], "notice": "2 of your saved items need a re-check …" \| null}`; each item has `label` (status text) |
+| `GET /api/knowledge/{id}/history` | anyone | event list (doc 09) |
+| `POST /api/knowledge/{id}/share` | owner | → `proposed` (curator owner: → `verified`) |
+| `POST /api/knowledge/{id}/promote` `{"scope":"org"\|"team"}` | curator | → `verified` |
+| `POST /api/knowledge/{id}/retire` `{"reason":""}` | owner / curator | → `retired` |
+| `POST /api/knowledge/{id}/restore` | owner / curator | undo the last status change |
+| `GET /api/review` | curator | items `proposed` or `quarantined`, oldest first |
+| `POST /api/admin/revalidate` | curator | `{"checked", "unchanged", "repaired", "stale"}` |
+| `GET /api/health` | anyone | `{"ok": true, "bootstrapped_at": …}` |
+
+## 3. Dev UI (`ui.py`, NiceGUI 3.18 mounted on the same FastAPI app)
+
+### `/` Ask
+```
+┌ Reports  Ask  My knowledge  Review queue                     alice · member ┐
+│ Reports: Ask for any report in plain words, for example …                     │
+│                                                   alice: active surrogates … │
+│ ┌ report card (doc 06 §2) ───────────────────────────────────────────────┐   │
+│ └─────────────────────────────────────────────────────────────────────────┘   │
+│ ┌ Should I remember this for next time? ┐                                     │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ [ Ask for a report                                              ] [ Send ]    │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+- Enter or **Send** → spinner → card. A conversation id is kept per browser tab.
+- **No, fix it** shows `fix_prompt`, changes the input placeholder to "Describe what should
+  change", and prefixes the next message as a correction.
+- Clarify options are buttons; clicking one sends its text.
+
+### `/knowledge` My knowledge
+Two lists: *What I've taught the bot* (every status) and *Shared knowledge I benefit from*. Each card
+shows kind, title, status label, question/body, collapsible SQL, "Confirmed n× · used n× · reported
+wrong n×", and the actions **Share with everyone** (own, active), **Withdraw**, **Undo last change**
+and **History** (a dialog of events).
+
+### `/review` Review queue (curators)
+Each card shows kind, status, title, owner, number of distinct confirmers, rejections, the SQL, and
+"Why it is here" (the latest event note, e.g. "3 people confirmed this same query independently").
+Buttons: **Share with everyone**, **Share with team X** (when the owner has a team), **Reject**.
+
+## 4. MCP (`reportsbot mcp`, FastMCP 4.1, stdio)
+
+Tools: `search_schema`, `describe_table`, `search_values`, `run_sql` (same guard and limits) and
+`verified_reports` (shared knowledge only). Learning is not exposed over MCP, because a
+confirmation needs an identified person. Example Claude Code config:
+
+```json
+{"mcpServers": {"reports": {"command": "uv", "args": ["run", "--directory", "/path/to/reports-bot", "--extra", "mcp", "reportsbot", "mcp"]}}}
+```
+
+## 5. Embedding into JMS (host adapter outline)
+
+1. JMS backend proxies `/reports-bot/*` → bot `/api/*`, setting `X-User-Id` = admin id,
+   `X-User-Role` = `curator` for admins with the reports-admin permission, and `X-User-Team` = agency id.
+2. JMS UI renders the `/api/ask` payload with its own components, using the `messages.py` texts
+   returned in the payload.
+3. Optional **"Save to Report Builder"** button: the host converts `sql` with its own translator
+   (`orchid/utils/report_query.py`). This stays in the host, so the bot stays database-agnostic
+   (doc 14).

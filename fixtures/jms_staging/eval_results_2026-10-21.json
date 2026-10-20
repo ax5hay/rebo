@@ -1,0 +1,475 @@
+{
+ "run": "2026-10-21",
+ "model": "anthropic/claude-sonnet-5.5",
+ "database": "local synthetic copy of JMS staging (seed 7, cap 3000)",
+ "knowledge": "empty (fresh eval user)",
+ "summary": {
+  "reports": 12,
+  "clarify": 6,
+  "errors": 0
+ },
+ "cases": [
+  {
+   "id": "validated-01",
+   "kind": "report",
+   "rows": 3,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 13.8,
+   "question": "Show me all active surrogates in Screening and list their current substage.",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 51946,
+    "output_tokens": 1145,
+    "tool_calls": 5
+   },
+   "title": "Active surrogates in Screening with current substage",
+   "sql": "SELECT g.case_id AS case_id, g.case_file_name AS surrogate_case, t.title AS current_substage\nFROM gc_case g\nLEFT JOIN custom_sub_stage s ON s.sub_stage_id = (\n    SELECT s2.sub_stage_id FROM custom_sub_stage s2\n    WHERE s2.gc_case_id = g.case_id AND s2.stage = 'screening' AND s2.completed IS NULL\n    ORDER BY s2.ordering, s2.sub_stage_id LIMIT 1)\nLEFT JOIN template_sub_stage t ON t.sub_stage_id = s.base_sub_stage_id\nWHERE g.case_type = 'surrogate' AND g.active = 1 AND g.stage = 'screening'\nORDER BY g.case_file_name",
+   "assumptions": [
+    "Surrogates are cases of type surrogate; active means the case is flagged active (not archived/inactive).",
+    "In Screening means the case's current stage is screening.",
+    "Current substage is the first not-yet-completed screening substage in workflow order for that case.",
+    "Surrogates in Screening with no screening substage assigned are still listed, with the substage left blank.",
+    "The case file name is used as the surrogate's name."
+   ]
+  },
+  {
+   "id": "validated-02",
+   "kind": "report",
+   "rows": 12,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 16.2,
+   "question": "Which IP cases are in matching right now? Include the names and emails for both IPs.",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 91061,
+    "output_tokens": 1056,
+    "tool_calls": 6
+   },
+   "title": "IP cases currently in matching, with both intended parents' names and emails",
+   "sql": "SELECT ic.case_id AS case_number, ic.case_file_name AS case_name, CONCAT_WS(' ', c1.first_name, c1.last_name) AS ip_1_name, c1.email AS ip_1_email, CONCAT_WS(' ', c2.first_name, c2.last_name) AS ip_2_name, c2.email AS ip_2_email FROM ip_case ic JOIN family f ON f.family_id = ic.family_id JOIN contact c1 ON c1.contact_id = f.ip_1_id LEFT JOIN contact c2 ON c2.contact_id = f.ip_2_id WHERE ic.stage = 'matching' AND ic.active = 1 ORDER BY ic.case_id",
+   "assumptions": [
+    "'In matching right now' means the case's current workflow stage is Matching.",
+    "Only active cases are included; one inactive case in the matching stage is left out.",
+    "'Both IPs' means the first and second intended parents on the family record. Many families have only one, so the second name and email are blank for those cases."
+   ]
+  },
+  {
+   "id": "validated-03",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 12.1,
+   "question": "List every active case assigned to [admin name].",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 60473,
+    "output_tokens": 798,
+    "tool_calls": 3
+   },
+   "clarify": "Your request still has the placeholder \"[admin name]\". Which admin do you mean (first and last name)? And which cases should I list?",
+   "options": [
+    "Carrier and donor cases only (surrogate, egg donor, sperm donor)",
+    "Intended-parent cases only",
+    "Both kinds together, with a column showing the case type"
+   ]
+  },
+  {
+   "id": "validated-04",
+   "kind": "report",
+   "rows": 2,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 18.7,
+   "question": "Which cases have had their profiles approved in the last 30 days?",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 127259,
+    "output_tokens": 1768,
+    "tool_calls": 7
+   },
+   "title": "Cases with profile approved in the last 30 days",
+   "sql": "select 'Intended parent' as `Case type`, ic.case_id as `Case ID`, ic.case_file_name as `Case name`, ic.stage as `Stage`, f.profile_approved as `Profile approved on` from ip_case ic join family f on f.family_id=ic.family_id where f.profile_approved >= date_sub(now(), interval 30 day) and f.profile_approved<=now()\nunion all\nselect case gc.case_type when 'surrogate' then 'Surrogate' when 'donor' then 'Egg donor' else 'Sperm donor' end, gc.case_id, gc.case_file_name, gc.stage, case gc.case_type when 'surrogate' then c.gc_profile_approved when 'donor' then c.ed_profile_approved else c.sd_profile_approved end from gc_case gc join contact c on c.contact_id=gc.gc_id where (case gc.case_type when 'surrogate' then c.gc_profile_approved when 'donor' then c.ed_profile_approved else c.sd_profile_approved end) >= date_sub(now(), interval 30 day) and (case gc.case_type when 'surrogate' then c.gc_profile_approved when 'donor' then c.ed_profile_approved else c.sd_profile_approved end) <= now()\norder by `Profile approved on` desc",
+   "assumptions": [
+    "'Last 30 days' means the 30 days up to today (2026-10-21).",
+    "For intended-parent cases, profile approval is the approval date on the family record linked to the case.",
+    "For surrogate, egg donor and sperm donor cases, profile approval is the matching approval date on the person's contact record (surrogate, egg donor or sperm donor profile).",
+    "All case types are included. Currently only intended-parent cases have approvals in this window: 2 cases."
+   ]
+  },
+  {
+   "id": "validated-05",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 6.0,
+   "question": "Show me the most recent notes on this journey, pinned ones first.",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 14673,
+    "output_tokens": 534,
+    "tool_calls": 3
+   },
+   "clarify": "Which journey do you mean by \"this journey\"? I can't tell which one from your message.",
+   "options": [
+    "A specific gestational carrier (GC) case \u2013 please give the case ID or the carrier's name",
+    "A specific intended parent (IP) case \u2013 please give the case ID or the parents' name",
+    "No single journey \u2013 show the most recent notes across all cases, pinned first"
+   ]
+  },
+  {
+   "id": "validated-06",
+   "kind": "report",
+   "rows": 126,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 23.1,
+   "question": "List all overdue tasks across my journeys.",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 92010,
+    "output_tokens": 1814,
+    "tool_calls": 6
+   },
+   "title": "Overdue tasks across journeys",
+   "sql": "SELECT\n  COALESCE(ip.case_file_name, gc.case_file_name) AS journey,\n  CASE WHEN t.ip_case_id IS NOT NULL THEN 'Intended parent' ELSE CONCAT('Journey - ', gc.case_type) END AS journey_type,\n  t.task_title AS task,\n  t.task_type AS task_type,\n  t.task_status AS task_status,\n  t.must_be_completed_by AS due_date,\n  t.must_be_completed_time AS due_time,\n  DATEDIFF('2026-10-21', t.must_be_completed_by) AS days_overdue,\n  CONCAT(a.first_name, ' ', a.last_name) AS task_assigned_to\nFROM case_task t\nLEFT JOIN ip_case ip ON ip.case_id = t.ip_case_id\nLEFT JOIN gc_case gc ON gc.case_id = t.gc_case_id\nLEFT JOIN admin a ON a.admin_id = t.task_assigned_to_id\nWHERE (t.ip_case_id IS NOT NULL OR t.gc_case_id IS NOT NULL)\n  AND t.completed IS NULL\n  AND t.task_status <> 'completed'\n  AND t.must_be_completed_by < '2026-10-21'\nORDER BY t.must_be_completed_by, t.must_be_completed_time",
+   "assumptions": [
+    "I couldn't tell which staff member you are, so this lists overdue tasks for all journeys, not only yours. The assigned person is shown so you can filter to yourself.",
+    "A journey means an intended-parent case or a donor/surrogate case.",
+    "A task is overdue if its due date is before today (2026-10-21) and it isn't complete.",
+    "A task counts as complete if it has a completion timestamp or its status is 'completed'. Deferred and pending tasks still count as overdue.",
+    "Tasks not linked to any journey are left out."
+   ]
+  },
+  {
+   "id": "validated-07",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 7.6,
+   "question": "What tasks are included in the [template name] workflow?",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 18221,
+    "output_tokens": 450,
+    "tool_calls": 2
+   },
+   "clarify": "Your request still has the placeholder \"[template name]\". Which workflow template do you want the tasks for?",
+   "options": [
+    "Gestational Carrier Workflow (DEFAULT)",
+    "Intended Parent Workflow - (IP/ED) (DEFAULT)",
+    "Egg Donation Workflow Name Change",
+    "A different template (please type its name)"
+   ]
+  },
+  {
+   "id": "validated-08",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 6.8,
+   "question": "Which contacts came in through [marketing source] and haven't completed a form since intake?",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 22029,
+    "output_tokens": 534,
+    "tool_calls": 2
+   },
+   "clarify": "Your request has \"[marketing source]\" as an unfilled placeholder. Which source do you want to look at?",
+   "options": [
+    "Facebook",
+    "Search Engine (including the 'search' entries)",
+    "Personal Referral (including the 'personal' entries)",
+    "Another source, such as Blog, YouTube, print, event, media, clinic or other"
+   ]
+  },
+  {
+   "id": "validated-09",
+   "kind": "report",
+   "rows": 1,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 19.4,
+   "question": "List egg donors available for a cycle who haven't donated before.",
+   "usage": {
+    "requests": 6,
+    "input_tokens": 150699,
+    "output_tokens": 1583,
+    "tool_calls": 9
+   },
+   "title": "Available egg donors who have not donated before",
+   "sql": "SELECT g.case_id AS case_number, g.case_file_name AS donor_case_name, c.contact_id AS donor_contact_id, c.first_name AS first_name, c.last_name AS last_name, c.email AS email, g.donor_status AS donor_availability, g.stage AS case_stage, p.past_donor AS donated_before_flag\nFROM gc_case g\nJOIN contact c ON c.contact_id = g.gc_id\nJOIN ed_profile p ON p.contact_id = c.contact_id\nWHERE g.case_type = 'donor'\n  AND g.active = 1\n  AND g.donor_status = 'available'\n  AND p.past_donor = 0\n  AND NOT EXISTS (SELECT 1 FROM ed_profile p2 WHERE p2.contact_id = c.contact_id AND p2.past_donor = 1)",
+   "assumptions": [
+    "Egg donors are donor-type cases; 'available for a cycle' means the donor's availability status is 'available' (not in a cycle, under review or temporarily unavailable).",
+    "Only active cases are included.",
+    "'Haven't donated before' means the donor's profile explicitly says they are not a past donor. Donors with no answer recorded or no profile are excluded, and so is any donor with another profile marked as a past donor.",
+    "Most available donors have no past-donor answer on file (9 of 10 available donors), so this list is short. Including those would make it much longer."
+   ]
+  },
+  {
+   "id": "validated-10",
+   "kind": "report",
+   "rows": 55,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 17.0,
+   "question": "Which contracts are still waiting on a signature?",
+   "usage": {
+    "requests": 6,
+    "input_tokens": 70489,
+    "output_tokens": 1700,
+    "tool_calls": 10
+   },
+   "title": "Contracts still waiting on a signature",
+   "sql": "SELECT h.hellosign_id AS `Signature Request #`,\n       h.created AS `Request Created`,\n       CONCAT(a.first_name, ' ', a.last_name) AS `Requested By`,\n       cr.user_type AS `Signer Type`,\n       CASE cr.user_type\n            WHEN 'user' THEN CONCAT(u.first_name, ' ', u.last_name)\n            WHEN 'np_user' THEN CONCAT(np.first_name, ' ', np.last_name)\n            WHEN 'admin' THEN CONCAT(sa.first_name, ' ', sa.last_name)\n       END AS `Signer`,\n       cr.status AS `Signature Status`,\n       cr.created AS `Sent To Signer On`,\n       DATEDIFF(CURDATE(), cr.created) AS `Days Waiting`\nFROM contract_rel cr\nJOIN hellosign h ON h.hellosign_id = cr.parent_id\nLEFT JOIN admin a ON a.admin_id = h.created_by_id\nLEFT JOIN user u ON cr.user_type = 'user' AND u.user_id = cr.user_id\nLEFT JOIN user_np np ON cr.user_type = 'np_user' AND np.np_user_id = cr.user_id\nLEFT JOIN admin sa ON cr.user_type = 'admin' AND sa.admin_id = cr.user_id\nWHERE cr.status <> 'signed'\nORDER BY cr.created",
+   "assumptions": [
+    "A contract is 'waiting on a signature' when a signer on its signature request has not yet signed; that includes requests that were sent, viewed, or could not be delivered.",
+    "Each row is one signer on one signature request, so a request with several unsigned signers appears more than once.",
+    "Signer names come from the matching user, partner/spouse or admin record depending on the signer type.",
+    "Days waiting is counted from when the request was sent to that signer until today."
+   ]
+  },
+  {
+   "id": "validated-11",
+   "kind": "report",
+   "rows": 39,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 14.8,
+   "question": "Show me which intended parents have never logged into their portal.",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 101571,
+    "output_tokens": 1027,
+    "tool_calls": 6
+   },
+   "title": "Intended parents who have never logged into their portal",
+   "sql": "SELECT u.user_id AS `User ID`, u.first_name AS `First Name`, u.last_name AS `Last Name`, u.email AS `Email`, u.created AS `Account Created`, CASE WHEN u.active = 1 THEN 'Active' ELSE 'Inactive' END AS `Account Status`, CASE WHEN u.confirmed_email = 1 THEN 'Yes' ELSE 'No' END AS `Email Confirmed` FROM `user` u WHERE u.user_type = 'IP' AND u.last_login IS NULL ORDER BY u.created DESC",
+   "assumptions": [
+    "Intended parents are user accounts of type 'IP'. IP representatives are not included.",
+    "Someone has 'never logged in' if their account has no recorded last-login time.",
+    "Active and inactive accounts are both included, and the report shows each account's status.",
+    "The report lists individual parent accounts, not cases or families. Accounts can't be reliably tied to a case or family in this data."
+   ]
+  },
+  {
+   "id": "validated-12",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 10.7,
+   "question": "Which cases have active, incomplete campaigns right now?",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 34324,
+    "output_tokens": 979,
+    "tool_calls": 4
+   },
+   "clarify": "What should count as an \"incomplete\" campaign?",
+   "options": [
+    "Still running: the campaign's flow status is starting, waiting or flowing (about 59 enrollments)",
+    "No completion date recorded yet (about 58 enrollments, including some marked finished or stopped)",
+    "Anything not finished: flow status is not finished or finished-by-trigger, including stopped or blank"
+   ]
+  },
+  {
+   "id": "validated-13",
+   "kind": "report",
+   "rows": 42,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 14.5,
+   "question": "How many open To Dos does each admin currently have assigned to them?",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 51785,
+    "output_tokens": 1353,
+    "tool_calls": 7
+   },
+   "title": "Open To Dos currently assigned to each admin",
+   "sql": "SELECT a.first_name AS first_name, a.last_name AS last_name,\n  SUM(t.src = 'case') AS open_case_todos,\n  SUM(t.src = 'general') AS open_general_todos,\n  SUM(t.src = 'contact') AS open_contact_todos,\n  COUNT(*) AS total_open_todos\nFROM (\n  SELECT 'case' AS src, task_assigned_to_id FROM case_task WHERE completed IS NULL\n  UNION ALL\n  SELECT 'general', task_assigned_to_id FROM general_task WHERE completed IS NULL\n  UNION ALL\n  SELECT 'contact', task_assigned_to_id FROM contact_task WHERE completed IS NULL\n) t\nJOIN admin a ON a.admin_id = t.task_assigned_to_id\nGROUP BY a.admin_id, a.first_name, a.last_name\nORDER BY total_open_todos DESC, a.last_name, a.first_name",
+   "assumptions": [
+    "'To Dos' covers all three kinds of tasks: case tasks, general tasks and contact tasks. They are shown in separate columns plus a total.",
+    "A To Do is open if it has no completion date, whatever its status label says (the status label is rarely set to completed even for finished tasks). Deferred and pending tasks count as open.",
+    "Only admins with at least one open To Do are listed.",
+    "Tasks with no assigned admin are excluded.",
+    "Overdue and future-dated open To Dos are both counted."
+   ]
+  },
+  {
+   "id": "validated-14",
+   "kind": "report",
+   "rows": 129,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 27.5,
+   "question": "Which surrogates are still waiting on their profile to be approved?",
+   "usage": {
+    "requests": 8,
+    "input_tokens": 142549,
+    "output_tokens": 1912,
+    "tool_calls": 14
+   },
+   "title": "Surrogates still waiting on profile approval",
+   "sql": "SELECT ct.contact_id AS \"Contact ID\", ct.first_name AS \"First name\", ct.last_name AS \"Last name\", ct.email AS \"Email\", g.case_file_name AS \"Case name\", g.stage AS \"Case stage\", s.status AS \"Case status\", a.first_name AS \"Assigned admin first name\", g.created AS \"Case created\"\nFROM gc_case g\nJOIN contact ct ON ct.contact_id = g.gc_id\nLEFT JOIN status s ON s.status_id = g.status_id\nLEFT JOIN admin a ON a.admin_id = g.assigned_admin\nWHERE g.case_type = 'surrogate'\n  AND g.active = 1\n  AND ct.gc_profile_approved IS NULL\nORDER BY g.created",
+   "assumptions": [
+    "Surrogates are cases of type 'surrogate' (not egg or sperm donors).",
+    "'Waiting on profile approval' means the surrogate's profile has no approval date recorded yet.",
+    "Only active cases are included; archived or inactive cases are left out.",
+    "A surrogate with more than one active case appears once per case."
+   ]
+  },
+  {
+   "id": "validated-15",
+   "kind": "report",
+   "rows": 216,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 10.3,
+   "question": "Show me egg donor profiles that haven't been approved by the agency yet.",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 70775,
+    "output_tokens": 1058,
+    "tool_calls": 6
+   },
+   "title": "Egg donor profiles not yet approved by the agency",
+   "sql": "SELECT c.contact_id AS contact_id, c.first_name AS first_name, c.last_name AS last_name, c.email AS email, c.created AS contact_created, s.status AS current_status, COUNT(e.profile_id) AS profile_records, MAX(e.profile_id) AS latest_profile_id\nFROM contact c\nJOIN ed_profile e ON e.contact_id = c.contact_id\nLEFT JOIN status s ON s.status_id = c.status_id\nWHERE c.ed_profile_approved IS NULL\nGROUP BY c.contact_id, c.first_name, c.last_name, c.email, c.created, s.status\nORDER BY c.created DESC",
+   "assumptions": [
+    "An egg donor profile is a contact that has an egg donor profile record on file.",
+    "A profile counts as not yet approved by the agency when the contact has no egg donor profile approval date.",
+    "Some donors have more than one profile record, so the report shows one row per donor and counts their profile records.",
+    "Newest contacts are listed first."
+   ]
+  },
+  {
+   "id": "validated-16",
+   "kind": "report",
+   "rows": 55,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 17.1,
+   "question": "Pull a list of sperm donors whose profiles are pending approval.",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 82820,
+    "output_tokens": 1663,
+    "tool_calls": 9
+   },
+   "title": "Sperm donors with profiles pending approval",
+   "sql": "SELECT c.contact_id AS `Contact ID`, c.first_name AS `First Name`, c.last_name AS `Last Name`, c.email AS `Email`, c.phone_number AS `Phone`, g.case_id AS `Case ID`, g.stage AS `Case Stage`, s.status AS `Case Status`, g.created AS `Case Created`\nFROM gc_case g\nJOIN contact c ON c.contact_id = g.gc_id\nLEFT JOIN status s ON s.status_id = g.status_id\nWHERE g.case_type = 'sperm_donor'\n  AND g.active = 1\n  AND c.sd_profile_approved IS NULL\nORDER BY g.created DESC",
+   "assumptions": [
+    "Sperm donors are people who have a case of type sperm donor.",
+    "'Profile pending approval' means the donor's sperm donor profile has no approval date recorded yet.",
+    "Only active cases are included; archived or inactive cases are excluded.",
+    "This is based on the profile approval date, not the workflow status label 'Pending IP Approval'. Tell me if you meant that status instead.",
+    "A donor with more than one active sperm donor case appears once per case."
+   ]
+  },
+  {
+   "id": "validated-17",
+   "kind": "report",
+   "rows": 34,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 13.5,
+   "question": "Show me intended parents whose profile has been approved.",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 81392,
+    "output_tokens": 960,
+    "tool_calls": 6
+   },
+   "title": "Intended parents with an approved profile",
+   "sql": "SELECT f.family_id AS family_id,\n       ic.case_id AS case_id,\n       ic.case_file_name AS case_name,\n       CONCAT_WS(' ', c1.first_name, c1.last_name) AS intended_parent_1,\n       CONCAT_WS(' ', c2.first_name, c2.last_name) AS intended_parent_2,\n       f.profile_approved AS profile_approved_on,\n       ic.stage AS case_stage,\n       ic.active AS case_active\nFROM family f\nLEFT JOIN ip_case ic ON ic.family_id = f.family_id\nLEFT JOIN contact c1 ON c1.contact_id = f.ip_1_id\nLEFT JOIN contact c2 ON c2.contact_id = f.ip_2_id\nWHERE f.profile_approved IS NOT NULL\nORDER BY f.profile_approved DESC",
+   "assumptions": [
+    "An intended parent's profile counts as approved when the family record has a profile approval date.",
+    "Each row is a family and its intended-parent case; a family with several cases appears once per case, and one with no case appears with blank case details.",
+    "Both intended parents of the family are shown, with the second blank when there isn't one.",
+    "Newest approvals are listed first."
+   ]
+  },
+  {
+   "id": "validated-18",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 9.4,
+   "question": "Which [GC or IP] cases are missing [specific form]?",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 20507,
+    "output_tokens": 692,
+    "tool_calls": 3
+   },
+   "clarify": "Your request still has placeholders in it. Which type of case and which form do you want to check?",
+   "options": [
+    "GC cases missing the 'GC - Gather Form'",
+    "GC cases missing a different form (tell me which one)",
+    "IP cases missing a specific form (tell me which one)",
+    "Both GC and IP cases missing a specific form (tell me which one)"
+   ]
+  }
+ ]
+}

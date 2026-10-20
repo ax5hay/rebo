@@ -1,0 +1,38 @@
+# Local guinea-pig database: the JMS staging structure (no real rows), filled by tools/synth.
+#   docker compose up -d db                       # first start loads the schema (about 30 s)
+#   uv run --extra synth python tools/synth/synth.py   # fill it with synthetic data
+#   uv run reportsbot bootstrap --describe        # teach the bot the structure
+#   uv run reportsbot serve                       # http://127.0.0.1:8080/?user=alice
+services:
+  db:
+    image: mysql:8.0.44
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: jms
+    command: ["--sql-mode=NO_ENGINE_SUBSTITUTION", "--character-set-server=utf8mb4",
+              "--collation-server=utf8mb4_0900_ai_ci", "--max-allowed-packet=256M"]
+    ports: ["3307:3306"]
+    volumes:
+      - ./fixtures/jms_staging/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./tools/localdb/02-readonly-user.sql:/docker-entrypoint-initdb.d/02-readonly-user.sql:ro
+      - dbdata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-uroot", "-proot"]
+      interval: 5s
+      retries: 30
+
+  bot:
+    build: .
+    profiles: ["bot"]
+    env_file: .env
+    environment:
+      REPORTSBOT_DATABASE_URL: mysql+pymysql://reports_ro:reports_ro@db:3306/jms
+      REPORTSBOT_STATE_DIR: /data
+    ports: ["8080:8080"]
+    volumes: ["botstate:/data"]
+    depends_on:
+      db: {condition: service_healthy}
+
+volumes:
+  dbdata:
+  botstate:
