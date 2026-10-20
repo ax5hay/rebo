@@ -32,11 +32,12 @@ All responses are JSON. Errors: 400 bad input, 403 not allowed, 404 unknown id.
  "sql": "SELECT …",
  "assumptions": ["Surrogates are cases of type surrogate; active means …", "…"],
  "provenance": {"label": "new", "item_ids": [], "text": "New report · not checked by anyone yet"},
+ "follow_ups": ["Break this down by sub-stage", "Only the last 30 days"],   // one-click drill-downs
  "suggestions": [{"id": "sg_…", "kind": "term", "title": "in intake", "body": "…", "sql": "…"}],
  "trace": [{"tool": "search_knowledge", "query": "…", "hits": 0}, {"tool": "describe_table", "table": "gc_case", "found": true}, …]}
 // response: clarify
 {"turn_id": "…", "conversation_id": "…", "kind": "clarify", "intro": "Quick check before I run this:",
- "question": "…", "options": ["…", "…"], "why": "…", "trace": […]}
+ "why": "…", "questions": [{"question": "…", "options": ["…", "…"]}, …up to 3], "trace": […]}
 // response: answer / error
 {"kind": "answer", "text": "…", "suggestions": […]}   |   {"kind": "error", "message": "…"}
 ```
@@ -82,7 +83,8 @@ prefixed `"Correction to the previous report: "`.
 - Enter or **Send** → spinner → card. A conversation id is kept per browser tab.
 - **No, fix it** shows `fix_prompt`, changes the input placeholder to "Describe what should
   change", and prefixes the next message as a correction.
-- Clarify options are buttons; clicking one sends its text.
+- A clarification shows every question at once (toggle chips per question) and one **Run** button;
+  the answers are sent together as `Q → A; Q → A`. Follow-up chips under a report send their text.
 
 ### `/knowledge` My knowledge
 Two lists: *What I've taught the bot* (every status) and *Shared knowledge I benefit from*. Each card

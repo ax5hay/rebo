@@ -77,16 +77,29 @@ def mount_ui(api: FastAPI, app: App) -> None:
                     with ui.expansion("Show SQL").classes("w-full"):
                         ui.code(r["sql"], language="sql").classes("w-full")
                     feedback_row(r)
+                    if r.get("follow_ups"):
+                        with ui.row().classes("gap-2"):
+                            for f in r["follow_ups"]:
+                                ui.button(f, on_click=lambda f=f: send(f)).props("flat dense no-caps color=primary")
                 for s in r.get("suggestions") or []:
                     suggestion_card(s)
             elif r["kind"] == "clarify":
                 with ui.card().classes("w-full"):
                     ui.label(r["intro"]).classes("text-sm opacity-70")
-                    ui.label(r["question"]).classes("text-base font-medium")
                     ui.label(r["why"]).classes("text-sm opacity-70")
-                    with ui.row():
-                        for opt in r["options"]:
-                            ui.button(opt, on_click=lambda o=opt: send(o)).props("outline")
+                    picks = []
+                    for q in r["questions"]:  # all questions answered in one turn
+                        ui.label(q["question"]).classes("text-base font-medium")
+                        picks.append((q["question"], ui.toggle(q["options"]).props("no-caps")))
+
+                    def answer(picks=picks):
+                        chosen = [f"{q} → {t.value}" for q, t in picks if t.value]
+                        if len(chosen) == len(picks):
+                            send("; ".join(chosen) if len(chosen) > 1 else picks[0][1].value)
+                        else:
+                            ui.notify("Pick one option for each question (or type your own answer below).")
+
+                    ui.button("Run", on_click=answer).props("color=primary")
             elif r["kind"] == "answer":
                 ui.chat_message(r["text"], name="Reports", sent=False)
                 for s in r.get("suggestions") or []:

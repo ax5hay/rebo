@@ -95,8 +95,11 @@ the user's confirmed example arrived in this block (doc 17).
 5. At most about 8 probes with `run_sql`.
 6. Finish with exactly one outcome: `Report` (readable aliases, no protected columns, no LIMIT
    needed), `Clarify` (only when readings are plausible, not settled by knowledge, and give
-   materially different results; 2–4 options), or `Reply`.
+   materially different results; **all** open questions bundled in one turn, at most 3, each with
+   2–4 options from stored values; if one reading is clearly most likely, answer with it as an
+   assumption; never re-ask what was answered), or `Reply`.
 7. `assumptions` are in plain business language with no table or column names.
+8. `follow_ups`: up to 3 drill-down questions, offered as one-click chips.
 8. `learnable` holds only what the user explicitly stated; usually empty.
 9. A correction from the user is the authority: revise, and put the general rule in `learnable`.
 

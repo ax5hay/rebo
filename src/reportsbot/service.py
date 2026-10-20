@@ -213,15 +213,15 @@ class App:
             res = deps.final
             payload = {"title": out.title, "sql": out.sql, "columns": res.columns, "rows": res.rows,
                        "truncated": res.truncated, "elapsed_ms": res.elapsed_ms, "assumptions": out.assumptions,
-                       "provenance": prov,
+                       "provenance": prov, "follow_ups": out.follow_ups,
                        "message": msg.say("report_ready", title=out.title,
                                           row_phrase=msg.rows_phrase(len(res.rows), res.truncated)),
                        "suggestions": self._suggestions(user, turn_id, out.learnable)}
             return self._record(turn_id, conv_id, user, text, "report", payload, deps, sql=out.sql, prov=prov,
                                 usage=usage_d)
         if isinstance(out, Clarify):
-            payload = {"intro": msg.say("clarify_intro"), "question": out.question, "options": out.options,
-                       "why": out.why}
+            payload = {"intro": msg.say("clarify_intro"), "why": out.why,
+                       "questions": [q.model_dump() for q in out.questions]}
             return self._record(turn_id, conv_id, user, text, "clarify", payload, deps, usage=usage_d)
         reply = out if isinstance(out, Reply) else Reply(text=str(out))
         payload = {"text": reply.text, "suggestions": self._suggestions(user, turn_id, reply.learnable)}

@@ -48,13 +48,20 @@ class Report(BaseModel):
     used_knowledge: list[str] = Field(default_factory=list, description="ids of learned items you relied on")
     learnable: list[Learnable] = Field(default_factory=list, description=(
         "Only facts the user explicitly stated this conversation that will apply to future questions"))
+    follow_ups: list[str] = Field(default_factory=list, max_length=3, description=(
+        "Up to 3 short next questions that drill into this result (by a dimension, a time range, a segment)"))
+
+
+class Question(BaseModel):
+    question: str
+    options: list[str] = Field(min_length=2, max_length=4, description="Concrete, mutually exclusive readings")
 
 
 class Clarify(BaseModel):
-    """Ask before running, because reasonable readings give materially different answers."""
-    question: str
-    options: list[str] = Field(min_length=2, max_length=4, description="Concrete, mutually exclusive readings")
-    why: str = Field(description="One sentence: what differs between the options")
+    """Ask before running, because reasonable readings give materially different answers.
+    All open questions go into ONE clarify turn, so the user answers once."""
+    questions: list[Question] = Field(min_length=1, max_length=3)
+    why: str = Field(description="One sentence: what differs between the readings")
 
 
 class Reply(BaseModel):
@@ -96,10 +103,15 @@ How to work
      column a readable alias. Never select columns marked protected. No LIMIT needed. The SQL is executed
      before it is shown; errors come back to you.
    - Clarify: only when two or more readings are plausible, learned knowledge does not settle it, and the
-     readings give materially different results. Offer 2-4 concrete options.
+     readings give materially different results. Put EVERY open question into this one clarify (at most 3),
+     each with 2-4 concrete options taken from stored values where possible, so the user answers once.
+     If one reading is clearly the most likely, do not ask: answer with it and state it as an assumption.
+     Never ask again about something the user already answered in this conversation.
    - Reply: when the message is not asking for data.
 7. assumptions: every interpretation you made, in plain business language. No table or column names.
-8. learnable: only what the user explicitly stated as a definition, rule or correction that should apply
+8. follow_ups: up to 3 short next questions a person would ask about this result (drill down by a
+   dimension, narrow the time range, compare segments). They are offered as one-click buttons.
+9. learnable: only what the user explicitly stated as a definition, rule or correction that should apply
    to future questions. Never add your own guesses. Empty in most turns.
 
 When the user corrects a previous report, their correction is the authority: revise the report, and put the

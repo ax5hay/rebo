@@ -37,6 +37,20 @@ def _completion(name: str, args: dict) -> dict:
             "usage": {"prompt_tokens": 10, "completion_tokens": 5, "total_tokens": 15}}
 
 
+async def test_all_open_questions_come_back_in_one_clarify_turn(app):
+    payload = {"why": "The two readings give different lists.", "questions": [
+        {"question": "Which customers?", "options": ["active", "paused"]},
+        {"question": "Which date?", "options": ["created", "last order"]}]}
+
+    def handler(request):
+        return httpx.Response(200, json=_completion("ask_clarifying_question", payload))
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    app.__dict__["agent"] = build_agent(build_model("lmstudio:m", app.settings, http_client=client))
+    r = await app.ask(User("alice"), "good customers by date")
+    assert r["kind"] == "clarify" and [q["question"] for q in r["questions"]] == ["Which customers?", "Which date?"]
+
+
 async def test_lmstudio_wire_protocol_end_to_end(app):
     """A stand-in for LM Studio's OpenAI-compatible server: one tool call, then a validated report."""
     seen = []

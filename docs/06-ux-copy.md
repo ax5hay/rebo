@@ -85,12 +85,18 @@ Status labels (`status_label()`): see doc 05 §2.
 
 ```
 Quick check before I run this:                                   ← clarify_intro
-Do you mean cases assigned to Andrew Lee (admin) or Andrew Park (coordinator)?
-Both exist, and they own different cases.                         ← why
-[ Andrew Lee ]  [ Andrew Park ]                                   ← options; clicking sends the text
+Both exist and own different cases.                              ← why
+Which Andrew?            ( Andrew Lee ) ( Andrew Park )           ← question 1, toggle chips
+Which cases?             ( Carrier/donor ) ( Intended parent ) ( Both )   ← question 2
+[ Run ]                                                           ← sends all answers in ONE turn
 ```
 
-When to ask is policy in the prompt (doc 04 §5): only when the evidence disagrees.
+When to ask is policy in the prompt (doc 04 §5): only when the evidence disagrees, all open
+questions bundled into one turn (max 3), never re-asking what was already answered, and
+answering with a stated assumption when one reading is clearly most likely.
+
+Under every report, up to 3 **follow-up chips** (e.g. "Break this down by sub-stage",
+"Only the last 30 days") let the user drill down without typing: one click is one turn.
 
 ## 7. Errors
 
