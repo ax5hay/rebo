@@ -1,0 +1,38 @@
+# reportsbot.yaml — the whole configuration. Copy to reportsbot.yaml and edit.
+# Everything about what the data *means* is learned from the database and from people.
+# Secrets never go here: set them as environment variables (see the bottom of this file).
+
+database: mysql+pymysql://reports_ro:reports_ro@127.0.0.1:3307/jms   # read-only user
+
+models:                                    # "<provider>:<model>"
+  agent: openrouter:anthropic/claude-sonnet-5.5
+  fast: openrouter:anthropic/claude-haiku-5.5
+  fallback: []                             # tried in order if the agent model's API fails, e.g.
+                                           # [google:<gemini model id>, lmstudio:<local model id>]
+lmstudio_url: http://127.0.0.1:1234/v1     # only used by "lmstudio:" models
+
+state_dir: data                            # the bot's memory (back this up)
+
+limits:
+  rows: 500                                # rows returned per report
+  probe_rows: 20                           # rows per exploratory query
+  query_timeout_s: 30
+  tool_calls: 25                           # per user turn
+
+allowed_tables: []                         # empty = every table the database user can read
+protected_columns: ""                      # regex on table.column, added to auto-detected secrets
+
+sharing:
+  threshold: 3                             # people agreeing before something is proposed for everyone
+
+embeddings: true                           # local vectors (needs the "embed" extra)
+
+auth:
+  mode: headers                            # headers (X-User-* from a trusted gateway) | jwt
+  issuer: orchid                           # expected "iss" claim when mode is jwt
+
+# Secrets (environment variables only):
+#   OPENROUTER_API_KEY   for openrouter:   (REPORTSBOT_OPENROUTER_API_KEY also accepted)
+#   ANTHROPIC_API_KEY    for anthropic:
+#   GEMINI_API_KEY       for google:       (GOOGLE_API_KEY also accepted)
+#   REPORTSBOT_JWT_SECRET  when auth.mode is jwt

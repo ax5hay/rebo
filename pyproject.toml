@@ -5,7 +5,7 @@ description = "Self-learning natural-language reports bot for any relational dat
 readme = "README.md"
 requires-python = ">=3.13,<3.14"
 dependencies = [
-    "pydantic-ai-slim[openrouter]>=2.58",
+    "pydantic-ai-slim[openrouter,openai,anthropic,google]>=2.58",
     "sqlglot>=30.24",
     "sqlalchemy>=2.0.48",
     "pymysql>=1.2",
@@ -14,6 +14,7 @@ dependencies = [
     "nicegui>=3.18",
     "numpy>=2.0",
     "pydantic-settings>=2.10",
+    "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]
