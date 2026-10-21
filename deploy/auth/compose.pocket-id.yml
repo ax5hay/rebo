@@ -1,0 +1,28 @@
+# Login without an existing identity provider (B-036): Pocket ID (passkeys, OIDC; BSD-2-Clause) +
+# oauth2-proxy in front of the bot. Use together with the production stack:
+#   docker compose -f compose.prod.yml -f deploy/auth/compose.pocket-id.yml up -d
+# Then: open https://<POCKET_ID_URL>/setup, create the admin passkey, add an OIDC client
+# (callback https://<BOT_URL>/oauth2/callback), create the groups reportsbot-admins and
+# reportsbot-owners, and put the client id/secret into .env (see deploy/auth/README.md).
+services:
+  pocket-id:
+    image: ghcr.io/pocket-id/pocket-id:v2.18.0
+    environment:
+      APP_URL: ${POCKET_ID_URL:?set POCKET_ID_URL, e.g. https://id.example.com}
+      TRUST_PROXY: "true"
+    ports: ["1411:1411"]
+    volumes: ["pocketid:/app/data"]
+    restart: unless-stopped
+
+  auth:                                      # overrides compose.prod.yml's proxy: OIDC against Pocket ID
+    environment:
+      OAUTH2_PROXY_PROVIDER: oidc
+      OAUTH2_PROXY_OIDC_ISSUER_URL: ${POCKET_ID_URL}
+      OAUTH2_PROXY_SCOPE: openid email profile groups
+      OAUTH2_PROXY_OIDC_GROUPS_CLAIM: groups # -> X-Forwarded-Groups -> the bot's role
+      OAUTH2_PROXY_REDIRECT_URL: ${BOT_URL:?set BOT_URL, e.g. https://reports.example.com}/oauth2/callback
+      OAUTH2_PROXY_EMAIL_DOMAINS: "*"
+    depends_on: [pocket-id]
+
+volumes:
+  pocketid:

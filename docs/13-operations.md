@@ -99,6 +99,14 @@ needs AWS access and the VPN (doc 12 §1).
 - Schedule: `bootstrap` nightly (or after migrations), and `revalidate` after every deploy of the
   target application.
 
+### 5.1 Login for standalone installs (B-036)
+
+See `deploy/auth/README.md`. oauth2-proxy signs people in with any OIDC provider; with none,
+`deploy/auth/compose.pocket-id.yml` adds Pocket ID (passkeys). Roles come from IdP groups
+`reportsbot-owners` / `reportsbot-admins` (fixed names; everyone else is a user). Behind the proxy the
+bot ignores client-sent `X-User-*` headers (verified against oauth2-proxy v7.15.5 that it strips
+forged `X-Forwarded-*` but passes `X-User-*` through). Keep the bot reachable only via the proxy.
+
 ## 6. Security checklist
 
 - [ ] The DB user has only `SELECT` (tools/localdb/02-readonly-user.sql is the template).
