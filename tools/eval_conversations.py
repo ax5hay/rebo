@@ -14,7 +14,7 @@ import sys
 import time
 from pathlib import Path
 
-from rebo.evals import run_conversations
+from rebo.evals import record_run, run_conversations
 from rebo.service import App
 
 
@@ -25,6 +25,8 @@ async def main(cases: str, out: str, limit: int = 0) -> None:
            "escalate": app.settings.escalate_model,
            "database": app.target.engine.url.render_as_string(hide_password=True), **res}
     Path(out).write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+    record_run(app, kind="conversations", cases=cases, model=app.settings.model, summary=res["summary"],
+               results_file=out)
     print(json.dumps(res["summary"]))
 
 

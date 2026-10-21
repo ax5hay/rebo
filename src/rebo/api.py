@@ -184,6 +184,23 @@ def router(app: App) -> APIRouter:
     def health():
         return {"ok": True, "bootstrapped_at": app.store.meta_get("bootstrapped_at")}
 
+    @r.get("/me")
+    def me(user: User = Depends(current_user)):
+        return {"id": user.id, "role": user.role, "team": user.team, "is_admin": user.is_admin,
+                "is_owner": user.is_owner}
+
+    @r.get("/conversations")
+    def conversations(user: User = Depends(current_user)):
+        return app.conversations(user)
+
+    @r.get("/conversations/{conversation_id}")
+    def conversation(conversation_id: str, user: User = Depends(current_user)):
+        return guard_errors(lambda: app.conversation(user, conversation_id))
+
+    @r.get("/insights")
+    def insights(days: int = 90, user: User = Depends(current_user)):
+        return guard_errors(lambda: app.insights(user, days))
+
     @r.post("/ask")
     async def ask(body: AskIn, user: User = Depends(current_user)):
         try:

@@ -15,7 +15,7 @@ import sys
 import time
 from pathlib import Path
 
-from rebo.evals import DRAFT_LABEL, cost, load_cases, run_eval
+from rebo.evals import DRAFT_LABEL, cost, load_cases, record_run, run_eval
 from rebo.service import App
 
 
@@ -52,6 +52,7 @@ async def main(cases: str, out: str, limit: int = 0, use_drafts: bool = False) -
            "model": app.settings.model, "escalate": app.settings.escalate_model,
            "database": app.target.engine.url.render_as_string(hide_password=True), "summary": summary, "cases": res["cases"]}
     Path(out).write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+    record_run(app, kind="questions", cases=cases, model=app.settings.model, summary=summary, results_file=out)
     print(json.dumps(summary))
 
 

@@ -27,7 +27,7 @@ from .agent import Clarify, Deps, Report, Reply, Trace, build_agent
 from .catalog import Catalog, bootstrap
 from .knowledge import Knowledge, User
 from .llm import build_model, cost, credentials_present, profile, turn_limits
-from .observability import ask_span, setup_tracing
+from .observability import ask_span, phoenix_url, setup_tracing
 from .retrieval import Index, fts_query, get_embedder
 from .safety import canonical_hash, drill_sql, fill_params, guard
 from .settings import Settings, get_settings, load_env_file
@@ -805,6 +805,121 @@ class App:
             raise ValueError("A default needs a name and a value.")
         return self.knowledge.teach(user, kind="note", title=self.DEFAULT_PREFIX + name, body=value, sql=None,
                                     source_turn=None).item
+
+    # ---- product views: who am I, my conversations, insights ---------------------------------------
+    def conversations(self, user: User, limit: int = 30) -> list[dict[str, Any]]:
+        """The user's recent conversations, newest first, with their first question and turn count."""
+        rows = self.store.all("SELECT c.id, c.updated_at, COUNT(t.id) AS turns, MIN(t.created_at) AS started "
+                              "FROM conversation c JOIN turn t ON t.conversation_id = c.id "
+                              "WHERE c.owner=? GROUP BY c.id, c.updated_at ORDER BY c.updated_at DESC LIMIT ?",
+                              (user.id, limit))
+        for r in rows:
+            first = self.store.one("SELECT question FROM turn WHERE conversation_id=? ORDER BY created_at LIMIT 1",
+                                   (r["id"],))
+            r["title"] = (first or {}).get("question", "")
+        return rows
+
+    def conversation(self, user: User, conversation_id: str) -> list[dict[str, Any]]:
+        """Every turn of one of the user's conversations, as /api/ask returned it."""
+        c = self.store.one("SELECT owner FROM conversation WHERE id=?", (conversation_id,))
+        if not c or c["owner"] != user.id:
+            raise PermissionError("That conversation belongs to someone else.")
+        out = []
+        for t in self.store.all("SELECT * FROM turn WHERE conversation_id=? ORDER BY created_at", (conversation_id,)):
+            usage = json.loads(t["usage"] or "{}")
+            out.append({"turn_id": t["id"], "conversation_id": conversation_id, "kind": t["kind"],
+                        "question": t["question"], "feedback": t["feedback"], "trace_id": usage.get("trace_id"),
+                        "route": usage.get("route"), "created_at": t["created_at"], **json.loads(t["payload"])})
+        return out
+
+    def insights(self, user: User, days: int = 90) -> dict[str, Any]:
+        """Health checks, accuracy over time and usage, for admins and owners (the Insights page)."""
+        if not user.is_admin:
+            raise PermissionError("Only admins and owners can see insights.")
+        checks: list[dict[str, Any]] = []
+
+        def check(name: str, fn, warn=None) -> None:
+            started = time.perf_counter()
+            try:
+                detail = fn()
+                state = "warn" if warn and warn(detail) else "ok"
+            except Exception as e:
+                detail, state = str(getattr(e, "orig", e)).splitlines()[0][:240], "fail"
+            checks.append({"name": name, "state": state, "detail": detail,
+                           "ms": round((time.perf_counter() - started) * 1000, 1)})
+
+        s = self.settings
+        check("Reported database", lambda: (self.target.run("SELECT 1", max_rows=1),
+                                            f"{self.target.dialect} at {self.target.engine.url.render_as_string(hide_password=True)}")[1])
+        check("State store", lambda: f"{self.store.dialect}, schema revision "
+                                     f"{self.store.one('SELECT version_num FROM alembic_version')['version_num']}")
+
+        def catalog():
+            t = self.store.one("SELECT COUNT(*) AS n, SUM(CASE WHEN description IS NOT NULL THEN 1 ELSE 0 END) AS d "
+                               "FROM cat_table")
+            if not t["n"]:
+                raise RuntimeError("not built yet: run `rebo bootstrap`")
+            when = self.store.meta_get("bootstrapped_at")
+            return f"{t['n']} tables, {t['d'] or 0} described, built " + (
+                dt.datetime.fromtimestamp(when).strftime("%Y-%m-%d %H:%M") if when else "at an unknown time")
+        check("Catalog", catalog)
+
+        def search():
+            docs = self.store.one("SELECT COUNT(*) AS n FROM schema_fts")["n"]
+            values = self.store.one("SELECT COUNT(*) AS n FROM value_fts")["n"]
+            vectors = self.store.one("SELECT COUNT(*) AS n FROM embedding WHERE ref LIKE 'schema:%'")["n"]
+            emb = self.index.embedder
+            if not emb.available:
+                return f"keyword only ({docs} documents, {values} values); embeddings off"
+            hits = len(self.index._dense("schema:", "name", 5))
+            if vectors < docs or not hits:
+                raise RuntimeError(f"{vectors} of {docs} documents have vectors and a probe found {hits}: "
+                                   "run `rebo bootstrap` again")
+            return f"{docs} documents, {values} values, {vectors} vectors ({emb.model_name}); dense probe found {hits}"
+        check("Search index", search)
+
+        def model_ready(spec: str) -> str:
+            if not credentials_present(spec, s):
+                raise RuntimeError(f"{spec}: no API key in the environment")
+            return spec
+
+        for label, spec in (("Agent model", s.model), ("Fast model", s.fast_model), ("Escalation model", s.escalate_model)):
+            if spec:
+                check(label, lambda spec=spec: model_ready(spec))
+        uses_lm = any(str(x).startswith("lmstudio:") for x in (s.model, s.fast_model, s.escalate_model, s.embeddings))
+        if uses_lm:
+            def lmstudio():
+                import httpx2
+                ids = [m["id"] for m in httpx2.get(f"{s.lmstudio_url}/models", timeout=3).json()["data"]]
+                return f"{len(ids)} models loaded: {', '.join(ids[:4])}"
+            check("LM Studio", lmstudio)
+
+        def tracing():
+            url = phoenix_url()
+            if not url:
+                return "off (start Phoenix: docker compose up -d phoenix)"
+            import httpx2
+            httpx2.get(url, timeout=2)
+            return f"Phoenix at {url}"
+        check("Tracing", tracing, warn=lambda d: d.startswith("off"))
+
+        def jobs():
+            by = {r["status"]: r["n"] for r in self.store.all("SELECT status, COUNT(*) AS n FROM job GROUP BY status")}
+            sched = self.store.one("SELECT COUNT(*) AS n FROM schedule WHERE active=1")["n"]
+            return f"{by.get('queued', 0)} queued, {by.get('running', 0)} running, {by.get('failed', 0)} failed; " \
+                   f"{sched} schedules"
+        check("Background jobs", jobs, warn=lambda d: not d.split("running, ")[1].startswith("0 failed"))
+
+        def knowledge():
+            by = {r["status"]: r["n"] for r in self.store.all("SELECT status, COUNT(*) AS n FROM knowledge GROUP BY status")}
+            return ", ".join(f"{n} {k}" for k, n in sorted(by.items())) or "nothing learned yet"
+        check("Knowledge", knowledge, warn=lambda d: "stale" in d)
+
+        runs = [{**r, "summary": json.loads(r["summary"])} for r in
+                self.store.all("SELECT * FROM eval_run ORDER BY at")]
+        return {"checks": checks, "accuracy": runs, "usage": self.stats(user, days), "phoenix": phoenix_url(),
+                "settings": {"model": s.model, "fast_model": s.fast_model, "escalate_model": s.escalate_model,
+                             "embeddings": str(s.embeddings), "state": self.store.dialect}}
 
     def pinned(self, user: User) -> list[dict[str, Any]]:
         return [i for i in self.knowledge.visible(user, "example") if i["pinned"] and i["owner"] == user.id]

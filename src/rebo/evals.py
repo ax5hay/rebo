@@ -222,6 +222,18 @@ async def run_conversations(app: App, path: str, *, limit: int = 0, user: str = 
     return {"summary": summary, "conversations": out}
 
 
+def record_run(app: App, *, kind: str, cases: str, model: str | None, summary: dict, results_file: str | None,
+               at: float | None = None) -> str:
+    """Keep an eval run's summary in the state store, so Insights can show accuracy over time."""
+    import time
+    from .store import new_id
+    rid = new_id("ev")
+    with app.store.tx() as db:
+        db.execute("INSERT INTO eval_run(id, at, kind, cases, model, summary, results_file) VALUES(?,?,?,?,?,?,?)",
+                   (rid, at or time.time(), kind, cases, model, json.dumps(summary), results_file))
+    return rid
+
+
 def export_confirmed(app: App, path: str) -> int:
     """Write every verified example as an eval case with its SQL as gold."""
     rows = app.store.all("SELECT id, question, sql FROM knowledge WHERE kind='example' AND status='verified'")

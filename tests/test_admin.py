@@ -166,3 +166,34 @@ def test_config_preview_checks_database_and_models_without_saving(app, tmp_path,
     assert app.store.one("SELECT COUNT(*) AS n FROM config_event")["n"] == 0
     with pytest.raises(PermissionError):
         admin.save_config(app, ADMIN, good, preview=True)
+
+
+async def test_insights_conversations_and_me(app):
+    import json
+
+    from fastapi.testclient import TestClient
+
+    from rebo.api import create_app
+    from rebo.evals import record_run
+    from test_llm import _completion, _scripted
+    _scripted(app, [_completion("reply", {"text": "hi"})])
+    first = await app.ask(USER, "hello")
+    await app.ask(USER, "again", first["conversation_id"])
+    record_run(app, kind="questions", cases="gold.jsonl", model="m", summary={"execution_match": "8/10"},
+               results_file="r.json")
+    client = TestClient(create_app(app, with_ui=False))
+    alice = {"X-User-Id": "alice"}
+    assert client.get("/api/me", headers=alice).json()["role"] == "user"
+    convs = client.get("/api/conversations", headers=alice).json()
+    assert convs[0]["turns"] == 2 and convs[0]["title"] == "hello"
+    turns = client.get(f"/api/conversations/{first['conversation_id']}", headers=alice).json()
+    assert [t["question"] for t in turns] == ["hello", "again"] and turns[0]["text"] == "hi"
+    assert client.get(f"/api/conversations/{first['conversation_id']}", headers={"X-User-Id": "bob"}).status_code == 403
+    assert client.get("/api/insights", headers=alice).status_code == 403
+    ins = client.get("/api/insights", headers={"X-User-Id": "ada", "X-User-Role": "admin"}).json()
+    states = {c["name"]: c["state"] for c in ins["checks"]}
+    assert states["Reported database"] == "ok" and states["State store"] == "ok" and states["Catalog"] == "ok"
+    assert states["Search index"] == "ok"            # embeddings are off in tests: keyword only is fine
+    assert states["Agent model"] in ("ok", "fail")    # depends on whether this machine has a key
+    assert ins["accuracy"][0]["summary"]["execution_match"] == "8/10" and "usage" in ins
+    assert json.dumps(ins)                           # serialisable as the API returns it
