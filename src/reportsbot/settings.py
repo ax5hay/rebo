@@ -53,23 +53,42 @@ class _YamlSource(PydanticBaseSettingsSource):
         path = config_path()
         if not path.is_file():
             return {}
-        doc = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-        out: dict[str, Any] = {}
+        return flatten_yaml(path.read_text(encoding="utf-8"), str(path))
 
-        def walk(node: dict, prefix: tuple[str, ...]) -> None:
-            for k, v in node.items():
-                key = (*prefix, str(k))
-                if key in _YAML_KEYS:
-                    out[_YAML_KEYS[key]] = v
-                elif isinstance(v, dict):
-                    walk(v, key)
-                else:
-                    raise ValueError(f"{path}: unknown setting '{'.'.join(key)}'")
 
-        walk(doc, ())
-        if isinstance(out.get("allow_tables"), list):
-            out["allow_tables"] = ",".join(out["allow_tables"])
-        return out
+def flatten_yaml(text: str, source: str = "reportsbot.yaml") -> dict[str, Any]:
+    """YAML text -> flat setting values. Unknown keys raise (so do secrets: they are not YAML keys)."""
+    doc = yaml.safe_load(text) or {}
+    if not isinstance(doc, dict):
+        raise ValueError(f"{source}: the file must be a mapping of settings")
+    out: dict[str, Any] = {}
+
+    def walk(node: dict, prefix: tuple[str, ...]) -> None:
+        for k, v in node.items():
+            key = (*prefix, str(k))
+            if key in _YAML_KEYS:
+                out[_YAML_KEYS[key]] = v
+            elif isinstance(v, dict):
+                walk(v, key)
+            else:
+                raise ValueError(f"{source}: unknown setting '{'.'.join(key)}'")
+
+    walk(doc, ())
+    if isinstance(out.get("allow_tables"), list):
+        out["allow_tables"] = ",".join(out["allow_tables"])
+    return out
+
+
+def validate_yaml(text: str) -> None:
+    """Raise ValueError if `text` is not a valid reportsbot.yaml (types included)."""
+    flat = flatten_yaml(text)
+    flat.setdefault("database_url", os.environ.get("REPORTSBOT_DATABASE_URL", ""))
+    if not flat["database_url"]:
+        raise ValueError("'database' is required")
+    try:
+        Settings.model_validate(flat)
+    except Exception as e:
+        raise ValueError(str(e).splitlines()[0] + ": " + "; ".join(str(e).splitlines()[1:3])) from e
 
 
 class Settings(BaseSettings):

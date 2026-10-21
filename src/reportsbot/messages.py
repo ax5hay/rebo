@@ -66,6 +66,10 @@ MESSAGES: dict[str, str] = {
     "request_done": "Marked done. The person who asked will see your note.",
     "request_declined": "Declined. The person who asked will see your note.",
 
+    # --- configuration and bulk knowledge (owners / admins) --------------------------------
+    "config_saved": "Configuration saved and the previous version kept. Restart the bot to apply it.",
+    "import_done": "Imported: {added} added, {updated} updated, {shared} shared, {retired} withdrawn, {errors} with errors.",
+
     # --- direct editing ------------------------------------------------------------------
     "edited": "Saved. \"{title}\" now reads as you wrote it. The previous version is kept; use Undo to go back.",
     "edit_nothing": "Nothing changed.",

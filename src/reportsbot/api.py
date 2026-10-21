@@ -6,9 +6,11 @@ from __future__ import annotations
 from typing import Literal
 
 from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 
 from .knowledge import ROLE_ALIASES, User, normalise_role  # noqa: F401
+from . import admin
 from .service import App
 
 
@@ -53,6 +55,15 @@ class RequestIn(BaseModel):
 class ResolveIn(BaseModel):
     status: Literal["done", "declined"]
     resolution: str = ""
+
+
+class ConfigIn(BaseModel):
+    yaml: str
+    note: str = ""
+
+
+class ImportIn(BaseModel):
+    yaml: str
 
 
 class KnowledgeEdit(BaseModel):
@@ -186,6 +197,26 @@ def router(app: App) -> APIRouter:
     @r.get("/review")
     def review(user: User = Depends(current_user)):
         return guard_errors(lambda: app.review_queue(user))
+
+    @r.get("/admin/config")
+    def get_config(user: User = Depends(current_user)):
+        return guard_errors(lambda: admin.get_config(app, user))
+
+    @r.put("/admin/config")
+    def save_config(body: ConfigIn, user: User = Depends(current_user)):
+        return guard_errors(lambda: admin.save_config(app, user, body.yaml, body.note))
+
+    @r.post("/admin/config/rollback/{event_id}")
+    def rollback_config(event_id: int, user: User = Depends(current_user)):
+        return guard_errors(lambda: admin.rollback_config(app, user, event_id))
+
+    @r.get("/knowledge/export", response_class=PlainTextResponse)
+    def export_knowledge(include_retired: bool = False, user: User = Depends(current_user)):
+        return guard_errors(lambda: admin.export_knowledge(app, user, include_retired))
+
+    @r.post("/knowledge/import")
+    def import_knowledge(body: ImportIn, user: User = Depends(current_user)):
+        return guard_errors(lambda: admin.import_knowledge(app, user, body.yaml))
 
     @r.post("/admin/revalidate")
     def revalidate(user: User = Depends(current_user)):

@@ -5,7 +5,9 @@ import argparse
 import asyncio
 import json
 import logging
+import os
 import sys
+from pathlib import Path
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -26,11 +28,27 @@ def main(argv: list[str] | None = None) -> int:
     e.add_argument("path")
     e.add_argument("--limit", type=int, default=0)
     sub.add_parser("mcp", help="serve the read-only tools over MCP (stdio)")
+    k = sub.add_parser("knowledge", help="export / import what the bot has learned (editable YAML)")
+    k.add_argument("action", choices=["export", "import"])
+    k.add_argument("path", nargs="?", help="file to write (export) or read (import); export defaults to stdout")
+    k.add_argument("--all", action="store_true", help="export: include withdrawn items")
+    k.add_argument("--as", dest="actor", default=os.environ.get("USERNAME") or os.environ.get("USER") or "cli",
+                   help="name recorded in the history (the CLI acts as an owner: it has server access)")
+    c = sub.add_parser("config", help="check reportsbot.yaml")
+    c.add_argument("action", choices=["check"])
     args = ap.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 
     from .service import App
 
+    if args.cmd == "config":
+        from .settings import config_path, validate_yaml
+        if not config_path().is_file():
+            print(f"{config_path()} not found: copy reportsbot.example.yaml to reportsbot.yaml")
+            return 1
+        validate_yaml(config_path().read_text(encoding="utf-8"))
+        print(f"{config_path()} is valid")
+        return 0
     if args.cmd == "mcp":
         from .mcp_server import serve_mcp
         serve_mcp(App())
@@ -50,6 +68,18 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(r, indent=2, default=str))
     elif args.cmd == "revalidate":
         print(json.dumps(app.revalidate(), indent=2))
+    elif args.cmd == "knowledge":
+        from . import admin
+        from .knowledge import User
+        owner = User(args.actor, role="owner")
+        if args.action == "export":
+            text = admin.export_knowledge(app, owner, include_retired=args.all)
+            if args.path:
+                admin.write_text(Path(args.path), text)
+            else:
+                print(text)
+        else:
+            print(json.dumps(admin.import_knowledge(app, owner, Path(args.path).read_text(encoding="utf-8")), indent=2))
     elif args.cmd == "eval":
         from .evals import run_eval
         print(json.dumps(asyncio.run(run_eval(app, args.path, limit=args.limit)), indent=2, default=str))
