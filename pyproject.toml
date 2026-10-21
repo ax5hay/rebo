@@ -17,6 +17,7 @@ dependencies = [
     "pyyaml>=6.0",
     "pyjwt>=2.10",
     "httpx2>=2.15",
+    "alembic>=1.20",
 ]
 
 [project.optional-dependencies]

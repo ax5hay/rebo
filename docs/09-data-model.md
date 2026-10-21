@@ -105,10 +105,20 @@ Turns hold result rows, which may include personal data from the target DB. Purg
 a scheduled `DELETE FROM turn WHERE created_at < …` according to the host's retention policy;
 knowledge items keep only SQL, titles and definitions, never rows.
 
-## Added later (in-place migrations in `store.MIGRATIONS`)
+## Schema changes: Alembic (B-027)
+
+`Store.__init__` runs `store.migrate()`: Alembic upgrades the state store to the latest revision in
+`src/reportsbot/migrations/versions/` on SQLite and Postgres alike (in-process; no command to run).
+`0001` is the baseline (every table, `IF NOT EXISTS`); `0002` adds the columns below only where they
+are missing. So a `state.db` from before Alembic upgrades in place and is stamped
+(`tests/test_store.py`, with the schema of commit 9b81192^ as fixture). New schema changes are new
+revision files; there is no downgrade (restore a backup instead).
 
 - `knowledge_event.turn_id`: the turn whose feedback caused the event, so `undo_feedback` reverses exactly that.
 - `turn.feedback_note`: feedback in the user's own words.
+- `knowledge.sql_template`, `knowledge.params`: an example's SQL with literals as `:p1…` and the literals (B-008).
+- `knowledge.pinned`: the owner's favourite (B-016).
+- `cat_column.pos`: column order (was SQLite's `rowid`; filled from it on upgrade).
 - `request(id, kind, target, requester, item_id, turn_id, text, status, resolver, resolution, created_at, updated_at)`:
   fix/access/config requests. `kind` is `fix_knowledge`, `fix_report`, `access`, `config` or `other`;
   `target` is `admin` or `owner`; `status` is `open`, `done` or `declined`.

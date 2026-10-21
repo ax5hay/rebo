@@ -21,3 +21,28 @@ def test_existing_catalog_keeps_its_column_order_after_upgrade(tmp_path):
     con.close()
     store = Store(path)
     assert [r["name"] for r in store.all("SELECT name FROM cat_column ORDER BY pos")] == ["zeta", "alpha"]
+
+
+def test_a_state_file_from_before_migrations_upgrades_in_place(tmp_path):
+    from pathlib import Path
+
+    from sqlalchemy import create_engine, inspect, text
+    path = tmp_path / "state.db"
+    con = sqlite3.connect(path)
+    con.executescript((Path(__file__).parent / "fixtures" / "state_schema_v0.sql").read_text(encoding="utf-8"))
+    con.execute("INSERT INTO knowledge(id, kind, status, scope, owner, title, created_at, updated_at) "
+                "VALUES ('te_1', 'term', 'active', 'personal', 'alice', 'paused', 1, 1)")
+    con.execute("INSERT INTO knowledge_event(item_id, at, actor, action) VALUES ('te_1', 1, 'alice', 'created')")
+    con.commit()
+    con.close()
+    store = Store(path)
+    assert store.one("SELECT title FROM knowledge WHERE id='te_1'")["title"] == "paused"
+    assert store.one("SELECT pinned FROM knowledge WHERE id='te_1'")["pinned"] == 0
+    cols = {t: {c["name"] for c in inspect(create_engine(f"sqlite:///{path}")).get_columns(t)}
+            for t in ("knowledge_event", "turn", "knowledge", "cat_column")}
+    assert {"turn_id"} <= cols["knowledge_event"] and {"feedback_note"} <= cols["turn"]
+    assert {"sql_template", "params", "pinned"} <= cols["knowledge"] and "pos" in cols["cat_column"]
+    with create_engine(f"sqlite:///{path}").connect() as c:
+        assert c.execute(text("SELECT version_num FROM alembic_version")).scalar() == "0002"
+    Store(path)                                                   # second start: nothing to do, no error
+    assert store.one("SELECT COUNT(*) AS n FROM knowledge_event")["n"] == 1

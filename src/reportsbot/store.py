@@ -165,17 +165,6 @@ CREATE TABLE IF NOT EXISTS config_event (
 );
 """
 
-# Columns added after the first release: (table, column, DDL). Applied once, idempotently.
-MIGRATIONS = [
-    ("knowledge_event", "turn_id", "ALTER TABLE knowledge_event ADD COLUMN turn_id TEXT"),
-    ("turn", "feedback_note", "ALTER TABLE turn ADD COLUMN feedback_note TEXT"),
-    ("knowledge", "sql_template", "ALTER TABLE knowledge ADD COLUMN sql_template TEXT"),  # example: literals -> :pN
-    ("knowledge", "params", "ALTER TABLE knowledge ADD COLUMN params TEXT"),               # JSON list of the literals
-    ("knowledge", "pinned", "ALTER TABLE knowledge ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0"),  # owner's favourite
-    ("cat_column", "pos", "ALTER TABLE cat_column ADD COLUMN pos INTEGER"),   # column order (was rowid)
-]
-
-
 # Postgres stand-ins for the FTS5 tables: same columns plus a generated tsvector (english = stemmed
 # like FTS5 "porter", simple = unstemmed like "unicode61"), searched by Store.match.
 _PG_FTS = {
@@ -238,6 +227,24 @@ class _PgConnection:
         self.conn.close()
 
 
+def migrate(store: "Store") -> None:
+    """Bring the state store to the latest Alembic revision (src/reportsbot/migrations). A state file from
+    before Alembic has no Alembic version stamp: the idempotent baseline and the add-if-missing column
+    revision upgrade it in place, then it is stamped."""
+    from alembic import command
+    from alembic.config import Config
+    from sqlalchemy import create_engine
+    cfg = Config()
+    cfg.set_main_option("script_location", str(Path(__file__).parent / "migrations"))
+    engine = create_engine(store.sqlalchemy_url)
+    try:
+        with engine.begin() as conn:
+            cfg.attributes["connection"] = conn
+            command.upgrade(cfg, "head")
+    finally:
+        engine.dispose()
+
+
 def new_id(prefix: str) -> str:
     return f"{prefix}_{uuid.uuid4().hex[:12]}"
 
@@ -253,20 +260,15 @@ class Store:
             self.path = Path(path)
             self.path.parent.mkdir(parents=True, exist_ok=True)
         self._local = threading.local()
-        with self.tx() as db:
-            db.executescript(SCHEMA if self.dialect == "sqlite" else _pg_schema())
-            for table, column, ddl in MIGRATIONS:
-                if column not in self._columns(db, table):
-                    db.execute(ddl)
-                    if (table, column) == ("cat_column", "pos") and self.dialect == "sqlite":
-                        db.execute("UPDATE cat_column SET pos=rowid")  # keep the order of an existing catalog
-
-    def _columns(self, db, table: str) -> set[str]:
         if self.dialect == "sqlite":
-            return {r[1] for r in db.execute(f"PRAGMA table_info({table})")}
-        return {r["column_name"] for r in db.execute(
-            "SELECT column_name FROM information_schema.columns WHERE table_name=? AND table_schema=current_schema()",
-            (table,)).fetchall()}
+            self.db.execute("PRAGMA journal_mode=WAL")  # persistent per file; cannot run inside a migration
+        migrate(self)
+
+    @property
+    def sqlalchemy_url(self) -> str:
+        if self.dialect == "sqlite":
+            return f"sqlite:///{self.path}"
+        return re.sub(r"^postgres(ql)?(\+\w+)?://", "postgresql+psycopg://", self.url)
 
     @property
     def db(self) -> Any:
