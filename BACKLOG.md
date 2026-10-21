@@ -351,10 +351,11 @@ do: Add a per-table correlation spec generated from the profile (e.g. stage give
 done when: the spec is applied, tests check date ordering, and doc 12 is updated.
 result: 2026-10-21, `git log --grep B-042`; date-order violations 9,809 -> 0 on the local MySQL. eval pending: needs llm (re-run the 18 prompts on the new data). Category correlations impossible from the profile.
 
-### [ ] B-043 · Visual UI check
+### [x] B-043 · Visual UI check
 needs: browser
 do: Use browser automation to open each page for each role, perform a feedback / undo / request / edit flow, and save screenshots to `docs/screenshots/`.
 done when: screenshots are committed and issues found are fixed.
+result: 2026-10-21, `git log --grep B-043`; 11 screenshots, 0 console errors; fixed stale config copy and a local-path leak in screenshots. Done with Playwright's own Chromium (doctor's `browser` capability is false).
 
 ### [x] B-044 · Real LM Studio run
 needs: lmstudio
