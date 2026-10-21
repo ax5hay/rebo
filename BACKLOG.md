@@ -384,7 +384,7 @@ update 2026-10-21b: staggered free-tier runs as the user asked: gemini-3.8-flash
 result: 2026-10-21, 82b8ea9. `agent.sql_trap`: = NULL, NOT IN (subquery), LEFT JOIN undone by WHERE, SUM/AVG over a one-to-many join; one retry. Demo gold Sonnet 8/10 → 8/10, $0.236 → $0.242, no trap fired.
 
 ### [x] B-047 · Spelling fallback for stored values
-result: 2026-10-21, 61c2992. RapidFuzz fallback in `search_values`. Two misspelled gold cases added (gp-11, gp-12); A/B in docs/08.
+result: 2026-10-21, 61c2992. RapidFuzz fallback in `search_values`. Two misspelled gold cases added (gp-11, gp-12). A/B, Sonnet: 2/2 on vs 2/2 off, $0.0335 vs $0.0328: no gain on Sonnet (it reads values via describe_table); kept, free when FTS hits. docs/08.
 
 ### [ ] B-048 · Low-confidence candidates with execution agreement
 needs: llm

@@ -1,0 +1,87 @@
+{
+ "run": "2026-10-21",
+ "questions": "as in the cases file",
+ "model": "openrouter:anthropic/claude-sonnet-5.5",
+ "escalate": "",
+ "database": "sqlite:///fixtures/demo_property/greenleaf.db",
+ "summary": {
+  "reports": 2,
+  "clarify": 0,
+  "clarify_rate": 0.0,
+  "gate_answered": 0,
+  "errors": 0,
+  "escalated": 0,
+  "median_seconds": 14.0,
+  "total_cost_usd": 0.0335,
+  "execution_match": "2/2"
+ },
+ "cases": [
+  {
+   "id": "gp-11",
+   "kind": "report",
+   "rows": 1,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 9.3,
+   "question": "How many plumbin requests are waiting_part?",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 13179,
+    "output_tokens": 392,
+    "cache_read_tokens": 9954,
+    "tool_calls": 2,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "trace_id": "5462ffe89d5c4ac8a70bbc6aed4f284b"
+   },
+   "cost_usd": 0.01137,
+   "title": "Plumbing requests waiting for parts",
+   "sql": "select count(*) as plumbing_requests_waiting_parts from maintenance where category='plumbing' and state='waiting_parts'",
+   "assumptions": [
+    "'plumbin' means the plumbing category",
+    "'waiting_part' means the status 'waiting parts'",
+    "Counts all such requests regardless of date or priority"
+   ]
+  },
+  {
+   "id": "gp-12",
+   "kind": "report",
+   "rows": 5,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 14.0,
+   "question": "Show open electricle maintenance requests with their unit.",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 20190,
+    "output_tokens": 698,
+    "cache_read_tokens": 13272,
+    "tool_calls": 4,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "concern",
+    "trace_id": "082153c56cca2e5f1ff9bb2aa7e5f617"
+   },
+   "cost_usd": 0.02214,
+   "title": "Open electrical maintenance requests with unit",
+   "sql": "SELECT m.request_id AS \"Request\", m.opened AS \"Opened\", m.priority AS \"Priority\", m.state AS \"Status\", b.name AS \"Building\", u.unit_number AS \"Unit\", u.unit_type AS \"Unit type\", m.assigned_to AS \"Assigned staff\", m.cost AS \"Cost\"\nFROM maintenance m\nJOIN unit u ON u.unit_id = m.unit_id\nJOIN building b ON b.building_id = u.building_id\nWHERE m.category = 'electrical' AND m.state = 'open'\nORDER BY m.opened",
+   "assumptions": [
+    "Read 'electricle' as the electrical category.",
+    "'Open' means requests whose status is exactly 'open'; requests that are in progress or waiting for parts are not included.",
+    "The unit is shown by its building name and unit number.",
+    "Check: The report treats \"open\" as only the exact status 'open', so electrical requests that are in progress or waiting for parts are left out, even though a business user would usually count them as still open. Check whether those statuses should be included before relying on the 5 rows."
+   ]
+  }
+ ]
+}

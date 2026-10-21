@@ -105,5 +105,9 @@ sets (needs an LLM key and saved examples).
 When full text finds no stored value, `Index.fuzzy_values` compares the text with every indexed value
 using RapidFuzz 3.14.6 (MIT, in process, `WRatio`, cutoff 85; queries under 4 characters are skipped).
 Hits carry `match: "spelled like '…' (NN%)"` so the agent treats them as approximate. The value list
-is cached and reloaded when the index changes size; 37,303 values on the JMS-shaped database. Not
-measured on gold yet: no gold case has a misspelling. Research and alternatives: doc 16 §5.
+is cached and reloaded when the index changes size; 37,303 values on the JMS-shaped database. Measured 2026-10-21 on the two misspelled demo cases (`gold_misspelled.jsonl`, gp-11/gp-12), Sonnet,
+fallback on vs off: 2/2 vs 2/2, $0.0335 vs $0.0328, same tool calls
+(`eval_results_sonnet_misspelled_fuzzy.json`; the off arm is in the commit message). Sonnet
+recovered the spellings itself from `describe_table` values, so no gain shows on this model; kept
+because it costs nothing when full text finds a hit and helps models that do not inspect values.
+Research and alternatives: doc 16 §5.

@@ -1,0 +1,2 @@
+{"id": "gp-11", "question": "How many plumbin requests are waiting_part?", "gold_sql": "SELECT COUNT(*) FROM maintenance WHERE category='plumbing' AND state='waiting_parts'", "min_rows": 1, "note": "misspelled stored values (fuzzy value search)"}
+{"id": "gp-12", "question": "Show open electricle maintenance requests with their unit.", "gold_sql": "SELECT m.request_id, u.unit_number, m.opened FROM maintenance m JOIN unit u ON u.unit_id=m.unit_id WHERE m.category='electrical' AND m.state='open'", "min_rows": 1, "note": "misspelled stored value (fuzzy value search)"}
