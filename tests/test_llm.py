@@ -376,3 +376,26 @@ async def test_a_conversation_cannot_be_continued_by_someone_else(app):
     r = client.post("/api/ask", json={"text": "hi", "conversation_id": first["conversation_id"]},
                     headers={"X-User-Id": "bob"})
     assert r.status_code == 403
+
+
+def test_agui_stream_reports_tool_steps_then_the_result(app):
+    from fastapi.testclient import TestClient
+
+    from reportsbot.api import create_app
+    _scripted(app, [_completion("search_values", {"text": "paused"}),
+                    _completion("present_report", {"title": "Paused customers", "assumptions": [],
+                                                   "sql": "SELECT full_name FROM customer WHERE status = 'paused'"})])
+    client = TestClient(create_app(app, with_ui=False))
+    body = {"threadId": "conv-1", "runId": "run-1", "state": None, "tools": [], "context": [],
+            "forwardedProps": None, "messages": [{"id": "m1", "role": "user", "content": "paused customers"}]}
+    with client.stream("POST", "/api/agui", json=body, headers={"X-User-Id": "alice",
+                                                                  "Accept": "text/event-stream"}) as r:
+        events = [json.loads(line[6:]) for line in r.iter_lines() if line.startswith("data: ")]
+    types = [e["type"] for e in events]
+    assert types[0] == "RUN_STARTED" and types[-1] == "RUN_FINISHED"
+    assert types.index("STEP_STARTED") < types.index("TEXT_MESSAGE_START")
+    assert next(e for e in events if e["type"] == "STEP_STARTED")["stepName"] == "search_values"
+    result = next(e for e in events if e.get("name") == "reportsbot.result")["value"]
+    assert result["kind"] == "report" and len(result["rows"]) == 10 and result["conversation_id"] == "conv-1"
+    other = client.post("/api/agui", json=body, headers={"X-User-Id": "bob"})
+    assert other.status_code == 403

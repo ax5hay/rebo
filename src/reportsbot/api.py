@@ -3,10 +3,12 @@ who the user is in headers. See docs/09-api-and-ui.md for every route and payloa
 """
 from __future__ import annotations
 
+import asyncio
+import json
 from typing import Literal
 
-from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException, Query
-from fastapi.responses import PlainTextResponse
+from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException, Query, Request
+from fastapi.responses import PlainTextResponse, StreamingResponse
 from pydantic import BaseModel
 
 from .knowledge import ROLE_ALIASES, User, normalise_role  # noqa: F401
@@ -156,6 +158,56 @@ def router(app: App) -> APIRouter:
             return await app.ask(user, body.text, body.conversation_id)
         except PermissionError as e:
             raise HTTPException(403, str(e)) from e
+
+    @r.post("/agui")
+    async def agui(request: Request, user: User = Depends(current_user)):
+        """AG-UI stream of one turn (B-029): RUN_STARTED, a STEP_STARTED/STEP_FINISHED pair per tool step
+        as it happens, the answer as a text message, CUSTOM "reportsbot.result" with the same payload
+        /api/ask returns, RUN_FINISHED (or RUN_ERROR). threadId is the conversation id."""
+        from ag_ui.core import (CustomEvent, RunAgentInput, RunErrorEvent, RunFinishedEvent, RunStartedEvent,
+                                StepFinishedEvent, StepStartedEvent, TextMessageContentEvent, TextMessageEndEvent,
+                                TextMessageStartEvent)
+        from ag_ui.encoder import EventEncoder
+        run = RunAgentInput.model_validate(await request.json())
+        last = next((m for m in reversed(run.messages) if m.role == "user"), None)
+        content = getattr(last, "content", "") if last else ""
+        text = content if isinstance(content, str) else " ".join(getattr(p, "text", "") for p in content or [])
+        if not text.strip():
+            raise HTTPException(400, "No user message to answer.")
+        conv = app.store.one("SELECT owner FROM conversation WHERE id=?", (run.thread_id,))
+        if conv and conv["owner"] != user.id:
+            raise HTTPException(403, "That conversation belongs to someone else.")
+        encoder = EventEncoder(accept=request.headers.get("accept"))
+        queue: asyncio.Queue = asyncio.Queue()
+
+        def step(s: dict) -> None:
+            queue.put_nowait(StepStartedEvent(step_name=s.get("tool", "step")))
+            queue.put_nowait(CustomEvent(name="reportsbot.progress", value=s))
+            queue.put_nowait(StepFinishedEvent(step_name=s.get("tool", "step")))
+
+        async def work() -> None:
+            try:
+                res = await app.ask(user, text, run.thread_id, progress=step)
+                say = res.get("message") or res.get("text") or res.get("intro") or ""
+                mid = f"msg_{res['turn_id']}"
+                for ev in (TextMessageStartEvent(message_id=mid, role="assistant"),
+                           TextMessageContentEvent(message_id=mid, delta=say or res["kind"]),
+                           TextMessageEndEvent(message_id=mid),
+                           CustomEvent(name="reportsbot.result", value=json.loads(json.dumps(res, default=str))),
+                           RunFinishedEvent(thread_id=run.thread_id, run_id=run.run_id)):
+                    queue.put_nowait(ev)
+            except Exception as e:  # the stream must end with an event the client understands
+                queue.put_nowait(RunErrorEvent(message=str(e)[:300]))
+            queue.put_nowait(None)
+
+        async def events():
+            yield encoder.encode(RunStartedEvent(thread_id=run.thread_id, run_id=run.run_id))
+            task = asyncio.create_task(work())
+            while (ev := await queue.get()) is not None:
+                yield encoder.encode(ev)
+            await task
+
+        return StreamingResponse(events(), media_type=encoder.get_content_type())
 
     @r.post("/turns/{turn_id}/feedback")
     def feedback(turn_id: str, body: FeedbackIn, user: User = Depends(current_user)):

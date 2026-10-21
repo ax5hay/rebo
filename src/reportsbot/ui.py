@@ -161,10 +161,13 @@ def mount_ui(api: FastAPI, app: App) -> None:
                 box.props("placeholder=Ask for a report")
             with feed:
                 ui.chat_message(text, name=u.id, sent=True)
-                spinner = ui.spinner(size="lg")
+                with ui.row().classes("items-center gap-2") as working:
+                    ui.spinner(size="lg")
+                    status = ui.label(msg.say("progress_start")).classes("text-sm opacity-70")
             box.value = ""
-            result = await app.ask(u, text, state["conversation_id"])
-            spinner.delete()
+            result = await app.ask(u, text, state["conversation_id"],
+                                   progress=lambda s: status.set_text(msg.progress(s.get("tool", ""))))
+            working.delete()
             state["conversation_id"] = result["conversation_id"]
             with feed:
                 render(result)

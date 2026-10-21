@@ -78,6 +78,7 @@ prefixed `"Correction to the previous report: "`.
 | `POST /api/admin/config/preview` `{yaml}` | owner | what saving would do: `{ok, errors, changes}`; database and model names checked, nothing saved |
 | `GET /api/admin/stats?days=90` | admin, owner | usage dashboard: confirmation per week, provenance mix, top questions, most reported wrong, open requests by age, cost per day |
 | `GET /api/admin/preview?user=X&q=…&team=` | admin | the context block user X would get for that question, plus the knowledge items with owners |
+| `POST /api/agui` (AG-UI `RunAgentInput`; `threadId` = conversation id) | the asker | one turn as an AG-UI event stream: `RUN_STARTED`, `STEP_STARTED`/`STEP_FINISHED` + `CUSTOM reportsbot.progress` per tool step as it happens, the answer as a text message, `CUSTOM reportsbot.result` (the `/api/ask` payload), `RUN_FINISHED` or `RUN_ERROR` (B-029) |
 | `GET /api/knowledge/about?q=` | anyone | what the bot knows about a word: visible learned items by trust, tables/columns with descriptions, stored values |
 | `GET /api/starter` | anyone | starter questions: the user's pinned reports first, then the most-used trusted reports |
 | `POST /api/turns/{id}/pin` / `DELETE /api/knowledge/{id}/pin` | the asker / the owner | pin a report (flags your own example with the same SQL, or creates one) / unpin; both logged in the item's history |

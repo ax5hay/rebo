@@ -12,7 +12,7 @@ and the database; failures go back to the model as a retry. See docs/03-agent-lo
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Callable, Literal
 
 import sqlglot
 from pydantic import BaseModel, Field
@@ -79,11 +79,24 @@ class Reply(BaseModel):
 Outcome = Report | Clarify | Reply
 
 
+class Trace(list):
+    """The turn's tool trace. `on_append` (optional) sees each step as it happens: streaming progress."""
+
+    def __init__(self, items=(), on_append: Callable[[dict[str, Any]], None] | None = None):
+        super().__init__(items)
+        self.on_append = on_append
+
+    def append(self, step: dict[str, Any]) -> None:
+        super().append(step)
+        if self.on_append:
+            self.on_append(step)
+
+
 @dataclass
 class Deps:
     app: "App"
     user: "User"
-    trace: list[dict[str, Any]] = field(default_factory=list)
+    trace: list[dict[str, Any]] = field(default_factory=Trace)
     final: QueryResult | None = None
     final_sql: str | None = None
     zero_row_retry: bool = False

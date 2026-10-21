@@ -13,6 +13,16 @@ MESSAGES: dict[str, str] = {
     "rows_none": "No rows matched. The assumptions below explain what was searched for.",
     "assumptions_header": "How I read your question",
     "review_concern": "Check: {concern}",
+    # progress while a turn runs (Ask page, /api/agui steps)
+    "progress_start": "Reading your question…",
+    "progress_search_schema": "Looking for the right tables…",
+    "progress_describe_table": "Reading a table's columns…",
+    "progress_search_values": "Checking how values are stored…",
+    "progress_find_join_path": "Working out how tables connect…",
+    "progress_search_knowledge": "Checking what people have taught me…",
+    "progress_run_sql": "Trying a small query…",
+    "progress_escalate": "Asking a stronger model…",
+    "progress_other": "Working…",
     "drill_rows": "The rows behind “{title}” where {where}, from the main table of that report.",
     "ask_feedback": "Is this right?",
 
@@ -105,6 +115,11 @@ MESSAGES: dict[str, str] = {
         "When an answer is right, say so and I'll remember it for you. When it's wrong, tell me what to fix."
     ),
 }
+
+
+def progress(tool: str) -> str:
+    """The sentence shown while a tool step runs."""
+    return MESSAGES.get(f"progress_{tool}", MESSAGES["progress_other"])
 
 
 def say(key: str, **kw) -> str:

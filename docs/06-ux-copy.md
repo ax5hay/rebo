@@ -48,6 +48,10 @@ keys rather than writing their own text, so behaviour and wording change togethe
 A new report built on more than 2 assumptions may carry one extra, last assumption from the
 reviewer (`review_concern`, doc 04 §7): "Check: Closed customers may be wanted too."
 
+While a turn runs, the Ask page shows a spinner with one line per tool step (`progress_*` in
+`messages.py`): "Looking for the right tables…", "Checking how values are stored…", "Trying a small
+query…". The same steps are streamed to other clients by `/api/agui` (doc 10).
+
 ## 3. Feedback sentences, verbatim
 
 | When | Key | Text |
