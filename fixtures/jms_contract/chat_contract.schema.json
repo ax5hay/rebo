@@ -1,0 +1,2355 @@
+{
+ "ChatMessageRequest": {
+  "$defs": {
+   "ChatRequestContext": {
+    "properties": {
+     "workflow_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Workflow Id"
+     },
+     "form_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Form Id"
+     },
+     "question_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Question Id"
+     },
+     "step_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Step Id"
+     }
+    },
+    "title": "ChatRequestContext",
+    "type": "object"
+   },
+   "EntityBinding": {
+    "properties": {
+     "entity_type": {
+      "title": "Entity Type",
+      "type": "string"
+     },
+     "entity_id": {
+      "title": "Entity Id",
+      "type": "integer"
+     },
+     "label": {
+      "title": "Label",
+      "type": "string"
+     }
+    },
+    "required": [
+     "entity_type",
+     "entity_id",
+     "label"
+    ],
+    "title": "EntityBinding",
+    "type": "object"
+   },
+   "ReportsInteraction": {
+    "properties": {
+     "action": {
+      "$ref": "#/$defs/ReportsUserAction",
+      "default": "query"
+     },
+     "option_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Option Id"
+     },
+     "reports_session_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Reports Session Id"
+     },
+     "entity_bindings": {
+      "items": {
+       "$ref": "#/$defs/EntityBinding"
+      },
+      "title": "Entity Bindings",
+      "type": "array"
+     },
+     "contact_type": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Contact Type"
+     },
+     "output_wants": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Output Wants"
+     }
+    },
+    "title": "ReportsInteraction",
+    "type": "object"
+   },
+   "ReportsUserAction": {
+    "description": "Client \u2192 server interaction for multi-turn report flows.",
+    "enum": [
+     "query",
+     "select_option",
+     "manual_select",
+     "confirm",
+     "reject",
+     "freetext",
+     "new_report",
+     "resume"
+    ],
+    "title": "ReportsUserAction",
+    "type": "string"
+   },
+   "SessionContext": {
+    "description": "Chat/session context anchored to a JMS Contact.",
+    "properties": {
+     "contact_id": {
+      "title": "Contact Id",
+      "type": "integer"
+     },
+     "contact_type": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Contact Type"
+     },
+     "workflow_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Workflow Id"
+     },
+     "form_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Form Id"
+     },
+     "question_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Question Id"
+     },
+     "step_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Step Id"
+     },
+     "active_personas": {
+      "default": [],
+      "items": {
+       "type": "string"
+      },
+      "title": "Active Personas",
+      "type": "array"
+     },
+     "jms_case_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Jms Case Id"
+     },
+     "jms_case_type": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Jms Case Type"
+     },
+     "jms_family_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Jms Family Id"
+     },
+     "jms_gc_sub_type": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Jms Gc Sub Type"
+     },
+     "jms_task_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Jms Task Id"
+     },
+     "jms_active_substage_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Jms Active Substage Id"
+     },
+     "awaiting_resume_confirmation": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Awaiting Resume Confirmation"
+     },
+     "awaiting_ready_confirmation": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Awaiting Ready Confirmation"
+     },
+     "awaiting_coordinator_approval": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Awaiting Coordinator Approval"
+     },
+     "intake_required_complete": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Intake Required Complete"
+     },
+     "deferred_redirect_qids": {
+      "default": [],
+      "items": {
+       "type": "integer"
+      },
+      "title": "Deferred Redirect Qids",
+      "type": "array"
+     },
+     "chatbot_skipped_task_ids": {
+      "default": [],
+      "items": {
+       "type": "integer"
+      },
+      "title": "Chatbot Skipped Task Ids",
+      "type": "array"
+     },
+     "kb_digression_active": {
+      "default": false,
+      "title": "Kb Digression Active",
+      "type": "boolean"
+     },
+     "held_question_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Held Question Id"
+     },
+     "kb_resume_prompted": {
+      "default": false,
+      "title": "Kb Resume Prompted",
+      "type": "boolean"
+     },
+     "disqualified": {
+      "default": false,
+      "title": "Disqualified",
+      "type": "boolean"
+     },
+     "disqualifier_question_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Disqualifier Question Id"
+     },
+     "pending_clarification": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Pending Clarification"
+     },
+     "last_form_group": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Last Form Group"
+     },
+     "last_section_notice_form_group": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Last Section Notice Form Group"
+     },
+     "family_ip_mode": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Family Ip Mode"
+     },
+     "family_composition_revision": {
+      "default": 0,
+      "title": "Family Composition Revision",
+      "type": "integer"
+     },
+     "db_schema": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Db Schema"
+     },
+     "active_form_group": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Active Form Group"
+     },
+     "active_form_group_label_for_speaker": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Active Form Group Label For Speaker"
+     },
+     "pending_family_composition_notice": {
+      "default": false,
+      "title": "Pending Family Composition Notice",
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "contact_id"
+    ],
+    "title": "SessionContext",
+    "type": "object"
+   },
+   "SnapConflictResolution": {
+    "description": "User chose which value to keep after a shared-snap conflict.",
+    "properties": {
+     "question_id": {
+      "title": "Question Id",
+      "type": "integer"
+     },
+     "chosen_value": {
+      "title": "Chosen Value",
+      "type": "string"
+     }
+    },
+    "required": [
+     "question_id",
+     "chosen_value"
+    ],
+    "title": "SnapConflictResolution",
+    "type": "object"
+   },
+   "SqlBotHistoryTurn": {
+    "properties": {
+     "role": {
+      "enum": [
+       "user",
+       "assistant"
+      ],
+      "title": "Role",
+      "type": "string"
+     },
+     "content": {
+      "maxLength": 8000,
+      "minLength": 1,
+      "title": "Content",
+      "type": "string"
+     }
+    },
+    "required": [
+     "role",
+     "content"
+    ],
+    "title": "SqlBotHistoryTurn",
+    "type": "object"
+   }
+  },
+  "properties": {
+   "message": {
+    "title": "Message",
+    "type": "string"
+   },
+   "session": {
+    "$ref": "#/$defs/SessionContext"
+   },
+   "context": {
+    "$ref": "#/$defs/ChatRequestContext"
+   },
+   "conflict_resolution": {
+    "anyOf": [
+     {
+      "$ref": "#/$defs/SnapConflictResolution"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null
+   },
+   "history": {
+    "anyOf": [
+     {
+      "items": {
+       "$ref": "#/$defs/SqlBotHistoryTurn"
+      },
+      "type": "array"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null,
+    "title": "History"
+   },
+   "reports": {
+    "anyOf": [
+     {
+      "$ref": "#/$defs/ReportsInteraction"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null
+   }
+  },
+  "required": [
+   "message",
+   "session",
+   "context"
+  ],
+  "title": "ChatMessageRequest",
+  "type": "object"
+ },
+ "ChatResponse": {
+  "$defs": {
+   "ChatTurn": {
+    "description": "One chat line in the HTTP response.\n\nWhen the row was persisted, ``id`` and ``created_at`` (ISO 8601 UTC ``\u2026Z``) are set.",
+    "properties": {
+     "id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "description": "Database primary key when this turn was persisted.",
+      "title": "Id"
+     },
+     "role": {
+      "title": "Role",
+      "type": "string"
+     },
+     "content": {
+      "title": "Content",
+      "type": "string"
+     },
+     "created_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "description": "UTC timestamp when stored (ISO 8601 with milliseconds and Z). Present when persisted.",
+      "title": "Created At"
+     }
+    },
+    "required": [
+     "role",
+     "content"
+    ],
+    "title": "ChatTurn",
+    "type": "object"
+   },
+   "Contradiction": {
+    "properties": {
+     "question_id": {
+      "title": "Question Id",
+      "type": "integer"
+     },
+     "existing_value": {
+      "title": "Existing Value",
+      "type": "string"
+     },
+     "new_value": {
+      "title": "New Value",
+      "type": "string"
+     },
+     "clarification_needed": {
+      "title": "Clarification Needed",
+      "type": "string"
+     }
+    },
+    "required": [
+     "question_id",
+     "existing_value",
+     "new_value",
+     "clarification_needed"
+    ],
+    "title": "Contradiction",
+    "type": "object"
+   },
+   "CurrentQuestionPayload": {
+    "description": "Structured next question for chat UI (radio / dropdown / checkbox).",
+    "properties": {
+     "question_id": {
+      "title": "Question Id",
+      "type": "integer"
+     },
+     "text": {
+      "title": "Text",
+      "type": "string"
+     },
+     "question_type": {
+      "title": "Question Type",
+      "type": "string"
+     },
+     "is_required": {
+      "title": "Is Required",
+      "type": "boolean"
+     },
+     "options": {
+      "default": [],
+      "items": {
+       "$ref": "#/$defs/QuestionOption"
+      },
+      "title": "Options",
+      "type": "array"
+     },
+     "percent_options": {
+      "default": [],
+      "items": {
+       "type": "string"
+      },
+      "title": "Percent Options",
+      "type": "array"
+     },
+     "why_we_ask": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Why We Ask"
+     },
+     "answer_hint": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Answer Hint"
+     },
+     "encouragement": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Encouragement"
+     },
+     "personas": {
+      "default": [],
+      "items": {
+       "type": "string"
+      },
+      "title": "Personas",
+      "type": "array"
+     }
+    },
+    "required": [
+     "question_id",
+     "text",
+     "question_type",
+     "is_required"
+    ],
+    "title": "CurrentQuestionPayload",
+    "type": "object"
+   },
+   "EntityBinding": {
+    "properties": {
+     "entity_type": {
+      "title": "Entity Type",
+      "type": "string"
+     },
+     "entity_id": {
+      "title": "Entity Id",
+      "type": "integer"
+     },
+     "label": {
+      "title": "Label",
+      "type": "string"
+     }
+    },
+    "required": [
+     "entity_type",
+     "entity_id",
+     "label"
+    ],
+    "title": "EntityBinding",
+    "type": "object"
+   },
+   "ExtractedSlot": {
+    "properties": {
+     "question_id": {
+      "title": "Question Id",
+      "type": "integer"
+     },
+     "value": {
+      "title": "Value",
+      "type": "string"
+     },
+     "confidence": {
+      "default": "high",
+      "title": "Confidence",
+      "type": "string"
+     }
+    },
+    "required": [
+     "question_id",
+     "value"
+    ],
+    "title": "ExtractedSlot",
+    "type": "object"
+   },
+   "FlagEvent": {
+    "properties": {
+     "severity": {
+      "title": "Severity",
+      "type": "string"
+     },
+     "reason": {
+      "title": "Reason",
+      "type": "string"
+     },
+     "category": {
+      "default": "other",
+      "title": "Category",
+      "type": "string"
+     },
+     "alert_tier": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Alert Tier"
+     }
+    },
+    "required": [
+     "severity",
+     "reason"
+    ],
+    "title": "FlagEvent",
+    "type": "object"
+   },
+   "GamificationPayload": {
+    "properties": {
+     "current_level_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Current Level Name"
+     },
+     "current_level_number": {
+      "default": 1,
+      "title": "Current Level Number",
+      "type": "integer"
+     },
+     "level_just_completed": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Level Just Completed"
+     },
+     "celebration_message": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Celebration Message"
+     },
+     "total_questions": {
+      "default": 0,
+      "title": "Total Questions",
+      "type": "integer"
+     },
+     "questions_answered": {
+      "default": 0,
+      "title": "Questions Answered",
+      "type": "integer"
+     },
+     "completion_pct": {
+      "default": 0.0,
+      "title": "Completion Pct",
+      "type": "number"
+     },
+     "graceful_exit": {
+      "default": false,
+      "title": "Graceful Exit",
+      "type": "boolean"
+     },
+     "journey_forms_total": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Journey Forms Total"
+     },
+     "journey_forms_completed": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Journey Forms Completed"
+     }
+    },
+    "title": "GamificationPayload",
+    "type": "object"
+   },
+   "PickerField": {
+    "properties": {
+     "key": {
+      "title": "Key",
+      "type": "string"
+     },
+     "label": {
+      "title": "Label",
+      "type": "string"
+     },
+     "optional": {
+      "default": false,
+      "title": "Optional",
+      "type": "boolean"
+     },
+     "selected_value": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Selected Value"
+     },
+     "options": {
+      "items": {
+       "$ref": "#/$defs/PickerOption"
+      },
+      "title": "Options",
+      "type": "array"
+     }
+    },
+    "required": [
+     "key",
+     "label"
+    ],
+    "title": "PickerField",
+    "type": "object"
+   },
+   "PickerOption": {
+    "properties": {
+     "value": {
+      "title": "Value",
+      "type": "string"
+     },
+     "label": {
+      "title": "Label",
+      "type": "string"
+     }
+    },
+    "required": [
+     "value",
+     "label"
+    ],
+    "title": "PickerOption",
+    "type": "object"
+   },
+   "QuestionOption": {
+    "properties": {
+     "value": {
+      "title": "Value",
+      "type": "string"
+     },
+     "label": {
+      "title": "Label",
+      "type": "string"
+     }
+    },
+    "required": [
+     "value",
+     "label"
+    ],
+    "title": "QuestionOption",
+    "type": "object"
+   },
+   "ReportChatTurn": {
+    "description": "One user or assistant line persisted on the admin-keyed reports session.",
+    "properties": {
+     "role": {
+      "enum": [
+       "user",
+       "assistant"
+      ],
+      "title": "Role",
+      "type": "string"
+     },
+     "content": {
+      "default": "",
+      "title": "Content",
+      "type": "string"
+     },
+     "sql": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Sql"
+     },
+     "columns": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Columns",
+      "type": "array"
+     },
+     "rows": {
+      "items": {
+       "items": {},
+       "type": "array"
+      },
+      "title": "Rows",
+      "type": "array"
+     },
+     "row_count": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Row Count"
+     },
+     "truncated": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Truncated"
+     },
+     "reports_phase": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Reports Phase"
+     },
+     "reports_awaiting": {
+      "anyOf": [
+       {
+        "enum": [
+         "selection",
+         "confirm",
+         "freetext"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Reports Awaiting"
+     },
+     "reports_options": {
+      "items": {
+       "$ref": "#/$defs/ReportOption"
+      },
+      "title": "Reports Options",
+      "type": "array"
+     },
+     "reports_preview_only": {
+      "default": false,
+      "title": "Reports Preview Only",
+      "type": "boolean"
+     },
+     "reports_consensus": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Reports Consensus"
+     },
+     "reports_allow_freetext": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Reports Allow Freetext"
+     },
+     "reports_freetext_prompt": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Reports Freetext Prompt"
+     }
+    },
+    "required": [
+     "role"
+    ],
+    "title": "ReportChatTurn",
+    "type": "object"
+   },
+   "ReportOption": {
+    "properties": {
+     "option_id": {
+      "title": "Option Id",
+      "type": "string"
+     },
+     "label": {
+      "title": "Label",
+      "type": "string"
+     },
+     "description": {
+      "title": "Description",
+      "type": "string"
+     },
+     "sql": {
+      "title": "Sql",
+      "type": "string"
+     },
+     "explanation": {
+      "default": "",
+      "title": "Explanation",
+      "type": "string"
+     },
+     "entity_bindings": {
+      "items": {
+       "$ref": "#/$defs/EntityBinding"
+      },
+      "title": "Entity Bindings",
+      "type": "array"
+     },
+     "preview_row_count": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Preview Row Count"
+     },
+     "preview_columns": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Preview Columns",
+      "type": "array"
+     },
+     "preview_rows": {
+      "items": {
+       "items": {},
+       "type": "array"
+      },
+      "title": "Preview Rows",
+      "type": "array"
+     },
+     "consensus_fingerprint": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Consensus Fingerprint"
+     },
+     "probe_error": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Probe Error"
+     },
+     "grain_variant_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Grain Variant Id"
+     },
+     "axis_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Axis Id"
+     },
+     "axis_variant_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Axis Variant Id"
+     }
+    },
+    "required": [
+     "option_id",
+     "label",
+     "description",
+     "sql"
+    ],
+    "title": "ReportOption",
+    "type": "object"
+   },
+   "ReportsLlmUsageHit": {
+    "description": "One Anthropic call in a Reports bot request.",
+    "properties": {
+     "hit": {
+      "title": "Hit",
+      "type": "integer"
+     },
+     "mode": {
+      "title": "Mode",
+      "type": "string"
+     },
+     "model": {
+      "default": "",
+      "title": "Model",
+      "type": "string"
+     },
+     "input_tokens": {
+      "title": "Input Tokens",
+      "type": "integer"
+     },
+     "output_tokens": {
+      "title": "Output Tokens",
+      "type": "integer"
+     },
+     "estimated": {
+      "default": false,
+      "title": "Estimated",
+      "type": "boolean"
+     },
+     "cache_creation_input_tokens": {
+      "default": 0,
+      "title": "Cache Creation Input Tokens",
+      "type": "integer"
+     },
+     "cache_read_input_tokens": {
+      "default": 0,
+      "title": "Cache Read Input Tokens",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "hit",
+     "mode",
+     "input_tokens",
+     "output_tokens"
+    ],
+    "title": "ReportsLlmUsageHit",
+    "type": "object"
+   },
+   "ReportsLlmUsageSummary": {
+    "properties": {
+     "hit_count": {
+      "default": 0,
+      "title": "Hit Count",
+      "type": "integer"
+     },
+     "total_input_tokens": {
+      "default": 0,
+      "title": "Total Input Tokens",
+      "type": "integer"
+     },
+     "total_output_tokens": {
+      "default": 0,
+      "title": "Total Output Tokens",
+      "type": "integer"
+     },
+     "hits": {
+      "items": {
+       "$ref": "#/$defs/ReportsLlmUsageHit"
+      },
+      "title": "Hits",
+      "type": "array"
+     }
+    },
+    "title": "ReportsLlmUsageSummary",
+    "type": "object"
+   },
+   "ReportsPickers": {
+    "properties": {
+     "fields": {
+      "items": {
+       "$ref": "#/$defs/PickerField"
+      },
+      "title": "Fields",
+      "type": "array"
+     }
+    },
+    "title": "ReportsPickers",
+    "type": "object"
+   },
+   "SessionContext": {
+    "description": "Chat/session context anchored to a JMS Contact.",
+    "properties": {
+     "contact_id": {
+      "title": "Contact Id",
+      "type": "integer"
+     },
+     "contact_type": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Contact Type"
+     },
+     "workflow_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Workflow Id"
+     },
+     "form_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Form Id"
+     },
+     "question_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Question Id"
+     },
+     "step_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Step Id"
+     },
+     "active_personas": {
+      "default": [],
+      "items": {
+       "type": "string"
+      },
+      "title": "Active Personas",
+      "type": "array"
+     },
+     "jms_case_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Jms Case Id"
+     },
+     "jms_case_type": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Jms Case Type"
+     },
+     "jms_family_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Jms Family Id"
+     },
+     "jms_gc_sub_type": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Jms Gc Sub Type"
+     },
+     "jms_task_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Jms Task Id"
+     },
+     "jms_active_substage_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Jms Active Substage Id"
+     },
+     "awaiting_resume_confirmation": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Awaiting Resume Confirmation"
+     },
+     "awaiting_ready_confirmation": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Awaiting Ready Confirmation"
+     },
+     "awaiting_coordinator_approval": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Awaiting Coordinator Approval"
+     },
+     "intake_required_complete": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Intake Required Complete"
+     },
+     "deferred_redirect_qids": {
+      "default": [],
+      "items": {
+       "type": "integer"
+      },
+      "title": "Deferred Redirect Qids",
+      "type": "array"
+     },
+     "chatbot_skipped_task_ids": {
+      "default": [],
+      "items": {
+       "type": "integer"
+      },
+      "title": "Chatbot Skipped Task Ids",
+      "type": "array"
+     },
+     "kb_digression_active": {
+      "default": false,
+      "title": "Kb Digression Active",
+      "type": "boolean"
+     },
+     "held_question_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Held Question Id"
+     },
+     "kb_resume_prompted": {
+      "default": false,
+      "title": "Kb Resume Prompted",
+      "type": "boolean"
+     },
+     "disqualified": {
+      "default": false,
+      "title": "Disqualified",
+      "type": "boolean"
+     },
+     "disqualifier_question_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Disqualifier Question Id"
+     },
+     "pending_clarification": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Pending Clarification"
+     },
+     "last_form_group": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Last Form Group"
+     },
+     "last_section_notice_form_group": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Last Section Notice Form Group"
+     },
+     "family_ip_mode": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Family Ip Mode"
+     },
+     "family_composition_revision": {
+      "default": 0,
+      "title": "Family Composition Revision",
+      "type": "integer"
+     },
+     "db_schema": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Db Schema"
+     },
+     "active_form_group": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Active Form Group"
+     },
+     "active_form_group_label_for_speaker": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Active Form Group Label For Speaker"
+     },
+     "pending_family_composition_notice": {
+      "default": false,
+      "title": "Pending Family Composition Notice",
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "contact_id"
+    ],
+    "title": "SessionContext",
+    "type": "object"
+   }
+  },
+  "properties": {
+   "contact_id": {
+    "title": "Contact Id",
+    "type": "integer"
+   },
+   "message": {
+    "title": "Message",
+    "type": "string"
+   },
+   "session": {
+    "anyOf": [
+     {
+      "$ref": "#/$defs/SessionContext"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null
+   },
+   "turns": {
+    "default": [],
+    "items": {
+     "$ref": "#/$defs/ChatTurn"
+    },
+    "title": "Turns",
+    "type": "array"
+   },
+   "gamification": {
+    "anyOf": [
+     {
+      "$ref": "#/$defs/GamificationPayload"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null
+   },
+   "extracted_slots": {
+    "default": [],
+    "items": {
+     "$ref": "#/$defs/ExtractedSlot"
+    },
+    "title": "Extracted Slots",
+    "type": "array"
+   },
+   "flags": {
+    "default": [],
+    "items": {
+     "$ref": "#/$defs/FlagEvent"
+    },
+    "title": "Flags",
+    "type": "array"
+   },
+   "contradictions": {
+    "default": [],
+    "items": {
+     "$ref": "#/$defs/Contradiction"
+    },
+    "title": "Contradictions",
+    "type": "array"
+   },
+   "summary": {
+    "anyOf": [
+     {
+      "type": "string"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null,
+    "title": "Summary"
+   },
+   "current_question_required": {
+    "anyOf": [
+     {
+      "type": "boolean"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null,
+    "title": "Current Question Required"
+   },
+   "current_question": {
+    "anyOf": [
+     {
+      "$ref": "#/$defs/CurrentQuestionPayload"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null
+   },
+   "intake_required_complete": {
+    "anyOf": [
+     {
+      "type": "boolean"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null,
+    "title": "Intake Required Complete"
+   },
+   "chat_session_id": {
+    "anyOf": [
+     {
+      "type": "integer"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null,
+    "title": "Chat Session Id"
+   },
+   "explanation": {
+    "anyOf": [
+     {
+      "type": "string"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null,
+    "title": "Explanation"
+   },
+   "sql": {
+    "anyOf": [
+     {
+      "type": "string"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null,
+    "title": "Sql"
+   },
+   "columns": {
+    "items": {
+     "type": "string"
+    },
+    "title": "Columns",
+    "type": "array"
+   },
+   "rows": {
+    "items": {
+     "items": {},
+     "type": "array"
+    },
+    "title": "Rows",
+    "type": "array"
+   },
+   "row_count": {
+    "anyOf": [
+     {
+      "type": "integer"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null,
+    "title": "Row Count"
+   },
+   "truncated": {
+    "anyOf": [
+     {
+      "type": "boolean"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null,
+    "title": "Truncated"
+   },
+   "error": {
+    "anyOf": [
+     {
+      "type": "string"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null,
+    "title": "Error"
+   },
+   "reports_phase": {
+    "anyOf": [
+     {
+      "type": "string"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null,
+    "title": "Reports Phase"
+   },
+   "reports_session_id": {
+    "anyOf": [
+     {
+      "type": "string"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null,
+    "title": "Reports Session Id"
+   },
+   "reports_awaiting": {
+    "anyOf": [
+     {
+      "type": "string"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null,
+    "title": "Reports Awaiting"
+   },
+   "reports_options": {
+    "items": {
+     "$ref": "#/$defs/ReportOption"
+    },
+    "title": "Reports Options",
+    "type": "array"
+   },
+   "reports_consensus": {
+    "anyOf": [
+     {
+      "type": "boolean"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null,
+    "title": "Reports Consensus"
+   },
+   "reports_allow_freetext": {
+    "anyOf": [
+     {
+      "type": "boolean"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null,
+    "title": "Reports Allow Freetext"
+   },
+   "reports_freetext_prompt": {
+    "anyOf": [
+     {
+      "type": "string"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null,
+    "title": "Reports Freetext Prompt"
+   },
+   "reports_preview_only": {
+    "anyOf": [
+     {
+      "type": "boolean"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null,
+    "title": "Reports Preview Only"
+   },
+   "reports_pickers": {
+    "anyOf": [
+     {
+      "$ref": "#/$defs/ReportsPickers"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null
+   },
+   "reports_llm_usage": {
+    "anyOf": [
+     {
+      "$ref": "#/$defs/ReportsLlmUsageSummary"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null
+   },
+   "reports_ai_generated": {
+    "anyOf": [
+     {
+      "type": "boolean"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null,
+    "title": "Reports Ai Generated"
+   },
+   "reports_review_prompt": {
+    "anyOf": [
+     {
+      "type": "string"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null,
+    "title": "Reports Review Prompt"
+   },
+   "reports_chat_history": {
+    "items": {
+     "$ref": "#/$defs/ReportChatTurn"
+    },
+    "title": "Reports Chat History",
+    "type": "array"
+   }
+  },
+  "required": [
+   "contact_id",
+   "message"
+  ],
+  "title": "ChatResponse",
+  "type": "object"
+ },
+ "ReportsInteraction": {
+  "$defs": {
+   "EntityBinding": {
+    "properties": {
+     "entity_type": {
+      "title": "Entity Type",
+      "type": "string"
+     },
+     "entity_id": {
+      "title": "Entity Id",
+      "type": "integer"
+     },
+     "label": {
+      "title": "Label",
+      "type": "string"
+     }
+    },
+    "required": [
+     "entity_type",
+     "entity_id",
+     "label"
+    ],
+    "title": "EntityBinding",
+    "type": "object"
+   },
+   "ReportsUserAction": {
+    "description": "Client \u2192 server interaction for multi-turn report flows.",
+    "enum": [
+     "query",
+     "select_option",
+     "manual_select",
+     "confirm",
+     "reject",
+     "freetext",
+     "new_report",
+     "resume"
+    ],
+    "title": "ReportsUserAction",
+    "type": "string"
+   }
+  },
+  "properties": {
+   "action": {
+    "$ref": "#/$defs/ReportsUserAction",
+    "default": "query"
+   },
+   "option_id": {
+    "anyOf": [
+     {
+      "type": "string"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null,
+    "title": "Option Id"
+   },
+   "reports_session_id": {
+    "anyOf": [
+     {
+      "type": "string"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null,
+    "title": "Reports Session Id"
+   },
+   "entity_bindings": {
+    "items": {
+     "$ref": "#/$defs/EntityBinding"
+    },
+    "title": "Entity Bindings",
+    "type": "array"
+   },
+   "contact_type": {
+    "anyOf": [
+     {
+      "type": "string"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null,
+    "title": "Contact Type"
+   },
+   "output_wants": {
+    "anyOf": [
+     {
+      "type": "string"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null,
+    "title": "Output Wants"
+   }
+  },
+  "title": "ReportsInteraction",
+  "type": "object"
+ },
+ "ReportOption": {
+  "$defs": {
+   "EntityBinding": {
+    "properties": {
+     "entity_type": {
+      "title": "Entity Type",
+      "type": "string"
+     },
+     "entity_id": {
+      "title": "Entity Id",
+      "type": "integer"
+     },
+     "label": {
+      "title": "Label",
+      "type": "string"
+     }
+    },
+    "required": [
+     "entity_type",
+     "entity_id",
+     "label"
+    ],
+    "title": "EntityBinding",
+    "type": "object"
+   }
+  },
+  "properties": {
+   "option_id": {
+    "title": "Option Id",
+    "type": "string"
+   },
+   "label": {
+    "title": "Label",
+    "type": "string"
+   },
+   "description": {
+    "title": "Description",
+    "type": "string"
+   },
+   "sql": {
+    "title": "Sql",
+    "type": "string"
+   },
+   "explanation": {
+    "default": "",
+    "title": "Explanation",
+    "type": "string"
+   },
+   "entity_bindings": {
+    "items": {
+     "$ref": "#/$defs/EntityBinding"
+    },
+    "title": "Entity Bindings",
+    "type": "array"
+   },
+   "preview_row_count": {
+    "anyOf": [
+     {
+      "type": "integer"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null,
+    "title": "Preview Row Count"
+   },
+   "preview_columns": {
+    "items": {
+     "type": "string"
+    },
+    "title": "Preview Columns",
+    "type": "array"
+   },
+   "preview_rows": {
+    "items": {
+     "items": {},
+     "type": "array"
+    },
+    "title": "Preview Rows",
+    "type": "array"
+   },
+   "consensus_fingerprint": {
+    "anyOf": [
+     {
+      "type": "string"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null,
+    "title": "Consensus Fingerprint"
+   },
+   "probe_error": {
+    "anyOf": [
+     {
+      "type": "string"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null,
+    "title": "Probe Error"
+   },
+   "grain_variant_id": {
+    "anyOf": [
+     {
+      "type": "string"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null,
+    "title": "Grain Variant Id"
+   },
+   "axis_id": {
+    "anyOf": [
+     {
+      "type": "string"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null,
+    "title": "Axis Id"
+   },
+   "axis_variant_id": {
+    "anyOf": [
+     {
+      "type": "string"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null,
+    "title": "Axis Variant Id"
+   }
+  },
+  "required": [
+   "option_id",
+   "label",
+   "description",
+   "sql"
+  ],
+  "title": "ReportOption",
+  "type": "object"
+ }
+}
