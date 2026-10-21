@@ -286,10 +286,11 @@ do: Add a `limits.cost_per_turn_usd` key using `UsageLimits(cost_limit=…)`; ve
 done when: offline tests; the config example stays ≤ 20 lines.
 result: 2026-10-21, `git log --grep B-032`; 143 passed; config example 20 settings. genai-prices disagrees with list prices for Haiku/Gemini: cap scaled (doc 20 §2.2).
 
-### [ ] B-033 · Production compose
+### [x] B-033 · Production compose
 needs: docker
 do: Add a `compose.prod.yml` with the bot, Postgres (B-026), optional TEI (B-028), Phoenix and oauth2-proxy, with health checks and volumes.
 done when: `docker compose -f compose.prod.yml config` is valid and the stack starts locally; doc 13 §5 updated.
+result: 2026-10-21, `git log --grep B-033`; stack started locally, all healthy (doc 13 §5). Real IdP sign-in not tested.
 
 ## Phase P3: product UI and operations
 
