@@ -60,7 +60,7 @@ done when:
 - doc 04 §7 updated.
 result: 2026-10-21, `git log --grep B-005`; 94 passed. eval pending: needs llm (re-run the Haiku cascade set to see the fan-out case fixed).
 
-### [ ] B-006 · Deterministic ask-gate
+### [x] B-006 · Deterministic ask-gate
 needs: offline
 why: CIGAsk found that prompting alone over-asks or under-asks.
 do: When the agent returns `Clarify`:
@@ -73,6 +73,7 @@ done when:
 - `eval_run.py` reports the clarify rate.
 - With `llm`, the 18 JMS prompts' clarify count is recorded in a results file.
 - doc 04 §5 and doc 06 §6 updated.
+result: 2026-10-21, `git log --grep B-006`; offline tests both paths; 98 passed. Implemented option 1 (option_sql in the same run). eval pending: needs llm (record the 18 JMS prompts' clarify count and gate_answered).
 
 ### [ ] B-007 · Remember clarification answers per user (aid)
 needs: offline
