@@ -169,13 +169,14 @@ do: Add `GET /api/knowledge/about?q=` and a UI search box on My knowledge. It re
 done when: offline test; doc 22 updated.
 result: 2026-10-21, `git log --grep B-017`; 119 passed. UI not browser-tested.
 
-### [ ] B-018 · Explain this number (drill-through)
+### [x] B-018 · Explain this number (drill-through)
 needs: offline
 do: For an aggregated report, clicking a cell (UI) or calling `POST /api/turns/{id}/drill {row, column}` builds the detail query with sqlglot:
 - remove the GROUP BY and aggregate,
 - add the group values as filters,
 - guard it and run it with no model.
 done when: offline test on the demo DB (open maintenance per building → the rows for one building).
+result: 2026-10-21, `git log --grep B-018`; 120 passed. UI row click not browser-tested.
 
 ### [ ] B-019 · Personal defaults
 needs: offline
