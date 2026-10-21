@@ -80,7 +80,7 @@ class App:
         self.settings = s = settings or get_settings()
         self.store = Store(s.state_url or s.state_db)
         self.target = TargetDB(s.database_url, timeout_s=s.query_timeout_s)
-        self.index = Index(self.store, get_embedder(s.embeddings))
+        self.index = Index(self.store, get_embedder(s.embeddings, s.lmstudio_url))
         self.catalog = Catalog(self.store)
         self.knowledge = Knowledge(self.store, self.index, self.catalog, self.target.dialect, s.share_threshold)
         self.allowed_tables = {t.strip() for t in s.allow_tables.split(",") if t.strip()} or None

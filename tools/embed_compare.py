@@ -20,7 +20,7 @@ import time
 from pathlib import Path
 
 from reportsbot.evals import load_cases
-from reportsbot.retrieval import Embedder, Index
+from reportsbot.retrieval import Embedder, Index, get_embedder
 from reportsbot.safety import tables_in
 from reportsbot.store import Store
 
@@ -51,7 +51,9 @@ def run(state: Path, case_files: list[str], models: list[str]) -> dict:
                 copy = Path(tmp) / "state.db"
                 shutil.copy(state, copy)
                 store = Store(copy)
-                index = Index(store, Embedder(True, model, asym))
+                if model.startswith("lmstudio:") and asym:
+                    continue  # LM Studio models get their own prefixes already (OpenAICompatEmbedder)
+                index = Index(store, get_embedder(model) if model.startswith("lmstudio:") else Embedder(True, model, asym))
                 rows = store.all("SELECT table_name, column_name, text FROM schema_fts")
                 started = time.time()
                 index.drop_vectors("schema:")

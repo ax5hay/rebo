@@ -64,3 +64,24 @@ def test_embeddings_setting_selects_the_embedder(app):
     emb = TEIEmbedder("http://tei:80/", client=httpx2.Client(transport=httpx2.MockTransport(tei)))
     vecs = emb.embed([f"text {i}" for i in range(40)])
     assert calls == [32, 8] and vecs.shape == (40, 2) and np.allclose(np.linalg.norm(vecs, axis=1), 1.0)
+
+
+def test_lmstudio_embeddings_use_the_openai_compatible_endpoint_with_nomic_prefixes():
+    import httpx2
+
+    from reportsbot.retrieval import OpenAICompatEmbedder, get_embedder
+    assert isinstance(get_embedder("lmstudio:text-embedding-nomic-embed-text-v1.5"), OpenAICompatEmbedder)
+    sent = []
+
+    def lm(request):
+        body = json.loads(request.content)
+        sent.append(body)
+        return httpx2.Response(200, json={"data": [{"index": i, "embedding": [1.0, float(i)]}
+                                                   for i, _ in enumerate(body["input"])]})
+
+    emb = OpenAICompatEmbedder("http://127.0.0.1:1234/v1", "text-embedding-nomic-embed-text-v1.5",
+                               client=httpx2.Client(transport=httpx2.MockTransport(lm)))
+    emb.embed(["customer status"], kind="query")
+    emb.embed(["table customer"], kind="passage")
+    assert [b["input"][0] for b in sent] == ["search_query: customer status", "search_document: table customer"]
+    assert sent[0]["model"] == "text-embedding-nomic-embed-text-v1.5"

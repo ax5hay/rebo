@@ -103,10 +103,38 @@ class TEIEmbedder(Embedder):
         return vecs / np.maximum(np.linalg.norm(vecs, axis=1, keepdims=True), 1e-9)
 
 
+class OpenAICompatEmbedder(Embedder):
+    """Embeddings from an OpenAI-compatible /embeddings endpoint, e.g. LM Studio
+    (`embeddings: lmstudio:text-embedding-nomic-embed-text-v1.5`, server at lmstudio_url)."""
+
+    # Models trained with task prefixes need them on both sides (model card of nomic-embed-text).
+    PREFIXES = {"nomic-embed": ("search_query: ", "search_document: ")}
+
+    def __init__(self, base_url: str, model: str, client: Any = None):
+        self.available, self._model, self.asymmetric = True, None, True
+        self.model_name, self.url, self._client = model, base_url.rstrip("/"), client
+        self.prefix = next((v for k, v in self.PREFIXES.items() if k in model), ("", ""))
+
+    def embed(self, texts: list[str], kind: str = "passage") -> np.ndarray:
+        import httpx2
+        client = self._client or httpx2.Client(timeout=120)
+        pre = self.prefix[0] if kind == "query" else self.prefix[1]
+        out: list[list[float]] = []
+        for i in range(0, len(texts), 64):
+            r = client.post(f"{self.url}/embeddings", json={"model": self.model_name,
+                                                            "input": [pre + t for t in texts[i:i + 64]]})
+            r.raise_for_status()
+            out += [d["embedding"] for d in sorted(r.json()["data"], key=lambda d: d["index"])]
+        vecs = np.array(out, dtype=np.float32)
+        return vecs / np.maximum(np.linalg.norm(vecs, axis=1, keepdims=True), 1e-9)
+
+
 @lru_cache(maxsize=4)
-def get_embedder(setting: bool | str) -> Embedder:
+def get_embedder(setting: bool | str, lmstudio_url: str = "http://127.0.0.1:1234/v1") -> Embedder:
     """`embeddings` setting: true = the default local model, false = keyword search only, a fastembed
-    model name, or an http(s):// URL of a TEI server."""
+    model name, `lmstudio:<embedding model id>`, or an http(s):// URL of a TEI server."""
+    if isinstance(setting, str) and setting.startswith("lmstudio:"):
+        return OpenAICompatEmbedder(lmstudio_url, setting.split(":", 1)[1])
     if isinstance(setting, str) and setting.startswith(("http://", "https://")):
         return TEIEmbedder(setting)
     if isinstance(setting, str) and setting.strip().lower() not in ("true", "false", ""):
