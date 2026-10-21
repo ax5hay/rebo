@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS cat_column (
     sensitive INTEGER NOT NULL DEFAULT 0,  -- never selectable, values never shown
     stats TEXT,                  -- JSON: null_rate, distinct, min, max, avglen
     top_values TEXT,             -- JSON list of {value, count} for categorical columns
+    pos INTEGER,                 -- column order in the table
     PRIMARY KEY (table_name, name)
 );
 CREATE TABLE IF NOT EXISTS cat_join (
@@ -167,6 +168,7 @@ MIGRATIONS = [
     ("knowledge", "sql_template", "ALTER TABLE knowledge ADD COLUMN sql_template TEXT"),  # example: literals -> :pN
     ("knowledge", "params", "ALTER TABLE knowledge ADD COLUMN params TEXT"),               # JSON list of the literals
     ("knowledge", "pinned", "ALTER TABLE knowledge ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0"),  # owner's favourite
+    ("cat_column", "pos", "ALTER TABLE cat_column ADD COLUMN pos INTEGER"),   # column order (was rowid)
 ]
 
 
@@ -186,6 +188,8 @@ class Store:
             for table, column, ddl in MIGRATIONS:
                 if column not in {r[1] for r in db.execute(f"PRAGMA table_info({table})")}:
                     db.execute(ddl)
+                    if (table, column) == ("cat_column", "pos"):
+                        db.execute("UPDATE cat_column SET pos=rowid")  # keep the order of an existing catalog
 
     @property
     def db(self) -> sqlite3.Connection:
@@ -213,6 +217,12 @@ class Store:
     def one(self, sql: str, args: tuple | dict = ()) -> dict[str, Any] | None:
         row = self.db.execute(sql, args).fetchone()
         return dict(row) if row else None
+
+    def match(self, table: str, fts: str, columns: str, *, limit: int) -> list[dict[str, Any]]:
+        """Full-text search on one of the *_fts tables, best match first. `fts` is the FTS5-style query
+        built by retrieval.fts_query: quoted tokens, optionally prefix-starred, joined by OR."""
+        return self.all(f"SELECT {columns} FROM {table} WHERE {table} MATCH ? ORDER BY bm25({table}) LIMIT ?",
+                        (fts, limit))
 
     def meta_get(self, key: str, default: Any = None) -> Any:
         row = self.one("SELECT value FROM meta WHERE key=?", (key,))

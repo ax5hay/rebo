@@ -222,9 +222,7 @@ class Knowledge:
     def _similar_examples(self, question: str, exclude: set[str], top: int = 5) -> list[dict[str, Any]]:
         """Examples of *any* owner whose question resembles this one (keyword search only)."""
         from .retrieval import fts_query
-        ids = [r["id"] for r in self.store.all(
-            "SELECT id, bm25(knowledge_fts) AS s FROM knowledge_fts WHERE knowledge_fts MATCH ? ORDER BY s LIMIT 20",
-            (fts_query(question),))]
+        ids = [r["id"] for r in self.store.match("knowledge_fts", fts_query(question), "id", limit=20)]
         out = []
         for i in ids:
             item = self.get(i)
@@ -383,10 +381,12 @@ class Knowledge:
                 raise PermissionError("Only an admin can change shared knowledge.")
             out = self.edit(user, item_id, before, note="undo")
             with self.store.tx() as db:  # mark the undo so a second undo goes one step further back
-                db.execute("UPDATE knowledge_event SET note=json_set(note, '$.undo', json('true')) WHERE id="
-                           "(SELECT MAX(id) FROM knowledge_event WHERE item_id=?)", (item_id,))
-                db.execute("UPDATE knowledge_event SET note=json_set(note, '$.undo', json('true')) WHERE id=?",
-                           (last_any["id"],))
+                newest = db.execute("SELECT MAX(id) AS id FROM knowledge_event WHERE item_id=?", (item_id,)).fetchone()
+                for ev_id in {dict(newest)["id"], last_any["id"]}:
+                    row = dict(db.execute("SELECT note FROM knowledge_event WHERE id=?", (ev_id,)).fetchone())
+                    note = {**json.loads(row["note"] or "{}"), "undo": True}
+                    db.execute("UPDATE knowledge_event SET note=? WHERE id=?",
+                               (json.dumps(note, separators=(",", ":")), ev_id))
             return Outcome("edit_undone", out.item)
         last = self.store.one("SELECT from_status FROM knowledge_event WHERE item_id=? AND action LIKE 'status:%' "
                               "ORDER BY id DESC LIMIT 1", (item_id,))

@@ -136,15 +136,15 @@ def bootstrap(target: TargetDB, store: Store, index: Index, *, allow: set[str] |
                                                fingerprint(info["columns"]), now()))
             db.execute("INSERT INTO schema_fts(kind, table_name, column_name, text) VALUES('table',?,?,?)",
                        (t, "", _table_doc(t, info, d.get("table"))))
-            for c in info["columns"]:
+            for pos, c in enumerate(info["columns"]):
                 is_secret = (t, c["name"]) in sensitive
                 top = None if is_secret else p["top_values"].get(c["name"])
                 cdesc = (d.get("columns") or {}).get(c["name"])
                 db.execute("INSERT INTO cat_column(table_name, name, type, nullable, is_pk, comment, description, "
-                           "sensitive, stats, top_values) VALUES(?,?,?,?,?,?,?,?,?,?)",
+                           "sensitive, stats, top_values, pos) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
                            (t, c["name"], c["type"], int(c["nullable"]), int(c["name"] in info["pk"]),
                             c.get("comment"), cdesc, int(is_secret), json.dumps(p["stats"].get(c["name"], {})),
-                            json.dumps(top) if top else None))
+                            json.dumps(top) if top else None, pos))
                 db.execute("INSERT INTO schema_fts(kind, table_name, column_name, text) VALUES('column',?,?,?)",
                            (t, c["name"], _column_doc(t, c, top, cdesc)))
                 if top and any(x in c["type"] for x in _TEXTUAL):
@@ -152,7 +152,8 @@ def bootstrap(target: TargetDB, store: Store, index: Index, *, allow: set[str] |
                                    [(str(v["value"]), t, c["name"], v["count"]) for v in top
                                     if isinstance(v["value"], str) and 0 < len(v["value"]) <= 80])
             for fk in info["fks"]:
-                db.execute("INSERT OR REPLACE INTO cat_join VALUES(?,?,?,?, 'fk', 1.0)",
+                db.execute("INSERT INTO cat_join VALUES(?,?,?,?, 'fk', 1.0) ON CONFLICT(from_table, from_cols, "
+                           "to_table, to_cols) DO UPDATE SET source=excluded.source, confidence=excluded.confidence",
                            (t, ",".join(fk["cols"]), fk["ref_table"], ",".join(fk["ref_cols"])))
 
     progress("inferring undeclared joins ...")
@@ -215,7 +216,7 @@ def _infer_joins(target: TargetDB, store: Store, meta: dict, profiles: dict) -> 
                     best = (share, rank, parent, pcol)
             if best:
                 with store.tx() as db:
-                    db.execute("INSERT OR IGNORE INTO cat_join VALUES(?,?,?,?, 'inferred', ?)",
+                    db.execute("INSERT INTO cat_join VALUES(?,?,?,?, 'inferred', ?) ON CONFLICT DO NOTHING",
                                (t, name, best[2], best[3], round(0.9 * best[0], 3)))
                 found += 1
     return found
@@ -254,7 +255,7 @@ class Catalog:
         """{table: [pk columns]}; tables without a declared primary key are absent."""
         if self._pks is None:
             pks: dict[str, list[str]] = {}
-            for r in self.store.all("SELECT table_name, name FROM cat_column WHERE is_pk=1 ORDER BY rowid"):
+            for r in self.store.all("SELECT table_name, name FROM cat_column WHERE is_pk=1 ORDER BY table_name, pos"):
                 pks.setdefault(r["table_name"], []).append(r["name"])
             self._pks = pks
         return self._pks
@@ -275,7 +276,7 @@ class Catalog:
         if not t:
             return None
         cols = []
-        for c in self.store.all("SELECT * FROM cat_column WHERE table_name=? ORDER BY rowid", (t["name"],)):
+        for c in self.store.all("SELECT * FROM cat_column WHERE table_name=? ORDER BY pos", (t["name"],)):
             entry: dict[str, Any] = {"name": c["name"], "type": c["type"]}
             if c["is_pk"]:
                 entry["pk"] = True

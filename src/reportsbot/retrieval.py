@@ -92,7 +92,8 @@ class Index:
             return
         vecs = self.embedder.embed(texts)
         with self.store.tx() as db:
-            db.executemany("INSERT OR REPLACE INTO embedding(ref, vector) VALUES(?, ?)",
+            db.executemany("INSERT INTO embedding(ref, vector) VALUES(?, ?) ON CONFLICT(ref) DO UPDATE SET "
+                           "vector=excluded.vector",
                            [(r, v.tobytes()) for r, v in zip(refs, vecs)])
         self._matrix.clear()
 
@@ -118,9 +119,7 @@ class Index:
         return [refs[i] for i in order if sims[i] > 0.2]
 
     def search_schema(self, query: str, top: int = 12) -> list[dict]:
-        rows = self.store.all(
-            "SELECT kind, table_name, column_name, bm25(schema_fts) AS s FROM schema_fts "
-            "WHERE schema_fts MATCH ? ORDER BY s LIMIT 60", (fts_query(query),))
+        rows = self.store.match("schema_fts", fts_query(query), "kind, table_name, column_name", limit=60)
         kw = [f"schema:{r['table_name']}.{r['column_name'] or ''}" for r in rows]
         fused = rrf(kw, self._dense("schema:", query, 60))
         out = []
@@ -130,9 +129,8 @@ class Index:
         return out
 
     def search_values(self, text: str, top: int = 15) -> list[dict]:
-        return self.store.all(
-            "SELECT value, table_name AS \"table\", column_name AS \"column\", freq, bm25(value_fts) AS s "
-            "FROM value_fts WHERE value_fts MATCH ? ORDER BY s LIMIT ?", (fts_query(text), top))
+        return self.store.match("value_fts", fts_query(text),
+                                'value, table_name AS "table", column_name AS "column", freq', limit=top)
 
     def masked_query(self, text: str, siblings: int = 30) -> str | None:
         """Question masking (DAIL-SQL): a word that is a stored value stands for its column, so it is
@@ -141,9 +139,8 @@ class Index:
         words = [w.strip('"*') for w in fts_query(text).split(" OR ")]
         out, masked = [], False
         for w in words:
-            cols = {(r["table_name"], r["column_name"]) for r in self.store.all(
-                "SELECT value, table_name, column_name FROM value_fts WHERE value_fts MATCH ? LIMIT 50",
-                (f'"{w}"',)) if r["value"].strip().lower() == w}
+            cols = {(r["table_name"], r["column_name"]) for r in self.store.match(
+                "value_fts", f'"{w}"', "value, table_name, column_name", limit=50) if r["value"].strip().lower() == w}
             if not cols:
                 out.append(w)
                 continue
@@ -158,8 +155,7 @@ class Index:
         if not visible_ids:
             return []
         def keyword(fts: str) -> list[str]:
-            rows = self.store.all("SELECT id, bm25(knowledge_fts) AS s FROM knowledge_fts WHERE knowledge_fts MATCH ? "
-                                  "ORDER BY s LIMIT 50", (fts,))
+            rows = self.store.match("knowledge_fts", fts, "id", limit=50)
             return [f"knowledge:{r['id']}" for r in rows if r["id"] in visible_ids]
         kw = keyword(fts_query(query))
         masked = keyword(m) if (m := self.masked_query(query)) else []
