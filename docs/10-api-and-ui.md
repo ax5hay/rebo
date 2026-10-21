@@ -137,3 +137,21 @@ confirmation needs an identified person. Example Claude Code config:
 3. Optional **"Save to Report Builder"** button: the host converts `sql` with its own translator
    (`orchid/utils/report_query.py`). This stays in the host, so the bot stays database-agnostic
    (doc 14).
+
+## React Ask page (`web/`, B-034)
+
+`web/` is a Vite 8 + React 19 + TypeScript app for people who ask questions: report cards (provenance
+badge, table, "How I read your question", SQL, CSV), clarification and follow-up chips, feedback
+(**Yes** / **No, fix it** with the correction in words, **Undo my feedback**), "Remember this?" cards
+and **Request a fix**. It streams progress from `/api/agui`. `cd web && npm ci && npm run build`;
+the bot then serves it at `/app/` (when `web/dist` exists). Identity comes from the login proxy, or
+from `?user=…&role=…` in the URL for local use. The NiceGUI pages stay for admins and owners
+(`/admin`, `/review`, `/config`, `/knowledge`).
+
+Research (2026-10-21, npm): assistant-ui 0.15.30 and CopilotKit 1.79.1 (both MIT, active) bring chat
+thread primitives and runtimes that this page would mostly override (its turns are report cards),
+and `@ag-ui/client` 1.0.3 targets AG-UI 1.x while the server emits events through ag-ui-protocol
+0.1.22; so the page uses no chat framework and reads its own events with a 25-line SSE reader
+(`web/src/api.ts`). Tests: `npx playwright test` (Playwright 1.64.1, headless Chromium) starts
+`tests/web_server.py` (shop DB, scripted FunctionModel) and covers report + feedback + undo +
+remember + follow-up, and clarification chip + correction in words.

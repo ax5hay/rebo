@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from pathlib import Path
 from typing import Literal
 
 from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException, Query, Request
@@ -13,6 +14,7 @@ from pydantic import BaseModel
 
 from .knowledge import ROLE_ALIASES, User, normalise_role  # noqa: F401
 from . import admin
+from . import messages as msg
 from .service import App, RateLimited
 
 
@@ -220,7 +222,7 @@ def router(app: App) -> APIRouter:
 
         def step(s: dict) -> None:
             queue.put_nowait(StepStartedEvent(step_name=s.get("tool", "step")))
-            queue.put_nowait(CustomEvent(name="reportsbot.progress", value=s))
+            queue.put_nowait(CustomEvent(name="reportsbot.progress", value={**s, "say": msg.progress(s.get("tool", ""))}))
             queue.put_nowait(StepFinishedEvent(step_name=s.get("tool", "step")))
 
         async def work() -> None:
@@ -405,6 +407,10 @@ def create_app(app: App, *, with_ui: bool = True, with_worker: bool = False) -> 
     for name in app.settings.adapters:  # optional host contracts (src/reportsbot/adapters/<name>.py)
         import importlib
         api.include_router(importlib.import_module(f".adapters.{name}", __package__).router(app))
+    web = Path(__file__).resolve().parents[2] / "web" / "dist"  # the React Ask page, when built (web/)
+    if web.is_dir():
+        from fastapi.staticfiles import StaticFiles
+        api.mount("/app", StaticFiles(directory=web, html=True), name="web")
     if with_ui:
         from .ui import mount_ui
         mount_ui(api, app)
