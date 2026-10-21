@@ -163,10 +163,11 @@ do: `POST /api/turns/{id}/pin` stores a pinned report per user, as a personal ex
 done when: offline test; Ask page shows pinned reports; doc 22 updated.
 result: 2026-10-21, `git log --grep B-016`; 117 passed. Ask page change not browser-tested.
 
-### [ ] B-017 · "What do you know about X?"
+### [x] B-017 · "What do you know about X?"
 needs: offline
 do: Add `GET /api/knowledge/about?q=` and a UI search box on My knowledge. It returns the visible knowledge items, matching tables/columns with their descriptions, and stored values (`search_values`), grouped and labelled by trust. Also add a chat path: the `Reply` outcome may cite items.
 done when: offline test; doc 22 updated.
+result: 2026-10-21, `git log --grep B-017`; 119 passed. UI not browser-tested.
 
 ### [ ] B-018 · Explain this number (drill-through)
 needs: offline
