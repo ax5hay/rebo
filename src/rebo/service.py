@@ -851,8 +851,7 @@ class App:
         s = self.settings
         check("Reported database", lambda: (self.target.run("SELECT 1", max_rows=1),
                                             f"{self.target.dialect} at {self.target.engine.url.render_as_string(hide_password=True)}")[1])
-        check("State store", lambda: f"{self.store.dialect}, schema revision "
-                                     f"{self.store.one('SELECT version_num FROM alembic_version')['version_num']}")
+        check("State store", lambda: f"{self.store.dialect}, schema revision {self.store.schema_revision()}")
 
         def catalog():
             t = self.store.one("SELECT COUNT(*) AS n, SUM(CASE WHEN description IS NOT NULL THEN 1 ELSE 0 END) AS d "

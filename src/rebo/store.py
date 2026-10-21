@@ -264,6 +264,17 @@ class Store:
             self.db.execute("PRAGMA journal_mode=WAL")  # persistent per file; cannot run inside a migration
         migrate(self)
 
+    def schema_revision(self) -> str | None:
+        """The Alembic revision this store is at."""
+        from alembic.runtime.migration import MigrationContext
+        from sqlalchemy import create_engine
+        engine = create_engine(self.sqlalchemy_url)
+        try:
+            with engine.connect() as conn:
+                return MigrationContext.configure(conn).get_current_revision()
+        finally:
+            engine.dispose()
+
     @property
     def sqlalchemy_url(self) -> str:
         if self.dialect == "sqlite":
