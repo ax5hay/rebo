@@ -22,7 +22,7 @@ from typing import Any, Callable, Literal
 
 from .catalog import Catalog
 from .retrieval import Index
-from .safety import GuardError, canonical_hash, tables_in
+from .safety import GuardError, canonical_hash, parameterize, tables_in
 from .store import Store, new_id, now
 
 Role = Literal["user", "admin", "owner"]
@@ -68,7 +68,7 @@ class Outcome:
 def _row(item: dict[str, Any] | None) -> dict[str, Any] | None:
     if item is None:
         return None
-    for k in ("tables", "fingerprints", "result_signature", "confirmers"):
+    for k in ("tables", "fingerprints", "result_signature", "confirmers", "params"):
         if isinstance(item.get(k), str):
             item[k] = json.loads(item[k])
     return item
@@ -211,6 +211,8 @@ class Knowledge:
                  1 if kind == "example" else 0, json.dumps([user.id] if kind == "example" else []),
                  source_turn, supersedes, ts, ts))
             self._event(db, item_id, user.id, "created", None, status, note, turn_id=source_turn)
+            if kind == "example" and sql and (p := parameterize(sql, self.dialect)):
+                db.execute("UPDATE knowledge SET sql_template=?, params=? WHERE id=?", (p[0], json.dumps(p[1]), item_id))
         item = self.get(item_id)
         self._index_item(item)
         return item

@@ -164,6 +164,8 @@ CREATE TABLE IF NOT EXISTS config_event (
 MIGRATIONS = [
     ("knowledge_event", "turn_id", "ALTER TABLE knowledge_event ADD COLUMN turn_id TEXT"),
     ("turn", "feedback_note", "ALTER TABLE turn ADD COLUMN feedback_note TEXT"),
+    ("knowledge", "sql_template", "ALTER TABLE knowledge ADD COLUMN sql_template TEXT"),  # example: literals -> :pN
+    ("knowledge", "params", "ALTER TABLE knowledge ADD COLUMN params TEXT"),               # JSON list of the literals
 ]
 
 

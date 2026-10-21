@@ -169,3 +169,36 @@ def tables_in(sql: str, dialect: str) -> list[str]:
         return []
     ctes = _cte_names(tree)
     return sorted({t.name for t in tree.find_all(exp.Table) if t.name and t.name.lower() not in ctes})
+
+
+def parameterize(sql: str, dialect: str) -> tuple[str, list[str | int | float]] | None:
+    """Replace the literals of a query with :p1..:pN placeholders (LIMIT/OFFSET and type sizes stay).
+    Returns (template, values in placeholder order), or None when the SQL cannot be parsed."""
+    try:
+        tree = sqlglot.parse_one(sql, read=dialect)
+    except Exception:
+        return None
+    values: list[str | int | float] = []
+    for lit in [n for n in tree.dfs() if isinstance(n, exp.Literal)]:
+        if lit.find_ancestor(exp.Limit, exp.Offset, exp.DataType):
+            continue
+        if lit.is_string:
+            values.append(lit.this)
+        else:
+            values.append(float(lit.this) if any(ch in lit.this for ch in ".eE") else int(lit.this))
+        lit.replace(exp.Placeholder(this=f"p{len(values)}"))
+    return tree.sql(dialect=dialect), values
+
+
+def fill_params(template: str, dialect: str, values: list[str | int | float]) -> str:
+    """Put values back into a template from `parameterize` as syntax-tree literals (never by string
+    interpolation, so a value can never change the shape of the query)."""
+    tree = sqlglot.parse_one(template, read=dialect)
+    for ph in list(tree.find_all(exp.Placeholder)):
+        name = str(ph.this or "")
+        if not name.startswith("p") or not name[1:].isdigit() or not 1 <= int(name[1:]) <= len(values):
+            raise ValueError(f"unknown placeholder :{name}")
+        v = values[int(name[1:]) - 1]
+        ph.replace(exp.Literal.number(v) if isinstance(v, (int, float)) and not isinstance(v, bool)
+                   else exp.Literal.string(str(v)))
+    return tree.sql(dialect=dialect)

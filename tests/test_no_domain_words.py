@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src" / "reportsbot"
 # Table names that are ordinary words in this code base's own vocabulary.
 PLAIN_WORDS = {"admin", "building", "contact", "contract", "err", "event", "form", "maintenance", "provider",
-               "retrieval", "status", "unit", "user"}
+               "retrieval", "status", "template", "unit", "user"}
 
 
 def domain_table_names() -> set[str]:
