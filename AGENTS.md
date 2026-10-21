@@ -3,6 +3,55 @@
 Read this before changing anything. It states what the product is, the rules that do not change,
 and how to work. Details live in `docs/` (start at `docs/README.md`).
 
+## 0. When the user says "continue" (or gives no other instruction)
+
+Do this without asking questions. The user expects work to resume and keep going.
+
+1. **Orient.** Read `HANDOFF.md` (state, measured facts, gotchas, working style), then this file,
+   then `BACKLOG.md`.
+2. **Prepare the machine.** Run:
+   ```
+   uv sync --all-extras --frozen
+   uv run python tools/doctor.py
+   ```
+   Doctor restores git history from `reportsbot.git.bundle` on first run, creates `reportsbot.yaml`
+   and `.env` from their examples, starts the local MySQL and fills it (if Docker exists), builds the
+   demo database, bootstraps both catalogs, runs the tests, and prints **NEXT**: the first backlog
+   item this machine can do. If it reports failing tests, fixing them is the first task.
+3. **Clean up an interrupted session.** If `git status` shows uncommitted work:
+   - inspect it, then finish and commit it if it matches a `[~]` backlog item;
+   - otherwise stash it with a descriptive message and note it in `HANDOFF.md`.
+4. **Do the NEXT item.** Mark it `[~]` in `BACKLOG.md`, then:
+   - follow its *do* steps;
+   - research first wherever it says so (§4);
+   - write tests and update the docs it names;
+   - make small commits (§3, docs/18 §0);
+   - run `uv run pytest` before every commit.
+
+   If the change affects answers and an LLM key exists, measure with `tools/eval_run.py` and commit
+   the results file. Without a key, write `eval pending: needs llm` on the item.
+5. **Close the item.** Mark it `[x]` with `result: <date>, <commits>, <numbers>`. Add a line to the
+   `HANDOFF.md` session log and update anything in `HANDOFF.md` §1–§4 that changed. Commit.
+6. **Keep going** with the next item (re-run `uv run python tools/doctor.py --check --no-tests` to pick
+   it). Stop only when:
+   - the remaining items need resources this machine lacks (`docker`, `llm`, `lmstudio`, `node`,
+     `browser`), or need a human; or
+   - you are running out of context or budget.
+
+   Before stopping, the tree must be committed and `HANDOFF.md` must say exactly where to resume.
+7. **Never:**
+   - push to a remote or publish anything unless the user asks;
+   - put API keys in files;
+   - add domain meaning to configuration;
+   - start an item marked `human`;
+   - contact JMS (it is unreachable and out of scope).
+
+   If an item turns out to need a human decision, mark it `[!]` with the question and move on.
+
+Optional resources unlock more items: LLM API keys in `.env` (`OPENROUTER_API_KEY` is enough),
+Docker, LM Studio running on port 1234, Node, browser automation. Absence is not an error: do the
+items that fit.
+
 ## 1. What this is
 
 A **self-contained reports bot** for any SQL database. People ask for reports in plain words; the

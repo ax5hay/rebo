@@ -16,6 +16,12 @@ JMS is the first test database (`fixtures/jms_staging/`). Nothing in `src/` is J
 Read **AGENTS.md** first (direction and rules). Roles: users ask and teach for themselves, admins manage
 learned knowledge, owners manage the ~10–20 line configuration (docs/22).
 
+## Continue on another machine
+
+Unzip the bundle (`tools/export_bundle.py`), open the folder in your AI coder and say **continue**.
+`AGENTS.md` §0 tells it to run `tools/doctor.py` and work through `BACKLOG.md` in small commits,
+keeping `HANDOFF.md` up to date. Add API keys to `.env` to unlock LLM measurements.
+
 ## Quick start
 
 ```bash

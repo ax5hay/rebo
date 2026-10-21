@@ -25,7 +25,8 @@ It warns about email addresses not on example domains. It writes `BUNDLE_MANIFES
 sha256 of every file, the git commit, and whether there were uncommitted changes. Tested in
 `tests/test_bundle.py`.
 
-To carry the git history as well, see doc 18 §1 (`git subtree split`).
+The commit history travels too, as `reportsbot.git.bundle`: a `git subtree split` of this folder,
+about 1 minute to make. `tools/doctor.py` restores it on the new machine. Use `--no-history` to leave it out.
 
 ## 2. Everything captured from JMS (and nothing else is needed)
 
@@ -52,6 +53,17 @@ If you know you will need something else from JMS later, capture it **before** t
 - **A fresh structure:** re-run `tools/snapshot/snapshot.py` (doc 12).
 
 ## 3. Set up on the new machine
+
+The intended way: unzip, open the folder in the AI coder, and say **"continue"**. The agent follows
+`AGENTS.md` §0:
+1. `uv sync --all-extras --frozen` and `tools/doctor.py`, which restores git history, creates config
+   files, starts and fills MySQL if Docker exists, builds the demo database, bootstraps, runs the tests
+   and prints the next backlog item;
+2. then it works through `BACKLOG.md` in small commits and keeps `HANDOFF.md` current.
+
+Put API keys in `.env` first to unlock the items that measure with an LLM. Everything else works without.
+
+By hand, the equivalent is:
 
 ```bash
 unzip reportsbot-*.zip && cd reportsbot

@@ -68,10 +68,35 @@ def fastembed_cache() -> Path | None:
     return None
 
 
+def git_history_bundle() -> Path | None:
+    """Committed history of just this folder as a git bundle (subtree split when it lives inside a
+    larger repository). Uncommitted changes are not in it; the manifest records them."""
+    def git(*a: str, cwd: Path = ROOT) -> subprocess.CompletedProcess:
+        return subprocess.run(["git", *a], cwd=cwd, capture_output=True, text=True)
+    top = git("rev-parse", "--show-toplevel")
+    if top.returncode != 0:
+        return None
+    prefix = os.path.relpath(ROOT, top.stdout.strip()).replace("\\", "/")
+    out = ROOT.parent / ".reportsbot.git.bundle.tmp"
+    if prefix in (".", ""):
+        r = git("bundle", "create", str(out), "HEAD")
+    else:
+        branch = "reportsbot-export"
+        git("branch", "-D", branch)
+        split = git("subtree", "split", "-P", prefix, "-b", branch, "HEAD", cwd=Path(top.stdout.strip()))
+        if split.returncode != 0:
+            print("WARN  history not included: git subtree split failed:", split.stderr[-200:])
+            return None
+        r = git("bundle", "create", str(out), branch)
+        git("branch", "-D", branch)
+    return out if r.returncode == 0 and out.exists() else None
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--out", type=Path, default=ROOT.parent / f"reportsbot-{dt.date.today().isoformat()}.zip")
     ap.add_argument("--with-models", action="store_true", help="include the fastembed model cache as models/fastembed")
+    ap.add_argument("--no-history", action="store_true", help="leave out reportsbot.git.bundle (the commit history)")
     args = ap.parse_args()
 
     files = sorted(p for p in ROOT.rglob("*") if p.is_file() and included(p))
@@ -107,6 +132,14 @@ def main() -> int:
                 if f.is_file():
                     z.write(f, str(Path("reportsbot/models/fastembed") / f.relative_to(cache)).replace("\\", "/"))
             manifest["models"] = "models/fastembed (set FASTEMBED_CACHE_PATH or keep it in place: found automatically)"
+        if not args.no_history:
+            hist = git_history_bundle()
+            if hist:
+                z.write(hist, "reportsbot/reportsbot.git.bundle")
+                manifest["history"] = "reportsbot.git.bundle (committed history of this folder; tools/doctor.py restores it)"
+                hist.unlink()
+            else:
+                manifest["history"] = "not included (not a git checkout)"
         z.writestr("reportsbot/BUNDLE_MANIFEST.json", json.dumps(manifest, indent=1))
     size = args.out.stat().st_size / 1e6
     print(json.dumps({"zip": str(args.out), "files": len(files), "mb": round(size, 1), "git_commit": commit,
