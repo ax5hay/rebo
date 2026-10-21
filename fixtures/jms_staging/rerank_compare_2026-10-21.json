@@ -1,0 +1,28 @@
+{
+ "run": "2026-10-21",
+ "state": "/private/tmp/claude-501/-Users-ghost-Projects-reportsbot/b3a1723b-7da2-4406-a111-ed33358fd734/scratchpad/jms_state.db",
+ "results": [
+  {
+   "cases": "fixtures/jms_staging/gold_custom_reports.jsonl:validated",
+   "n": 12,
+   "depth": 30,
+   "hybrid_recall@5": 0.621,
+   "Xenova/ms-marco-MiniLM-L-6-v2": {
+    "recall@5": 0.517,
+    "ms_per_question": 187
+   },
+   "Xenova/ms-marco-MiniLM-L-12-v2": {
+    "recall@5": 0.552,
+    "ms_per_question": 364
+   },
+   "jinaai/jina-reranker-v1-turbo-en": {
+    "recall@5": 0.586,
+    "ms_per_question": 233
+   },
+   "BAAI/bge-reranker-v2-m3-int8": {
+    "recall@5": 0.483,
+    "ms_per_question": 2640
+   }
+  }
+ ]
+}

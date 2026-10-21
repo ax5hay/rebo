@@ -111,3 +111,20 @@ fallback on vs off: 2/2 vs 2/2, $0.0335 vs $0.0328, same tool calls
 recovered the spellings itself from `describe_table` values, so no gain shows on this model; kept
 because it costs nothing when full text finds a hit and helps models that do not inspect values.
 Research and alternatives: doc 16 §5.
+
+## Cross-encoder rerank: rejected (2026-10-21, B-051)
+
+`tools/rerank_compare.py` re-scored the hybrid top 30 schema documents with four local rerankers
+(fastembed 0.9 `TextCrossEncoder`, ONNX, permissive licences) and counted gold tables in the first 5:
+
+| Set | Hybrid (today) | MiniLM-L-6 | MiniLM-L-12 | jina-v1-turbo | bge-v2-m3 int8 |
+|---|---|---|---|---|---|
+| JMS, 12 validated questions | **0.621** | 0.517 | 0.552 | 0.586 | 0.483 |
+| Demo gold, 12 cases | **0.969** | 0.906 | 0.938 | 0.906 | 0.906 |
+| Added time per question (JMS) | – | 187 ms | 364 ms | 233 ms | 2,640 ms |
+
+Every reranker lowered recall and added latency. Rerankers are trained on passage relevance (MS MARCO
+web text); schema documents are terse column descriptions, where keyword + embedding fusion already
+does better. Files: `fixtures/jms_staging/rerank_compare_2026-10-21.json`,
+`fixtures/demo_property/rerank_compare_2026-10-21.json`. Re-open only with a reranker trained on schema
+linking.

@@ -398,5 +398,6 @@ do: The reviewer restates the SQL in plain words before comparing with the quest
 ### [ ] B-050 · SQL-skeleton similarity for confirmed examples
 do: After a draft SQL exists, re-rank confirmed examples by skeleton similarity (sqlglot, literals stripped; Jaccard over node types and tables). Offline test first; then B-009-style eval with saved examples.
 
-### [ ] B-051 · Optional cross-encoder rerank
+### [x] B-051 · Optional cross-encoder rerank
 do: fastembed `TextCrossEncoder` (ms-marco-MiniLM-L-6-v2, Apache, 80 MB) over the RRF top 30 in `search_knowledge` and `search_schema`, behind one setting, default off. Measure recall@5 with `tools/embed_compare.py` first; adopt only if recall moves.
+result: 2026-10-21, rejected. `tools/rerank_compare.py`: all four rerankers lowered recall@5 (JMS 0.621 → 0.483–0.586; demo 0.969 → 0.906–0.938) and added 0.13–2.6 s per question. doc 08.
