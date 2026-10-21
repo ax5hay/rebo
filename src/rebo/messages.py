@@ -13,6 +13,8 @@ MESSAGES: dict[str, str] = {
     "rows_none": "No rows matched. The assumptions below explain what was searched for.",
     "assumptions_header": "How I read your question",
     "review_concern": "Check: {concern}",
+    "agreement_other": "Check: another reading gives a different result: {reading} If that is what you meant, say so.",
+    "agreement_two_ways": "Check: this can be read two ways. 1) {first} 2) {second} This report uses the first.",
     "rate_limited": "You've asked {n} questions in the last minute. Please wait a moment and ask again.",
     # progress while a turn runs (Ask page, /api/agui steps)
     "progress_start": "Reading your question…",

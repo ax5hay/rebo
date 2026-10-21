@@ -210,3 +210,28 @@ it for evals and traces; it is not shown. Demo gold, Sonnet agent + Haiku review
 False alarms fell (3 → 0 and 1) but one run missed two wrong reports: precision up, recall unsteady.
 Two runs of a 10-case set cannot settle it; kept because false "Check:" notes on correct answers
 erode trust and the cost is unchanged. Files: `eval_results_sonnet_backtranslate_{1,2}.json`.
+
+### Execution agreement on unsure reports (2026-10-21, B-048)
+
+Setting `checks.agreement` (env `REBO_AGREEMENT_CHECK`), **default off**. On the turns the second
+opinion reviews (a new report with more than 2 assumptions), `App._agreement` runs alongside the review:
+
+1. One structured call to the fast model (`candidate_agent`, tool `write_queries`) gets the question,
+   the context block the agent saw, and the tables the report's SQL uses with their columns (protected
+   columns left out), and returns up to 2 independently written queries, each with a plain reading.
+2. Each runs through the guard and `_run_report_sql` (read-only, row cap); failures and truncated
+   results are ignored.
+3. Each result is compared with the report by content: `evals.columns_match` either way round (same
+   rows; column order, names and extra columns ignored). Any agreement keeps the answer:
+   `usage.agreement = agreed:n/m`.
+4. If none agrees, one judge call (`judge_agent`, fast model) gets the question, the context and every
+   query with its first 5 rows, and picks the report (`disagreed:report`, nothing added), a candidate
+   (`disagreed:candidate`: a "Check: another reading gives a different result: …" note) or calls the
+   question ambiguous (`disagreed:ambiguous`: a note naming both readings). The answer is never swapped:
+   the person sees the other reading and can say "No, fix it".
+5. Errors are logged and never block the answer (`usage.agreement = error`; `none` when no candidate
+   ran). The extra tokens are in `usage.agreement_tokens` and `usage.agreement_cost_usd` (fast-model
+   list price); they are not in the turn's main cost, like the reviewer's.
+
+Sources: CHASE-SQL (ICLR'25), MaP-SQL (arXiv 2609.00834), "Two Surfaces of Ambiguity" (VLDB'26 AIDB);
+doc 16 §5.
