@@ -8,7 +8,7 @@ This is the part that replaces every YAML file the previous bots had. Code: `src
 
 | Kind | Created when | Fields that matter | How it is used |
 |---|---|---|---|
-| `example` | A user presses **Yes, this is right** on a report | `question`, `title`, `sql`, `sql_canonical`, `tables`, `fingerprints`, `result_signature`, `confirmers` | Retrieved into `<learned_knowledge>`; the agent adapts it. If the final SQL is canonically identical, the answer gets the **Verified** or **Yours** badge |
+| `example` | A user presses **Yes, this is right** on a report | `question`, `title`, `sql`, `sql_canonical`, `sql_template` + `params` (literals as `:p1…`), `tables`, `fingerprints`, `result_signature`, `confirmers` | Retrieved into `<learned_knowledge>`; the agent adapts it. If the final SQL is canonically identical, the answer gets the **Verified** or **Yours** badge. The same question from its owner re-runs it with no model call; a similar trusted one with new values is filled in by the fast model (doc 20 §2) |
 | `term` | The user accepts a *Remember this?* card about a word's meaning | `title` (the word), `body` (meaning), `sql` (predicate, optional) | Retrieved; the prompt says "follow it exactly" |
 | `note` | The user accepts a card about a rule or fact | `title`, `body` | Retrieved as context |
 | `join` | The user accepts a card about how two tables connect | `sql` = `a.col = b.col` | `Knowledge.learned_joins()` feeds `describe_table` and `find_join_path` with cost 0.8 (preferred over declared FKs at 1.0 and inferred joins at 1.5) |

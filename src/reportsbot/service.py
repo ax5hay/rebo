@@ -532,6 +532,21 @@ class App:
         rows.sort(key=lambda i: (i["status"] != "verified", -(i["uses"] or 0), -(i["confirmations"] or 0)))
         return list(dict.fromkeys(i["question"] for i in rows))[:top]
 
+    def rerun(self, user: User, turn_id: str) -> dict[str, Any]:
+        """"Re-run with today's data": an earlier report of yours, same SQL, fresh rows, no model call.
+        Recorded as a new turn in the same conversation with usage.route = "rerun"."""
+        t = self._turn(user, turn_id)
+        if t["kind"] != "report":
+            raise ValueError("Only reports can be re-run.")
+        p = json.loads(t["payload"])
+        res = self._run_report_sql(t["sql"])
+        out = Report(title=p["title"], sql=t["sql"], assumptions=p.get("assumptions") or [],
+                     follow_ups=p.get("follow_ups") or [])
+        usage_d = {"requests": 0, "input_tokens": 0, "output_tokens": 0, "cache_read_tokens": 0, "tool_calls": 0,
+                   "model": None, "escalated": False, "route": "rerun"}
+        deps = Deps(app=self, user=user, trace=[{"tool": "rerun", "turn": turn_id}])
+        return self._report_turn(new_id("turn"), t["conversation_id"], user, t["question"], out, res, deps, usage_d)
+
     def turn_csv(self, user: User, turn_id: str) -> str:
         import csv
         import io

@@ -72,6 +72,7 @@ prefixed `"Correction to the previous report: "`.
 | `GET /api/requests?status=open` | anyone | users: their own; admins: admin-targeted + own; owners: all |
 | `POST /api/requests/{id}/resolve` `{status: done / declined, resolution}` | admin (admin requests), owner (all) | the requester sees the note |
 | `GET /api/turns/{id}/csv` | the asker | the report as CSV |
+| `POST /api/turns/{id}/rerun` | the asker | "Re-run with today's data": same SQL, fresh rows, no model call; a new turn with `usage.route = "rerun"` |
 | `GET /api/starter` | anyone | starter questions from the most-used trusted reports |
 | `GET /api/knowledge/export` / `POST /api/knowledge/import` `{yaml}` | admin | everything learned as editable YAML, and back |
 | `GET/PUT /api/admin/config` `{yaml, note}`, `POST /api/admin/config/rollback/{id}` | owner | view/change/roll back `reportsbot.yaml` (validated, atomic, audited) |

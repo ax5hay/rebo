@@ -30,16 +30,27 @@ return 400 for non-default sampling parameters, and Pydantic AI also strips them
 | `models.fallback` | Pydantic AI `FallbackModel`: next provider when the API itself fails | `[]` |
 
 **Routing (`App.ask`):**
-1. Retrieve visible knowledge.
-2. If the top results contain an `example` that is **verified or the user's own** and its question
-   shares ≥ 60% of content words with this one (`_reuse_match`), run on `models.fast`. The turn only
-   adapts saved SQL. Otherwise run on `models.agent`.
-3. If the run raises (validator retries exhausted, `UsageLimitExceeded`, API error) and
+1. **Direct, no model.** The user's own confirmed example whose question is the same text (case,
+   spacing and end punctuation ignored) is re-run through the guard (`_direct_answer`).
+2. Retrieve visible knowledge.
+3. If the top results contain an `example` that is **verified or the user's own** and its question
+   shares ≥ 60% of content words with this one (`_reuse_match`):
+   - **Params, one fast call.** If the example has a template (B-008), one `fill_parameters` call on
+     `models.fast` decides whether only values changed and returns them; they are put back as
+     syntax-tree literals and run (`_param_answer`). Not the same report, a failing query or 0 rows →
+     next step.
+   - Otherwise the agent runs on `models.fast`; the turn only adapts saved SQL.
+4. Anything else runs the agent on `models.agent`.
+5. If the run raises (validator retries exhausted, `UsageLimitExceeded`, API error) and
    `models.escalate` is set, re-run once on the escalation model from a clean slate.
-4. `turn.usage` records `model`, `route` (`reuse`/`new`) and `escalated`.
+6. `turn.usage` records `model`, `route` (`direct`/`params`/`reuse`/`new`, and `rerun` for
+   "Re-run with today's data") and `escalated`.
 
 Tested offline: `test_trusted_saved_example_routes_to_fast_model_new_questions_to_agent_model`,
-`test_failed_turn_escalates_once_to_the_stronger_model`.
+`test_failed_turn_escalates_once_to_the_stronger_model`,
+`test_exact_repeat_of_own_confirmed_question_makes_no_model_request`,
+`test_saved_report_with_new_values_is_filled_in_without_the_agent`. The cost saving of the direct
+and params routes has not been measured with a real model yet (needs an LLM key).
 
 ## 3. Current models and prices (checked 2026-10-21)
 

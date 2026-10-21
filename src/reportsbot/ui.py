@@ -158,6 +158,10 @@ def mount_ui(api: FastAPI, app: App) -> None:
             with feed:
                 render(result)
 
+        def rerun(r: dict) -> None:
+            with feed:
+                render(app.rerun(u, r["turn_id"]))
+
         def render(r: dict) -> None:
             if r["kind"] == "report":
                 with ui.card().classes("w-full"):
@@ -178,6 +182,7 @@ def mount_ui(api: FastAPI, app: App) -> None:
                         for f in r.get("follow_ups") or []:
                             ui.button(f, on_click=lambda f=f: send(f)).props("flat dense no-caps color=primary")
                         ui.space()
+                        ui.button("Re-run with today's data", on_click=lambda r=r: rerun(r)).props("flat dense")
                         ui.button("Download CSV", on_click=lambda r=r: ui.download.content(
                             app.turn_csv(u, r["turn_id"]), f"{r['title'][:60]}.csv")).props("flat dense")
                         ui.button("Request a fix", on_click=lambda r=r: _request_dialog(

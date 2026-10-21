@@ -31,3 +31,24 @@ def test_confirmed_example_stores_template_and_params(app):
     app.feedback(alice, t, "correct")
     item = app.knowledge.visible(alice, "example")[0]
     assert item["params"] == ["paused"] and ":p1" in item["sql_template"]
+
+
+def test_rerun_returns_fresh_rows_without_a_model(app):
+    import json
+    import sqlite3
+
+    from fastapi.testclient import TestClient
+
+    from reportsbot.api import create_app
+    from test_learning import fake_turn
+    alice = User("alice")
+    t = fake_turn(app, alice, "SELECT full_name AS customer FROM customer WHERE status = 'paused'")
+    con = sqlite3.connect(app.settings.database_url.removeprefix("sqlite:///"))
+    con.execute("INSERT INTO customer(customer_id, full_name, status) VALUES (999, 'New Person', 'paused')")
+    con.commit()
+    con.close()
+    client = TestClient(create_app(app, with_ui=False))     # no agent is configured: any model call would fail
+    r = client.post(f"/api/turns/{t}/rerun", headers={"X-User-Id": "alice"}).json()
+    assert r["kind"] == "report" and len(r["rows"]) == 11 and ["New Person"] in r["rows"]
+    assert json.loads(app.store.one("SELECT usage FROM turn WHERE id=?", (r["turn_id"],))["usage"])["route"] == "rerun"
+    assert client.post(f"/api/turns/{t}/rerun", headers={"X-User-Id": "bob"}).status_code == 403
