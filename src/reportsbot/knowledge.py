@@ -294,7 +294,7 @@ class Knowledge:
         return out
 
     def teach(self, user: User, *, kind: str, title: str, body: str, sql: str | None,
-              source_turn: str | None) -> Outcome:
+              source_turn: str | None, question: str | None = None) -> Outcome:
         """Save a fact the user agreed to have remembered (from a 'Remember this?' card)."""
         same_title = [i for i in self.visible(user, kind) if i["title"].strip().lower() == title.strip().lower()]
         shared = next((i for i in same_title if i["owner"] != user.id and i["status"] == "verified"), None)
@@ -304,7 +304,7 @@ class Knowledge:
                                 status="proposed", note=f"differs from shared item {shared['id']}")
             return Outcome("teach_conflicts_shared", item, {"shared": shared})
         item = self._create(user=user, kind=kind, title=title, body=body, sql=sql, source_turn=source_turn,
-                            supersedes=own["id"] if own else None)
+                            question=question, supersedes=own["id"] if own else None)
         if own:
             self._set_status(own["id"], "retired", actor=user.id, note=f"replaced by {item['id']}")
             return Outcome("teach_replaced_own", item, {"previous": own})

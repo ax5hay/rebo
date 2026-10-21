@@ -195,3 +195,42 @@ async def test_ask_gate_asks_when_readings_differ_or_cannot_be_checked(app, sqls
     _scripted(app, [_clarify(sqls)])
     r = await app.ask(User("alice"), "customers on hold")
     assert r["kind"] == "clarify" and _gate(app, r) == "asked"
+
+
+async def test_a_clarification_answer_is_remembered_and_not_asked_again(app):
+    from pydantic_ai.messages import ModelResponse, ToolCallPart, UserPromptPart
+    from pydantic_ai.models.function import FunctionModel
+
+    def model(messages, info):
+        prompt = [p.content for m in messages for p in m.parts if isinstance(p, UserPromptPart)][-1]
+        if '"title": "Which customers?"' in prompt:   # the remembered answer is in <learned_knowledge>
+            return ModelResponse(parts=[ToolCallPart("present_report", {
+                "title": "Paused", "assumptions": [], "sql": "SELECT full_name FROM customer WHERE status = 'paused'"})])
+        return ModelResponse(parts=[ToolCallPart("ask_clarifying_question", {"why": "Two readings.", "questions": [
+            {"question": "Which customers?", "options": ["paused", "closed"]}]})])
+
+    app.__dict__["agent"] = build_agent(FunctionModel(model))
+    alice, bob = User("alice"), User("bob")
+    first = await app.ask(alice, "customers on hold")
+    assert first["kind"] == "clarify"
+    answered = await app.ask(alice, "Which customers? → paused", first["conversation_id"])
+    assert answered["kind"] == "report"
+    notes = [i for i in app.knowledge.visible(alice, "note") if i["title"] == "Which customers?"]
+    assert len(notes) == 1 and notes[0]["body"] == "paused" and notes[0]["source_turn"] == first["turn_id"]
+    again = await app.ask(alice, "customers on hold")            # new conversation: not asked twice
+    assert again["kind"] == "report"
+    assert (await app.ask(bob, "customers on hold"))["kind"] == "clarify"   # personal: bob is still asked
+
+
+async def test_free_text_that_is_not_an_option_is_not_remembered(app):
+    from pydantic_ai.messages import ModelResponse, ToolCallPart
+    from pydantic_ai.models.function import FunctionModel
+
+    def model(messages, info):
+        return ModelResponse(parts=[ToolCallPart("ask_clarifying_question", {"why": "Two readings.", "questions": [
+            {"question": "Which customers?", "options": ["paused", "closed"]}]})])
+
+    app.__dict__["agent"] = build_agent(FunctionModel(model))
+    first = await app.ask(User("alice"), "customers on hold")
+    await app.ask(User("alice"), "never mind, show me orders", first["conversation_id"])
+    assert app.knowledge.visible(User("alice"), "note") == []

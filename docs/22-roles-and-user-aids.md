@@ -46,6 +46,7 @@ Rules behind the table:
 | Provenance badge | "Verified report · checked by …" / "Same as a report you confirmed" / "Built from saved knowledge" / "New report" | Trust at a glance; fewer re-checks |
 | Assumptions in plain words | "How I read your question" list | Wrong readings are spotted before anyone uses the numbers |
 | One-turn clarification | Up to 3 questions with option chips and one **Run** | One clarifying turn instead of several |
+| Remembered clarification answers | Picking an option stores a personal note (title = the question, body = the answer) shown in My knowledge, withdrawable there; free text that is not an option is not stored | The same question is not asked twice (B-007) |
 | Follow-up chips | Up to 3 drill-downs under each report | Drill down with one click |
 | Starter questions | "Others often ask: …" from the most-used trusted reports | First question lands on a known-good report |
 | Feedback in full words | **No, fix it** opens a text box; the words become the correction and run immediately | One step instead of two; the reason is kept with the feedback |
@@ -62,7 +63,6 @@ Rules behind the table:
 |---|---|---|
 | **"What do you know about X?"** | everyone | A chat intent answered from `search_knowledge` + the catalog: the learned definitions and saved reports about X, with their status and owners |
 | **"Why did you ask me that?"** | everyone | Show the evidence behind a clarification: the competing readings and their row counts (needs the deterministic ask-gate, doc 18 P1.2) |
-| **Remember my clarification answers** | everyone | Store the answer as a personal note ("for me, 'active' means not archived") so it is never asked again (doc 18 P1.3) |
 | **Favourites / pin a report** | everyone | Pin a confirmed report to the starter row; one-click re-run with fresh data |
 | **Re-run with today's data** | everyone | Button on any past report; reuses the SQL, no model call |
 | **Explain this number** | everyone | Click a cell to see the rows behind it (drill-through: same SQL with a filter on that group) |

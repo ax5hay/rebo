@@ -210,6 +210,7 @@ class App:
                 db.execute("INSERT INTO conversation(id, owner, created_at, updated_at) VALUES(?,?,?,?)",
                            (conv_id, user.id, now(), now()))
         history = self._load_history(conv_id)
+        self._remember_clarification(user, conv_id, text)
         deps = Deps(app=self, user=user)
         turn_id = new_id("turn")
         limits = UsageLimits(request_limit=40, tool_calls_limit=self.settings.max_tool_calls)
@@ -262,6 +263,24 @@ class App:
         reply = out if isinstance(out, Reply) else Reply(text=str(out))
         payload = {"text": reply.text, "suggestions": self._suggestions(user, turn_id, reply.learnable)}
         return self._record(turn_id, conv_id, user, text, "answer", payload, deps, usage=usage_d)
+
+    def _remember_clarification(self, user: User, conv_id: str, text: str) -> None:
+        """An answer to the previous turn's clarifying question(s) becomes a personal note titled with
+        the question, so this user is not asked the same thing again (docs/22 §2). Answers arrive as
+        "Q → A" pairs joined by "; ", or as a bare option when there was one question. Only answers
+        that are one of the offered options are kept; other text is a new request, not an answer."""
+        prev = self.store.one("SELECT id, kind, question, payload FROM turn WHERE conversation_id=? AND owner=? "
+                              "ORDER BY created_at DESC LIMIT 1", (conv_id, user.id))
+        if not prev or prev["kind"] != "clarify":
+            return
+        questions = {q["question"].strip(): q["options"] for q in json.loads(prev["payload"])["questions"]}
+        for part in text.split(";"):
+            q, sep, a = part.partition("→")
+            q, a = (q.strip(), a.strip()) if sep else (next(iter(questions)) if len(questions) == 1 else "", q.strip())
+            option = next((o for o in questions.get(q, []) if o.strip().lower() == a.lower()), None)
+            if option:
+                self.knowledge.teach(user, kind="note", title=q, body=option, sql=None, source_turn=prev["id"],
+                                     question=prev["question"])
 
     def _report_turn(self, turn_id, conv_id, user, text, out: Report, res: QueryResult, deps, usage_d):
         prov = self._provenance(user, out.sql, out.used_knowledge)
