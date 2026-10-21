@@ -258,10 +258,11 @@ do: **Research first.** Then:
 3. Switch the default only if better.
 done when: a results table goes into doc 08, and the default is changed or kept with evidence.
 
-### [ ] B-029 · Streaming (AG-UI)
+### [x] B-029 · Streaming (AG-UI)
 needs: offline
 do: **Research first** (Pydantic AI AG-UI adapter). Then add a `/api/agui` endpoint that streams tool progress and the final payload; the NiceGUI Ask page shows the progress.
 done when: offline test with TestClient streaming and a FunctionModel.
+result: 2026-10-21, `git log --grep B-029`; 134 passed. Also fixed: conversations could be continued by another user (separate fix commit). UI progress not browser-tested.
 
 ### [ ] B-030 · Durable jobs, scheduled reports, mock JMS async push
 needs: offline
