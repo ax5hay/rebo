@@ -20,7 +20,8 @@ def test_parse_prefixes_and_openrouter_shorthand():
 def test_every_provider_builds_offline(app, monkeypatch):
     for k in ("OPENROUTER_API_KEY", "ANTHROPIC_API_KEY", "GEMINI_API_KEY", "OPENAI_API_KEY"):
         monkeypatch.setenv(k, "test")
-    names = {type(build_model(s, app.settings)).__name__ for s in
+    unwrap = lambda m: getattr(m, "wrapped", m)  # noqa: E731  (remote models come wrapped in PatientModel)
+    names = {type(unwrap(build_model(s, app.settings))).__name__ for s in
              ("openrouter:anthropic/claude-sonnet-5.5", "anthropic:claude-sonnet-5-5", "google:gemini-x",
               "lmstudio:local-model", "openai:gpt-x")}
     assert names == {"OpenRouterModel", "AnthropicModel", "GoogleModel", "OpenAIChatModel"}
@@ -479,3 +480,45 @@ def test_profile_output_retries_reach_the_agent(app, monkeypatch):
     monkeypatch.setenv("OPENROUTER_API_KEY", "test")
     app.settings.model = "lmstudio:google/gemma-4-e2b"
     assert app.agent._max_output_retries == 4
+
+
+async def test_rate_limits_are_waited_out_not_failed(monkeypatch):
+    from pydantic_ai.exceptions import ModelHTTPError
+    from pydantic_ai.messages import ModelResponse, TextPart
+    from pydantic_ai.models.function import FunctionModel
+
+    from rebo.llm import PatientModel
+    calls = []
+
+    def flaky(messages, info):
+        calls.append(1)
+        if len(calls) <= 2:
+            raise ModelHTTPError(429, "gemini-3.8-flash", body={"error": {"message": "Please retry in 0.01s."}})
+        return ModelResponse(parts=[TextPart("ok")])
+
+    from pydantic_ai import Agent
+    patient = PatientModel(FunctionModel(flaky), max_wait_s=10)
+    patient._delay = lambda e: 0.01                       # keep the test fast; parsing is tested below
+    assert (await Agent(patient).run("hi")).output == "ok" and len(calls) == 3
+
+    def always_429(messages, info):
+        raise ModelHTTPError(429, "m", body={"error": {"message": "retry in 1s"}})
+    with pytest.raises(ModelHTTPError):
+        await Agent(PatientModel(FunctionModel(always_429), max_wait_s=0.5)).run("hi")   # budget exhausted
+
+    def server_error(messages, info):
+        raise ModelHTTPError(500, "m", body="boom")
+    with pytest.raises(ModelHTTPError):
+        await Agent(PatientModel(FunctionModel(server_error))).run("hi")             # only 429 is retried
+
+    p = PatientModel(FunctionModel(flaky))
+    assert p._delay(ModelHTTPError(429, "m", body={"error": {"message": "Please retry in 47.75s."}})) == 48.75
+    assert p._delay(ModelHTTPError(429, "m", body={"details": [{"retryDelay": "12s"}]})) == 13
+    assert p._delay(ModelHTTPError(429, "m", body="slow down")) == 30.0
+
+
+def test_only_remote_models_are_patient(app, monkeypatch):
+    from rebo.llm import PatientModel
+    monkeypatch.setenv("GEMINI_API_KEY", "test")
+    assert isinstance(build_model("google:gemini-3.8-flash", app.settings), PatientModel)
+    assert not isinstance(build_model("lmstudio:google/gemma-4-e2b", app.settings), PatientModel)

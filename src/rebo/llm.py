@@ -13,16 +13,22 @@ See docs/20-llm-providers.md.
 """
 from __future__ import annotations
 
+import asyncio
+import logging
 import os
+import re
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any, Literal
 
 from pydantic_ai import UsageLimits
+from pydantic_ai.exceptions import ModelHTTPError
 from pydantic_ai.models import Model
+from pydantic_ai.models.wrapper import WrapperModel
 
 from .settings import Settings
 
+log = logging.getLogger(__name__)
 PROVIDERS = ("openrouter", "anthropic", "google", "lmstudio", "openai")
 _MAX_TOKENS = 4096
 
@@ -167,10 +173,48 @@ def build_one(spec: str, settings: Settings, *, http_client: Any = None) -> Mode
     return OpenAIChatModel(name, provider=prov, settings=ModelSettings(**_tuned(spec)))
 
 
+class PatientModel(WrapperModel):
+    """Waits and retries when the provider answers "too many requests" (HTTP 429), honouring the delay
+    it gives ("retry in 47s", retryDelay, Retry-After), up to `max_wait_s` in total per request, instead
+    of failing the turn. Free tiers (Gemini: 5 requests/minute) and burst limits then slow a turn down
+    rather than break it."""
+
+    def __init__(self, wrapped: Model, max_wait_s: float = 300.0, default_delay_s: float = 30.0):
+        super().__init__(wrapped)
+        self.max_wait_s, self.default_delay_s = max_wait_s, default_delay_s
+
+    @property
+    def settings(self):  # the wrapped model's settings (caching, thinking, ...) stay visible
+        return self.wrapped.settings
+
+    def _delay(self, e: ModelHTTPError) -> float:
+        text = f"{e.body} {getattr(e, 'headers', '')}"
+        m = re.search(r"retry in ([0-9.]+)s|retryDelay'?\"?:? ?'?\"?([0-9.]+)s|retry-after'?:? ?'?([0-9.]+)", text, re.I)
+        return float(next(g for g in m.groups() if g)) + 1 if m else self.default_delay_s
+
+    async def request(self, messages, model_settings, model_request_parameters):
+        waited = 0.0
+        while True:
+            try:
+                return await self.wrapped.request(messages, model_settings, model_request_parameters)
+            except ModelHTTPError as e:
+                delay = self._delay(e) if e.status_code == 429 else None
+                if delay is None or waited + delay > self.max_wait_s:
+                    raise
+                log.info("%s: rate limited, waiting %.0f s", self.wrapped.model_name, delay)
+                await asyncio.sleep(delay)
+                waited += delay
+
+
+def _patient(spec: str, model: Model) -> Model:
+    """Remote APIs get PatientModel (rate limits wait instead of failing); local LM Studio does not."""
+    return model if parse(spec)[0] == "lmstudio" else PatientModel(model)
+
+
 def build_model(spec: str, settings: Settings, fallbacks: list[str] | None = None, *,
                 http_client: Any = None) -> Model:
-    primary = build_one(spec, settings, http_client=http_client)
-    rest = [build_one(f, settings, http_client=http_client) for f in (fallbacks or [])]
+    primary = _patient(spec, build_one(spec, settings, http_client=http_client))
+    rest = [_patient(f, build_one(f, settings, http_client=http_client)) for f in (fallbacks or [])]
     if not rest:
         return primary
     from pydantic_ai.models.fallback import FallbackModel
