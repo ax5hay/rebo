@@ -300,10 +300,11 @@ do: **Research first** (assistant-ui vs CopilotKit vs alternatives). Build `web/
 done when: `npm run build` works, and Playwright smoke tests cover the main flows against a FunctionModel-backed server.
 result: 2026-10-21, `git log --grep B-034`; npm run build OK, Playwright 2/2 passed. No chat framework (research in doc 10). Pins, drill, schedules and My knowledge are not in the React page yet (NiceGUI has them).
 
-### [ ] B-035 · Tracing on by default in compose (Phoenix)
+### [x] B-035 · Tracing on by default in compose (Phoenix)
 needs: docker
 do: Set up a `phoenix` service, `OTEL_EXPORTER_OTLP_ENDPOINT` in compose, and add the `otel` extra to the image.
 done when: a trace appears for one ask (screenshot or API check).
+result: 2026-10-21, `git log --grep B-035`; spans checked via Phoenix API for a scripted turn; containerised real-model trace not run (no key).
 
 ### [ ] B-036 · Standalone login recipe
 needs: docker
