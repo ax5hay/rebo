@@ -71,6 +71,8 @@ class Clarify(BaseModel):
 class Reply(BaseModel):
     """A plain answer when the message is not a report request."""
     text: str
+    used_knowledge: list[str] = Field(default_factory=list, description=(
+        "ids of learned items the answer relies on (e.g. when asked what a word means); shown as sources"))
     learnable: list[Learnable] = Field(default_factory=list)
 
 

@@ -230,6 +230,10 @@ def router(app: App) -> APIRouter:
     def rollback_config(event_id: int, user: User = Depends(current_user)):
         return guard_errors(lambda: admin.rollback_config(app, user, event_id))
 
+    @r.get("/knowledge/about")
+    def about(q: str, user: User = Depends(current_user)):
+        return app.about(user, q)
+
     @r.get("/knowledge/export", response_class=PlainTextResponse)
     def export_knowledge(include_retired: bool = False, user: User = Depends(current_user)):
         return guard_errors(lambda: admin.export_knowledge(app, user, include_retired))

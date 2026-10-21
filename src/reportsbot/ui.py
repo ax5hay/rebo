@@ -220,6 +220,9 @@ def mount_ui(api: FastAPI, app: App) -> None:
                     ui.button("Run", on_click=answer).props("color=primary")
             elif r["kind"] == "answer":
                 ui.chat_message(r["text"], name="Reports", sent=False)
+                if r.get("cites"):
+                    ui.label("From: " + ", ".join(f"{c['title']} ({c['trust']})" for c in r["cites"])).classes(
+                        "text-xs opacity-60")
                 for s in r.get("suggestions") or []:
                     suggestion_card(s)
             else:
@@ -300,7 +303,32 @@ def mount_ui(api: FastAPI, app: App) -> None:
     def knowledge(user: str = "guest", role: str = "user", team: str | None = None):
         u = _user(user, role, team)
         _nav(u)
+        with ui.row().classes("w-full max-w-5xl mx-auto gap-2 px-4 pt-4 items-center"):
+            about_q = ui.input(placeholder="What do you know about…").classes("grow")
+            ui.button("Look up", on_click=lambda: show_about()).props("outline")
+        about_box = ui.column().classes("w-full max-w-5xl mx-auto gap-1 px-4")
         body = ui.column().classes("w-full max-w-5xl mx-auto gap-3 p-4")
+
+        def show_about():
+            about_box.clear()
+            if not (about_q.value or "").strip():
+                return
+            a = app.about(u, about_q.value.strip())
+            with about_box:
+                labels = {"verified": "Verified (everyone)", "yours": "Yours", "pending": "Not yet shared"}
+                for trust, items in a["knowledge"].items():
+                    for i in items:
+                        ui.label(f"{labels[trust]} · {i['kind']}: {i['title']}"
+                                 + (f" — {i['body']}" if i.get("body") else "")).classes("text-sm")
+                for t in a["schema"]:
+                    where = t["table"] + (f".{t['column']}" if t.get("column") else "")
+                    about = t.get("column_about") or t.get("about") or ""
+                    ui.label(f"Data · {where}{' — ' + about if about else ''}").classes("text-sm opacity-80")
+                for v in a["values"]:
+                    ui.label(f"Value · '{v['value']}' in {v['table']}.{v['column']} ({v['freq']} rows)").classes(
+                        "text-sm opacity-60")
+                if not (any(a["knowledge"].values()) or a["schema"] or a["values"]):
+                    ui.label("Nothing known about that yet.").classes("text-sm opacity-70")
 
         def draw():
             body.clear()

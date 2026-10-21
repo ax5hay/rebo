@@ -306,7 +306,11 @@ class App:
                        "questions": [q.model_dump(exclude={"option_sql"}) for q in out.questions]}
             return self._record(turn_id, conv_id, user, text, "clarify", payload, deps, usage=usage_d)
         reply = out if isinstance(out, Reply) else Reply(text=str(out))
-        payload = {"text": reply.text, "suggestions": self._suggestions(user, turn_id, reply.learnable)}
+        visible = self.knowledge.visible_ids(user)
+        cites = [self.knowledge_for_prompt(i, user) for i in map(self.knowledge.get, reply.used_knowledge)
+                 if i and i["id"] in visible]
+        payload = {"text": reply.text, "cites": [{k: c[k] for k in ("id", "title", "trust")} for c in cites],
+                   "suggestions": self._suggestions(user, turn_id, reply.learnable)}
         return self._record(turn_id, conv_id, user, text, "answer", payload, deps, usage=usage_d)
 
     def _remember_clarification(self, user: User, conv_id: str, text: str) -> None:
@@ -572,6 +576,26 @@ class App:
         rows.sort(key=lambda i: (not (i["pinned"] and i["owner"] == user.id), i["status"] != "verified",
                                  -(i["uses"] or 0), -(i["confirmations"] or 0)))
         return list(dict.fromkeys(i["question"] for i in rows))[:top]
+
+    def about(self, user: User, q: str) -> dict[str, Any]:
+        """"What do you know about X?": the visible learned items grouped by trust, matching tables and
+        columns with their descriptions, and stored values. No model call (docs/22 §2)."""
+        groups: dict[str, list[dict[str, Any]]] = {"verified": [], "yours": [], "pending": []}
+        for item in self.knowledge.search(user, q, top=10):
+            p = self.knowledge_for_prompt(item, user)
+            groups[p["trust"] if p["trust"] in ("verified", "yours") else "pending"].append(p)
+        schema = []
+        for h in self.index.search_schema(q, top=10):
+            t = self.catalog.table_summary(h["table"]) or {}
+            entry = {"table": h["table"], "about": t.get("description") or t.get("comment")}
+            if h["column"]:
+                c = self.store.one("SELECT description, comment, sensitive FROM cat_column WHERE table_name=? AND "
+                                   "name=?", (h["table"], h["column"])) or {}
+                entry.update(column=h["column"], column_about=c.get("description") or c.get("comment"),
+                             protected=bool(c.get("sensitive")))
+            schema.append(entry)
+        values = [{k: v[k] for k in ("value", "table", "column", "freq")} for v in self.index.search_values(q, top=10)]
+        return {"query": q, "knowledge": groups, "schema": schema, "values": values}
 
     def pinned(self, user: User) -> list[dict[str, Any]]:
         return [i for i in self.knowledge.visible(user, "example") if i["pinned"] and i["owner"] == user.id]
