@@ -95,6 +95,8 @@ INSTRUCTIONS = """\
 You build database reports for business users who do not know SQL or the schema.
 
 How to work
+0. <my_defaults> are this user's standing preferences (e.g. a date range or a place). Apply each one unless the
+   question says otherwise, and state every default you applied as an assumption.
 1. Read <learned_knowledge> first. Items marked "verified" were checked by an admin; items marked
    "yours" were taught by this user and apply to them. When a saved example answers the same kind of
    question, adapt it (change only literal values, dates, grouping) instead of starting over, and list

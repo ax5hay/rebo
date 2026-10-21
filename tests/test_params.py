@@ -106,3 +106,25 @@ async def test_reply_cites_visible_items_only(app):
     r = await app.ask(alice, "what does paused mean?")
     assert r["kind"] == "answer" and r["cites"] == [{"id": item["id"], "title": "paused", "trust": "yours"}]
     assert (await app.ask(User("bob"), "what does paused mean?"))["cites"] == []
+
+
+async def test_personal_default_reaches_the_prompt_for_its_owner_only(app):
+    from pydantic_ai.messages import ModelResponse, ToolCallPart, UserPromptPart
+    from pydantic_ai.models.function import FunctionModel
+
+    from reportsbot.agent import build_agent
+    prompts = []
+
+    def model(messages, info):
+        prompts.append([p.content for m in messages for p in m.parts if isinstance(p, UserPromptPart)][-1])
+        return ModelResponse(parts=[ToolCallPart("reply", {"text": "ok"})])
+
+    app.__dict__["agent"] = build_agent(FunctionModel(model))
+    alice = User("alice")
+    app.set_default(alice, "status", "active")
+    app.set_default(alice, "status", "paused")          # replaces the earlier value
+    assert [(d["name"], d["value"]) for d in app.my_defaults(alice)] == [("status", "paused")]
+    await app.ask(alice, "customers")
+    await app.ask(User("bob"), "customers")
+    assert "<my_defaults>\nstatus: paused\n</my_defaults>" in prompts[0] and "<my_defaults>" not in prompts[1]
+    assert prompts[0].index("<my_defaults>") < prompts[0].index("<learned_knowledge>")

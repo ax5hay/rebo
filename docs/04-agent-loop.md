@@ -69,6 +69,9 @@ Shape below; the ids and counts are illustrative:
 
 ```xml
 <turn>Today is 2026-10-21. The user is a user whose id in the host application is '42' (use it for 'my' / 'me' when a table stores that id).</turn>
+<my_defaults>
+period: last 30 days
+</my_defaults>                                       ← only when the user set defaults (B-019)
 <learned_knowledge>
 {"id":"ex_3f…","kind":"example","trust":"verified","title":"Active surrogates in screening","question":"…","sql":"…","confirmed_by":4}
 {"id":"te_91…","kind":"term","trust":"yours","title":"in intake","body":"active cases whose current stage is intake","sql":"gc_case.stage='intake' AND gc_case.active=1"}

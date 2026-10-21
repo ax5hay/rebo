@@ -24,6 +24,10 @@ class FeedbackIn(BaseModel):
     note: str = ""
 
 
+class DefaultIn(BaseModel):
+    value: str
+
+
 class DrillIn(BaseModel):
     row: int
     column: str | None = None
@@ -238,6 +242,14 @@ def router(app: App) -> APIRouter:
     @r.post("/admin/config/rollback/{event_id}")
     def rollback_config(event_id: int, user: User = Depends(current_user)):
         return guard_errors(lambda: admin.rollback_config(app, user, event_id))
+
+    @r.get("/defaults")
+    def defaults(user: User = Depends(current_user)):
+        return app.my_defaults(user)
+
+    @r.put("/defaults/{name}")
+    def set_default(name: str, body: DefaultIn, user: User = Depends(current_user)):
+        return guard_errors(lambda: app.set_default(user, name, body.value))
 
     @r.get("/knowledge/about")
     def about(q: str, user: User = Depends(current_user)):

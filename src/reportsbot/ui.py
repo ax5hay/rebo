@@ -352,6 +352,17 @@ def mount_ui(api: FastAPI, app: App) -> None:
                     ui.label("What I've taught the bot").classes("text-lg font-semibold")
                     ui.space()
                     ui.button("Add knowledge", on_click=lambda: _knowledge_dialog(app, u, draw)).props("outline")
+                ui.label("My defaults").classes("text-base font-semibold")
+                ui.label("Applied to every question unless it says otherwise, e.g. period = this year, "
+                         "currency = EUR. Only for you.").classes("text-xs opacity-60")
+                for d in app.my_defaults(u):
+                    ui.label(f"{d['name']} = {d['value']}").classes("text-sm")
+                with ui.row().classes("items-center gap-2"):
+                    d_name = ui.input("name").props("dense")
+                    d_value = ui.input("value").props("dense")
+                    ui.button("Set default", on_click=lambda: (
+                        _safe(app.set_default, u, d_name.value or "", d_value.value or "") and draw())).props(
+                        "outline dense")
                 if not data["mine"]:
                     ui.label("Nothing yet. Confirm a report, accept a 'Remember this?' card, or add knowledge.")
                 for item in data["mine"]:

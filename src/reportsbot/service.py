@@ -190,6 +190,9 @@ class App:
         parts = [f"<turn>Today is {dt.date.today().isoformat()}. The user is a {user.role} whose id in the host "
                  f"application is '{user.id}' (use it for 'my' / 'me' when a table stores that id).</turn>",
                  "<learned_knowledge>"]
+        defaults = self.my_defaults(user)
+        if defaults:
+            parts[1:1] = ["<my_defaults>", *[f"{d['name']}: {d['value']}" for d in defaults], "</my_defaults>"]
         parts += [json.dumps(self.knowledge_for_prompt(i, user), default=str) for i in items] or ["(none yet)"]
         parts += ["</learned_knowledge>", "<likely_tables>"]
         for t in tables:
@@ -596,6 +599,22 @@ class App:
             schema.append(entry)
         values = [{k: v[k] for k in ("value", "table", "column", "freq")} for v in self.index.search_values(q, top=10)]
         return {"query": q, "knowledge": groups, "schema": schema, "values": values}
+
+    DEFAULT_PREFIX = "default: "
+
+    def my_defaults(self, user: User) -> list[dict[str, Any]]:
+        """Personal defaults (a date range, a place, ...): the user's own notes titled "default: <name>"."""
+        return [{"id": i["id"], "name": i["title"][len(self.DEFAULT_PREFIX):], "value": i["body"] or ""}
+                for i in self.knowledge.visible(user, "note")
+                if i["owner"] == user.id and i["title"].lower().startswith(self.DEFAULT_PREFIX)]
+
+    def set_default(self, user: User, name: str, value: str) -> dict[str, Any]:
+        """Set or replace one personal default; the previous value stays in the history (undoable)."""
+        name, value = name.strip(), value.strip()
+        if not name or not value:
+            raise ValueError("A default needs a name and a value.")
+        return self.knowledge.teach(user, kind="note", title=self.DEFAULT_PREFIX + name, body=value, sql=None,
+                                    source_turn=None).item
 
     def pinned(self, user: User) -> list[dict[str, Any]]:
         return [i for i in self.knowledge.visible(user, "example") if i["pinned"] and i["owner"] == user.id]
