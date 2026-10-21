@@ -374,3 +374,41 @@ def _explain_steps(tree, src) -> list[str]:
     if limit is not None and isinstance(limit.expression, exp.Literal):
         steps.append(f"Only the first {limit.expression.this}")
     return steps
+
+
+# ---- query skeletons (B-050) -------------------------------------------------------------------
+# What a query does, without its literal values: which tables, which columns, which clauses and which
+# predicate shapes. Two queries that answer the same kind of question share most of it even when their
+# values, aliases and column order differ (DAIL-SQL and UCS-SQL select examples by such skeletons).
+_SKELETON_WEIGHT = {"T": 3.0, "P": 2.0, "C": 1.0, "N": 1.0}
+_STRUCTURE = (exp.Join, exp.Where, exp.Group, exp.Having, exp.Order, exp.Limit, exp.Distinct, exp.Subquery, exp.Union,
+              exp.Case, exp.Window, exp.Count, exp.Sum, exp.Avg, exp.Max, exp.Min)
+_PREDICATES = (exp.EQ, exp.NEQ, exp.GT, exp.GTE, exp.LT, exp.LTE, exp.Like, exp.ILike, exp.In, exp.Between, exp.Is)
+
+
+def skeleton(sql: str, dialect: str) -> dict[str, float]:
+    """Weighted features of a query's shape: T:table, C:column, N:clause or aggregate, P:column+operator.
+    Empty when the SQL does not parse."""
+    try:
+        tree = sqlglot.parse_one(sql, read=dialect)
+    except ParseError:
+        return {}
+    feats: set[str] = set()
+    feats.update(f"T:{t.name.lower()}" for t in tree.find_all(exp.Table) if t.name)
+    feats.update(f"C:{c.name.lower()}" for c in tree.find_all(exp.Column) if c.name)
+    for node in tree.find_all(*_STRUCTURE):
+        side = f":{node.side.lower()}" if isinstance(node, exp.Join) and node.side else ""
+        feats.add(f"N:{type(node).__name__.lower()}{side}")
+    for p in tree.find_all(*_PREDICATES):
+        col = p.this if isinstance(p.this, exp.Column) else next(p.find_all(exp.Column), None)
+        if col is not None:
+            feats.add(f"P:{col.name.lower()}:{type(p).__name__.lower()}")
+    return {f: _SKELETON_WEIGHT[f[0]] for f in feats}
+
+
+def skeleton_similarity(a: dict[str, float], b: dict[str, float]) -> float:
+    """Weighted Jaccard of two skeletons, 0..1."""
+    keys = a.keys() | b.keys()
+    top = sum(min(a.get(k, 0.0), b.get(k, 0.0)) for k in keys)
+    bottom = sum(max(a.get(k, 0.0), b.get(k, 0.0)) for k in keys)
+    return top / bottom if bottom else 0.0

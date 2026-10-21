@@ -652,3 +652,29 @@ async def test_agreement_check_errors_never_block_the_answer(app):
     r = await app.ask(User("alice"), "paused customers")
     usage = json.loads(app.store.one("SELECT usage FROM turn WHERE id=?", (r["turn_id"],))["usage"])
     assert r["kind"] == "report" and usage["agreement"] == "error" and r["assumptions"] == THREE
+
+
+@pytest.mark.parametrize("on", [True, False])
+async def test_shape_check_offers_a_saved_report_with_the_same_query_shape_once(app, on):
+    app.settings.shape_check = on
+    saved = app.add_knowledge(User("ada", role="admin"), kind="example", title="Paused customers", question="paused customers",
+                              sql="SELECT full_name AS customer FROM customer WHERE status = 'paused'")["item"]
+    draft = {"title": "On a break", "sql": "SELECT full_name FROM customer WHERE status = 'closed'", "assumptions": []}
+    adapted = {**draft, "sql": saved["sql"], "used_knowledge": [saved["id"]]}
+    seen = _scripted(app, [_completion("present_report", draft), _completion("present_report", adapted)])
+    r = await app.ask(User("alice"), "zzz people taking a break")
+    usage = json.loads(app.store.one("SELECT usage FROM turn WHERE id=?", (r["turn_id"],))["usage"])
+    if on:
+        assert len(seen) == 2 and "nearly the same query shape" in seen[1] and saved["id"] in seen[1]
+        assert usage["shape"] == "adapted"
+    else:
+        assert len(seen) == 1 and "shape" not in usage
+
+
+def test_shape_matches_skip_what_was_shown_and_unlike_queries(app):
+    ada = User("ada", role="admin")
+    a = app.add_knowledge(ada, kind="example", title="Paused", sql="SELECT full_name FROM customer WHERE status = 'paused'")["item"]
+    app.add_knowledge(ada, kind="example", title="Order totals", sql="SELECT state, SUM(amount) FROM orders GROUP BY state")
+    near = app.shape_matches(User("bob"), "SELECT full_name FROM customer WHERE status = 'closed'")
+    assert [i["id"] for i, _ in near] == [a["id"]] and near[0][1] == 1.0
+    assert app.shape_matches(User("bob"), "SELECT full_name FROM customer WHERE status = 'closed'", exclude={a["id"]}) == []

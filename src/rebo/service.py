@@ -29,7 +29,7 @@ from .knowledge import Knowledge, User
 from .llm import build_model, cost, credentials_present, profile, turn_limits
 from .observability import annotate_trace, ask_span, phoenix_url, setup_tracing
 from .retrieval import Index, fts_query, get_embedder
-from .safety import canonical_hash, drill_sql, explain_sql, fill_params, guard, tables_in
+from .safety import canonical_hash, drill_sql, explain_sql, fill_params, guard, skeleton, skeleton_similarity, tables_in
 from .settings import Settings, get_settings, load_env_file
 from .store import Store, new_id, now
 from .target import QueryResult, TargetDB
@@ -367,6 +367,7 @@ class App:
         deps = Deps(app=self, user=user, trace=Trace(on_append=progress))
         turn_id = new_id("turn")
         items = self.knowledge.search(user, text, top=6)
+        deps.shown = {i["id"] for i in items}
         prompt = self._context_block(user, text, items)
         # Routing: a trusted saved report with new values -> filled in by the fast model, no agent;
         # adapting one otherwise -> agent on the fast model; anything new -> agent model.
@@ -387,7 +388,7 @@ class App:
                 if not self.escalation_model:
                     raise
                 log.info("escalating after %s: %s", type(first).__name__, str(first)[:200])
-                deps = Deps(app=self, user=user, trace=Trace(deps.trace, on_append=progress))
+                deps = Deps(app=self, user=user, trace=Trace(deps.trace, on_append=progress), shown=deps.shown)
                 deps.trace.append({"tool": "escalate", "after": type(first).__name__})
                 escalated = True
                 result = await self.agent.run(prompt, deps=deps, message_history=history,
@@ -409,6 +410,8 @@ class App:
                    "cache_read_tokens": getattr(usage, "cache_read_tokens", None), "tool_calls": usage.tool_calls,
                    "model": self.settings.escalate_model if escalated else first_name, "escalated": escalated,
                    "route": "reuse" if reuse and not escalated else "new"}
+        if deps.shape_retry:
+            usage_d["shape"] = "adapted" if isinstance(out, Report) and out.used_knowledge else "kept"
         if isinstance(out, Report) and deps.final is not None:
             await self._second_opinion(user, text, out, deps.final, usage_d, context=prompt)
             if cache_key:
@@ -556,6 +559,20 @@ class App:
         finally:
             usage_d["agreement_tokens"] = tokens
             usage_d["agreement_cost_usd"] = cost({**tokens, "model": self.settings.fast_model})
+
+    def shape_matches(self, user: User, sql: str, exclude: set[str] = frozenset(), top: int = 2,
+                      floor: float = 0.45) -> list[tuple[dict[str, Any], float]]:
+        """Saved reports this person may use whose query has the most similar skeleton to `sql` (B-050):
+        at most `top`, at least `floor` alike, leaving out `exclude` (already in the context). Measured:
+        with paraphrased questions the skeleton of the agent's draft finds the right saved report first
+        13 of 17 times, the question text 1 of 17 (fixtures/jms_staging/skeleton_compare_2026-10-21.json)."""
+        draft = skeleton(sql, self.target.dialect)
+        if not draft:
+            return []
+        scored = [(i, skeleton_similarity(draft, skeleton(i["sql"], self.target.dialect)))
+                  for i in self.knowledge.visible(user, "example")
+                  if i["sql"] and i["id"] not in exclude and i["status"] in ("active", "proposed", "verified")]
+        return sorted([x for x in scored if x[1] >= floor], key=lambda x: -x[1])[:top]
 
     def _limits(self, model_spec: str) -> UsageLimits:
         tool_calls = round(self.settings.max_tool_calls * profile(model_spec).tool_call_factor)

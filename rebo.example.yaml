@@ -25,6 +25,7 @@ limits:
   per_user_per_minute: 0                   # questions per person per minute; 0 = no limit
 # checks:
 #   agreement: false                       # true: 2 extra queries from the fast model check unsure new reports
+#   shape: false                           # true: offer saved reports whose query has the same shape
 
 allowed_tables: []                         # empty = every table the database user can read
 protected_columns: ""                      # regex on table.column, added to auto-detected secrets

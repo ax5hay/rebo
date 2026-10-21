@@ -102,6 +102,8 @@ class Deps:
     zero_row_retry: bool = False
     grain_retry: bool = False
     trap_retry: bool = False
+    shape_retry: bool = False
+    shown: set[str] = field(default_factory=set)  # knowledge ids already in the agent's context
     probes: int = 0
 
 
@@ -365,6 +367,16 @@ def build_agent(model: Model, output: Literal["tool", "prompted"] = "tool", retr
                              f"has several rows for each. One row per {key[1]} was probably intended: aggregate or "
                              f"pick one row. If one row per joined record is intended, present it again and say so "
                              "in the assumptions.")
+        near = [] if deps.shape_retry or output.used_knowledge or not app.settings.shape_check \
+            else app.shape_matches(deps.user, g.sql, exclude=deps.shown)
+        if near:
+            deps.shape_retry = True
+            listed = "\n".join(f"- id {i['id']}: \"{i['title']}\" (asked as \"{i.get('question') or i['title']}\"), "
+                               f"{round(sim * 100)}% the same shape: {i['sql']}" for i, sim in near)
+            raise ModelRetry("Saved reports with nearly the same query shape exist, but you did not see them:\n"
+                             f"{listed}\nIf one of them answers this question, adapt it (change only values, dates, "
+                             "grouping) and list its id in used_knowledge. If none does, present your report again "
+                             "unchanged.")
         deps.final, deps.final_sql = res, g.sql
         return output
 

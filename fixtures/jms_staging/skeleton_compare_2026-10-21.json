@@ -1,0 +1,145 @@
+{
+ "run": "2026-10-21",
+ "bank": 77,
+ "refused": [
+  "cr-16",
+  "cr-17"
+ ],
+ "cases": 17,
+ "text": {
+  "recall@1": 0.059,
+  "recall@3": 0.176,
+  "mrr": 0.173
+ },
+ "skeleton": {
+  "recall@1": 0.765,
+  "recall@3": 0.941,
+  "mrr": 0.863
+ },
+ "fused": {
+  "recall@1": 0.412,
+  "recall@3": 0.706,
+  "mrr": 0.596
+ },
+ "rows": [
+  {
+   "id": "cr-4",
+   "matched": false,
+   "text": 17,
+   "skeleton": 1,
+   "fused": 1
+  },
+  {
+   "id": "cr-5",
+   "matched": null,
+   "text": 12,
+   "skeleton": 1,
+   "fused": 2
+  },
+  {
+   "id": "cr-6",
+   "matched": null,
+   "text": 24,
+   "skeleton": 1,
+   "fused": 8
+  },
+  {
+   "id": "cr-7",
+   "matched": false,
+   "text": 9,
+   "skeleton": 1,
+   "fused": 2
+  },
+  {
+   "id": "cr-8",
+   "matched": false,
+   "text": 9,
+   "skeleton": 1,
+   "fused": 1
+  },
+  {
+   "id": "cr-9",
+   "matched": false,
+   "text": 8,
+   "skeleton": 1,
+   "fused": 1
+  },
+  {
+   "id": "cr-11",
+   "matched": false,
+   "text": 11,
+   "skeleton": 2,
+   "fused": 2
+  },
+  {
+   "id": "cr-12",
+   "matched": false,
+   "text": 5,
+   "skeleton": 1,
+   "fused": 1
+  },
+  {
+   "id": "cr-13",
+   "matched": false,
+   "text": 6,
+   "skeleton": 1,
+   "fused": 2
+  },
+  {
+   "id": "cr-14",
+   "matched": null,
+   "text": 1,
+   "skeleton": 1,
+   "fused": 1
+  },
+  {
+   "id": "cr-18",
+   "matched": true,
+   "text": 7,
+   "skeleton": 1,
+   "fused": 1
+  },
+  {
+   "id": "cr-19",
+   "matched": true,
+   "text": 29,
+   "skeleton": 1,
+   "fused": 9
+  },
+  {
+   "id": "cr-20",
+   "matched": false,
+   "text": 48,
+   "skeleton": 1,
+   "fused": 13
+  },
+  {
+   "id": "cr-22",
+   "matched": false,
+   "text": 3,
+   "skeleton": 1,
+   "fused": 1
+  },
+  {
+   "id": "cr-23",
+   "matched": false,
+   "text": 22,
+   "skeleton": 6,
+   "fused": 8
+  },
+  {
+   "id": "cr-24",
+   "matched": false,
+   "text": 23,
+   "skeleton": 2,
+   "fused": 5
+  },
+  {
+   "id": "cr-25",
+   "matched": false,
+   "text": 3,
+   "skeleton": 2,
+   "fused": 2
+  }
+ ]
+}

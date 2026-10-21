@@ -40,6 +40,7 @@ _YAML_KEYS = {
     ("adapters",): "adapters",
     ("notify_url",): "notify_url",
     ("checks", "agreement"): "agreement_check",
+    ("checks", "shape"): "shape_check",
 }
 
 
@@ -139,6 +140,9 @@ class Settings(BaseSettings):
     # 9. Optional extra check on low-confidence new reports: 2 candidate queries from the fast model,
     #    executed and compared with the report; disagreement goes to a judge (doc 04, B-048).
     agreement_check: bool = False
+    # 10. Optional: after a new report, offer the agent the saved reports whose query has nearly the same
+    #     shape (SQL skeleton) but were not in its context, once (doc 04, B-050).
+    shape_check: bool = False
 
     # Secrets: environment only, never in the YAML file.
     openrouter_api_key: str = ""

@@ -53,3 +53,13 @@ def test_percent_and_colon_literals_survive():
 def test_canonical_hash_ignores_format_and_limit():
     assert canonical_hash("SELECT id FROM a LIMIT 5", "mysql") == canonical_hash("select  id\nfrom a", "mysql")
     assert canonical_hash("select id from a", "mysql") != canonical_hash("select name from a", "mysql")
+
+
+def test_skeleton_ignores_values_aliases_and_order_but_not_shape():
+    from rebo.safety import skeleton, skeleton_similarity
+    a = skeleton("SELECT c.full_name, c.status FROM customer c WHERE c.status = 'paused'", "sqlite")
+    same_shape = skeleton("SELECT status, full_name FROM customer AS x WHERE x.status = 'closed'", "sqlite")
+    other = skeleton("SELECT o.state, SUM(o.amount) FROM orders o GROUP BY o.state", "sqlite")
+    assert skeleton_similarity(a, same_shape) == 1.0
+    assert skeleton_similarity(a, other) < 0.2
+    assert "P:status:eq" in a and "T:customer" in a and skeleton("not sql at all (", "sqlite") == {}
