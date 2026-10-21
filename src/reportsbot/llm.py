@@ -14,7 +14,8 @@ See docs/20-llm-providers.md.
 from __future__ import annotations
 
 import os
-from typing import Any
+from dataclasses import dataclass
+from typing import Any, Literal
 
 from pydantic_ai.models import Model
 
@@ -22,6 +23,38 @@ from .settings import Settings
 
 PROVIDERS = ("openrouter", "anthropic", "google", "lmstudio", "openai")
 _MAX_TOKENS = 4096
+
+
+@dataclass(frozen=True)
+class Profile:
+    """How one model family is driven. Defaults keep today's behaviour (docs/20 §2.1)."""
+    thinking: bool | Literal["minimal", "low", "medium", "high"] | None = None  # None: provider default
+    tool_call_factor: float = 1.0          # multiplies limits.tool_calls for turns on this model
+    parallel_tool_calls: bool | None = None
+    output: Literal["tool", "prompted"] = "tool"  # prompted: JSON in text, for models that fail tool calls
+
+
+# First entry whose key is a substring of the model name wins. Researched 2026-10-21 against
+# Pydantic AI 2.58.0: the unified `thinking` setting maps to Gemini's thinking_level and to
+# OpenRouter's reasoning effort. Gemini values are a first guess, to be measured (B-012).
+PROFILES: list[tuple[str, Profile]] = [
+    ("gemini-3", Profile(thinking="low", tool_call_factor=1.6, parallel_tool_calls=True)),
+]
+
+
+def profile(spec: str) -> Profile:
+    name = parse(spec)[1].lower()
+    return next((p for key, p in PROFILES if key in name), Profile())
+
+
+def _tuned(spec: str) -> dict[str, Any]:
+    p = profile(spec)
+    out: dict[str, Any] = {"max_tokens": _MAX_TOKENS}
+    if p.thinking is not None:
+        out["thinking"] = p.thinking
+    if p.parallel_tool_calls is not None:
+        out["parallel_tool_calls"] = p.parallel_tool_calls
+    return out
 
 
 def _env(*names: str) -> str:
@@ -45,21 +78,21 @@ def build_one(spec: str, settings: Settings, *, http_client: Any = None) -> Mode
         from pydantic_ai.providers.openrouter import OpenRouterProvider
         key = settings.openrouter_api_key or _env("OPENROUTER_API_KEY")
         return OpenRouterModel(name, provider=OpenRouterProvider(api_key=key, app_title="reportsbot"),
-                               settings=OpenRouterModelSettings(max_tokens=_MAX_TOKENS,
+                               settings=OpenRouterModelSettings(**_tuned(spec),
                                                                 openrouter_cache_instructions=True,
                                                                 openrouter_cache_tool_definitions=True))
     if provider == "anthropic":
         from pydantic_ai.models.anthropic import AnthropicModel, AnthropicModelSettings
         from pydantic_ai.providers.anthropic import AnthropicProvider
         return AnthropicModel(name, provider=AnthropicProvider(api_key=_env("ANTHROPIC_API_KEY")),
-                              settings=AnthropicModelSettings(max_tokens=_MAX_TOKENS,
+                              settings=AnthropicModelSettings(**_tuned(spec),
                                                               anthropic_cache_instructions="1h",
                                                               anthropic_cache_tool_definitions="1h"))
     if provider == "google":
         from pydantic_ai.models.google import GoogleModel, GoogleModelSettings
         from pydantic_ai.providers.google import GoogleProvider
         return GoogleModel(name, provider=GoogleProvider(api_key=_env("GEMINI_API_KEY", "GOOGLE_API_KEY")),
-                           settings=GoogleModelSettings(max_tokens=_MAX_TOKENS))
+                           settings=GoogleModelSettings(**_tuned(spec)))
     # OpenAI-compatible: LM Studio (local, offline) or OpenAI itself.
     from pydantic_ai.models.openai import OpenAIChatModel
     from pydantic_ai.providers.openai import OpenAIProvider
@@ -69,7 +102,7 @@ def build_one(spec: str, settings: Settings, *, http_client: Any = None) -> Mode
         prov = OpenAIProvider(base_url=settings.lmstudio_url, api_key="lm-studio", http_client=http_client)
     else:
         prov = OpenAIProvider(api_key=_env("OPENAI_API_KEY"), http_client=http_client)
-    return OpenAIChatModel(name, provider=prov, settings=ModelSettings(max_tokens=_MAX_TOKENS))
+    return OpenAIChatModel(name, provider=prov, settings=ModelSettings(**_tuned(spec)))
 
 
 def build_model(spec: str, settings: Settings, fallbacks: list[str] | None = None, *,

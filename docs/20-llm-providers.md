@@ -52,6 +52,26 @@ Tested offline: `test_trusted_saved_example_routes_to_fast_model_new_questions_t
 `test_saved_report_with_new_values_is_filled_in_without_the_agent`. The cost saving of the direct
 and params routes has not been measured with a real model yet (needs an LLM key).
 
+### 2.1 Per-model profiles (`llm.PROFILES`, B-012)
+
+A profile says how one model family is driven; the first entry whose key is a substring of the
+model name applies, and models with no entry keep the defaults (today's behaviour):
+
+| Field | Effect | Default |
+|---|---|---|
+| `thinking` | unified Pydantic AI `thinking` setting (Gemini → `thinking_level`, OpenRouter → `reasoning`) | provider default |
+| `tool_call_factor` | multiplies `limits.tool_calls` for turns on that model (`App._limits`) | 1.0 |
+| `parallel_tool_calls` | model setting | provider default |
+| `output` | `tool` (outcome tools) or `prompted` (`PromptedOutput`: JSON in text, for local models whose tool calls fail) | `tool` |
+
+Entries today: `gemini-3` → thinking `low`, 1.6× tool budget (25 → 40), parallel tool calls. Why:
+Gemini 3.8 Flash ran out of tool budget on 10 of 18 prompts (§5). Research, 2026-10-21: the installed
+Pydantic AI 2.58.0 (PyPI, released 2026-10-20) documents the unified `thinking` field as supported
+by Google and OpenRouter, and maps `low` to Gemini's `LOW` thinking level (source:
+`pydantic_ai/settings.py`, `models/google.py`). No new dependency. The Gemini values are a first
+guess: **not measured** (needs an LLM key; target file `eval_results_gemini_profile.json`).
+No LM Studio entry is set: which local models need `prompted` is unknown until one is run.
+
 ## 3. Current models and prices (checked 2026-10-21)
 
 | Model | API id | OpenRouter id | $/1M in · cache read · out | Notes |

@@ -301,3 +301,35 @@ async def test_instructions_are_identical_across_turns_and_users(app):
     (first, p1), (second, p2) = seen
     assert first == second and "customer(40)" in first and "alice" not in first
     assert "Today is" in p1[0] and "'alice'" in p1[0] and "'bob'" in p2[0]
+
+
+def test_model_profiles_are_applied(app, monkeypatch):
+    from pydantic_ai import PromptedOutput
+
+    from reportsbot import llm
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test")
+    gem = build_model("openrouter:google/gemini-3.8-flash", app.settings)
+    claude = build_model("openrouter:anthropic/claude-sonnet-5.5", app.settings)
+    assert gem.settings["thinking"] == "low" and gem.settings["parallel_tool_calls"] is True
+    assert "thinking" not in claude.settings and claude.settings["openrouter_cache_instructions"] is True
+    base = app.settings.max_tool_calls
+    assert app._limits("openrouter:google/gemini-3.8-flash").tool_calls_limit == round(base * 1.6)
+    assert app._limits("openrouter:anthropic/claude-sonnet-5.5").tool_calls_limit == base
+    monkeypatch.setattr(llm, "PROFILES", [("weak-local", llm.Profile(output="prompted"))])
+    assert llm.profile("lmstudio:weak-local-7b").output == "prompted"
+    agent = build_agent(build_model("lmstudio:weak-local-7b", app.settings), output="prompted")
+    assert isinstance(agent.output_type, PromptedOutput)
+
+
+async def test_prompted_output_turn_end_to_end(app):
+    """A model that answers in JSON text instead of tool calls still produces a validated report."""
+    from pydantic_ai.messages import ModelResponse, TextPart
+    from pydantic_ai.models.function import FunctionModel
+
+    def model(messages, info):
+        return ModelResponse(parts=[TextPart(json.dumps({"result": {"kind": "Report", "data": {
+            "title": "Paused", "assumptions": [], "sql": "SELECT full_name FROM customer WHERE status = 'paused'"}}}))])
+
+    app.__dict__["agent"] = build_agent(FunctionModel(model), output="prompted")
+    r = await app.ask(User("alice"), "paused customers")
+    assert r["kind"] == "report" and len(r["rows"]) == 10

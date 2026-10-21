@@ -11,7 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src" / "reportsbot"
 # Table names that are ordinary words in this code base's own vocabulary.
-PLAIN_WORDS = {"admin", "building", "contact", "contract", "err", "event", "form", "maintenance", "provider",
+PLAIN_WORDS = {"admin", "building", "contact", "contract", "err", "event", "family", "form", "maintenance", "provider",
                "retrieval", "status", "template", "unit", "user"}
 
 

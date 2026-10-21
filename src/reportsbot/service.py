@@ -23,7 +23,7 @@ from . import messages as msg
 from .agent import Clarify, Deps, Report, Reply, build_agent
 from .catalog import Catalog, bootstrap
 from .knowledge import Knowledge, User
-from .llm import build_model, credentials_present
+from .llm import build_model, credentials_present, profile
 from .observability import setup_tracing
 from .retrieval import Index, fts_query, get_embedder
 from .safety import canonical_hash, fill_params, guard
@@ -79,7 +79,7 @@ class App:
         s = self.settings
         if not credentials_present(s.model, s):
             raise RuntimeError(f"No API key in the environment for model '{s.model}' (see .env.example)")
-        return build_agent(build_model(s.model, s, s.fallback_models))
+        return build_agent(build_model(s.model, s, s.fallback_models), output=profile(s.model).output)
 
     @cached_property
     def fast_agent_model(self):
@@ -238,7 +238,6 @@ class App:
             return direct
         deps = Deps(app=self, user=user)
         turn_id = new_id("turn")
-        limits = UsageLimits(request_limit=40, tool_calls_limit=self.settings.max_tool_calls)
         items = self.knowledge.search(user, text, top=6)
         prompt = self._context_block(user, text, items)
         # Routing: a trusted saved report with new values -> filled in by the fast model, no agent;
@@ -248,6 +247,7 @@ class App:
             return filled
         reuse = reuse if self.settings.fast_model != self.settings.model else None
         first_model, first_name = (self.fast_agent_model, self.settings.fast_model) if reuse else (None, self.settings.model)
+        limits = self._limits(first_name)
         escalated = False
         try:
             try:
@@ -261,7 +261,8 @@ class App:
                 log.info("escalating after %s: %s", type(first).__name__, str(first)[:200])
                 deps = Deps(app=self, user=user, trace=[*deps.trace, {"tool": "escalate", "after": type(first).__name__}])
                 escalated = True
-                result = await self.agent.run(prompt, deps=deps, message_history=history, usage_limits=limits,
+                result = await self.agent.run(prompt, deps=deps, message_history=history,
+                                              usage_limits=self._limits(self.settings.escalate_model),
                                               model=self.escalation_model)
         except UsageLimitExceeded:
             return self._record(turn_id, conv_id, user, text, "error", {"message": msg.say("error_budget")}, deps)
@@ -322,6 +323,10 @@ class App:
                    "suggestions": self._suggestions(user, turn_id, out.learnable)}
         return self._record(turn_id, conv_id, user, text, "report", payload, deps, sql=out.sql, prov=prov,
                             usage=usage_d)
+
+    def _limits(self, model_spec: str) -> UsageLimits:
+        tool_calls = round(self.settings.max_tool_calls * profile(model_spec).tool_call_factor)
+        return UsageLimits(request_limit=40, tool_calls_limit=tool_calls)
 
     def _run_report_sql(self, sql: str) -> QueryResult:
         g = guard(sql, dialect=self.target.dialect, schema=self.catalog.schema, sensitive=self.catalog.sensitive,

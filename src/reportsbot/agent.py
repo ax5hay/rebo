@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any, Literal
 
 import sqlglot
 from pydantic import BaseModel, Field
-from pydantic_ai import Agent, ModelRetry, RunContext, ToolOutput
+from pydantic_ai import Agent, ModelRetry, PromptedOutput, RunContext, ToolOutput
 from pydantic_ai.models import Model
 from sqlglot import exp
 
@@ -152,13 +152,15 @@ def entity_key(sql: str, dialect: str, pks: dict[str, list[str]]) -> tuple[int, 
     return None
 
 
-def build_agent(model: Model) -> Agent[Deps, Outcome]:
-    """`model` comes from llm.build_model (any provider; settings such as caching travel with it)."""
+def build_agent(model: Model, output: Literal["tool", "prompted"] = "tool") -> Agent[Deps, Outcome]:
+    """`model` comes from llm.build_model (any provider; settings such as caching travel with it).
+    `output="prompted"` asks for the outcome as JSON in text, for models whose tool calls fail."""
+    outputs: Any = ([ToolOutput(Report, name="present_report"), ToolOutput(Clarify, name="ask_clarifying_question"),
+                     ToolOutput(Reply, name="reply")] if output == "tool" else PromptedOutput([Report, Clarify, Reply]))
     agent: Agent[Deps, Outcome] = Agent(
         model,
         deps_type=Deps,
-        output_type=[ToolOutput(Report, name="present_report"), ToolOutput(Clarify, name="ask_clarifying_question"),
-                     ToolOutput(Reply, name="reply")],
+        output_type=outputs,
         instructions=INSTRUCTIONS,
         retries=2,
         name="reportsbot",
