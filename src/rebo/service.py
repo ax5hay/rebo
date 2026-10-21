@@ -370,7 +370,8 @@ class App:
         cache_key = None if history else self._cache_key(user, text)  # follow-ups depend on history: never cached
         if cache_key and (cached := self._cached_answer(user, conv_id, text, cache_key)):
             return cached
-        deps = Deps(app=self, user=user, trace=Trace(on_append=progress))
+        last = self.store.one("SELECT kind FROM turn WHERE conversation_id=? ORDER BY created_at DESC LIMIT 1", (conv_id,))
+        deps = Deps(app=self, user=user, trace=Trace(on_append=progress), asked=bool(last and last["kind"] == "clarify"))
         turn_id = new_id("turn")
         items = self.knowledge.search(user, text, top=6)
         deps.shown = {i["id"] for i in items}
@@ -394,7 +395,7 @@ class App:
                 if not self.escalation_model:
                     raise
                 log.info("escalating after %s: %s", type(first).__name__, str(first)[:200])
-                deps = Deps(app=self, user=user, trace=Trace(deps.trace, on_append=progress), shown=deps.shown)
+                deps = Deps(app=self, user=user, trace=Trace(deps.trace, on_append=progress), shown=deps.shown, asked=deps.asked)
                 deps.trace.append({"tool": "escalate", "after": type(first).__name__})
                 escalated = True
                 result = await self.agent.run(prompt, deps=deps, message_history=history,
@@ -419,7 +420,7 @@ class App:
             # Doubt-gated decide (docs/20 §5b): the stronger model settles the turn from the cheaper model's
             # lookups and draft, in one or two requests instead of exploring again.
             before, first_deps = usage_d, deps
-            deps = Deps(app=self, user=user, trace=Trace(deps.trace, on_append=progress), shown=deps.shown)
+            deps = Deps(app=self, user=user, trace=Trace(deps.trace, on_append=progress), shown=deps.shown, asked=deps.asked)
             deps.trace.append({"tool": "decide", "after": doubt})
             try:
                 result = await self.agent.run(self._decide_prompt(prompt, result, first_deps), deps=deps,
@@ -436,7 +437,7 @@ class App:
         elif doubt and doubt != "clarify" and not escalated and self.escalation_model \
                 and first_name != self.settings.escalate_model:
             before, first_deps = usage_d, deps
-            deps = Deps(app=self, user=user, trace=Trace(deps.trace, on_append=progress), shown=deps.shown)
+            deps = Deps(app=self, user=user, trace=Trace(deps.trace, on_append=progress), shown=deps.shown, asked=deps.asked)
             deps.trace.append({"tool": "escalate", "after": doubt})
             try:
                 result = await self.agent.run(prompt, deps=deps, message_history=history,

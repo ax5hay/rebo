@@ -40,3 +40,22 @@ async def test_a_confident_report_never_reaches_the_decide_model(app):
         decide_model=FunctionModel(lambda m, i: calls.append(1)), escalation_model=None)
     r = await app.ask(User("ada"), "paused customers")
     assert r["kind"] == "report" and calls == []
+
+
+async def test_after_one_clarification_the_bot_answers_instead_of_asking_again(app):
+    """One round of questions per request: the person answered, so a second question is sent back."""
+    ask = ToolCallPart("ask_clarifying_question", {"why": "Two readings.", "questions": [{"question": "Which?", "options": ["a", "b"]}]})
+    report = ToolCallPart("present_report", {"title": "Paused", "sql": "SELECT full_name FROM customer WHERE status = 'paused'",
+                                             "assumptions": ["Paused means the stored status paused."]})
+    retried = []
+
+    def model(messages, info):
+        if any(getattr(p, "part_kind", "") == "retry-prompt" for p in messages[-1].parts):
+            retried.append(1)
+            return ModelResponse(parts=[report])
+        return ModelResponse(parts=[ask])
+    app.__dict__.update(agent=build_agent(FunctionModel(model)), escalation_model=None)
+    first = await app.ask(User("ada"), "customers please")
+    assert first["kind"] == "clarify"
+    second = await app.ask(User("ada"), "a", first["conversation_id"])
+    assert second["kind"] == "report" and retried == [1]

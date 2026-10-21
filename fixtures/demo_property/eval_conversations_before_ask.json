@@ -1,0 +1,189 @@
+{
+ "run": "2026-10-21",
+ "model": "openrouter:anthropic/claude-sonnet-5.5",
+ "fast_model": "openrouter:anthropic/claude-haiku-5.5",
+ "escalate": "",
+ "database": "sqlite:///fixtures/demo_property/greenleaf.db",
+ "summary": {
+  "conversations": 5,
+  "solved": 3,
+  "mean_turns_to_first_correct": 2.0,
+  "clarify_rate": 0.0,
+  "total_cost_usd": 0.1846
+ },
+ "conversations": [
+  {
+   "id": "dc-01",
+   "turns_to_first_correct": 2,
+   "asked": 2,
+   "clarify": 0,
+   "cost_usd": 0.03981,
+   "turns": [
+    {
+     "step": {
+      "say": "Show me the tenants"
+     },
+     "text": "Show me the tenants",
+     "kind": "report",
+     "rows": 188,
+     "correct": false,
+     "route": "new",
+     "cost_usd": 0.01984
+    },
+    {
+     "step": {
+      "pick": 0
+     },
+     "skipped": "does not fit the previous turn"
+    },
+    {
+     "step": {
+      "say": "Only tenants with a lease right now, with their unit and monthly rent"
+     },
+     "text": "Only tenants with a lease right now, with their unit and monthly rent",
+     "kind": "report",
+     "rows": 109,
+     "correct": true,
+     "route": "new",
+     "cost_usd": 0.01997
+    }
+   ]
+  },
+  {
+   "id": "dc-02",
+   "turns_to_first_correct": null,
+   "asked": 2,
+   "clarify": 0,
+   "cost_usd": 0.03826,
+   "turns": [
+    {
+     "step": {
+      "say": "Open maintenance requests"
+     },
+     "text": "Open maintenance requests",
+     "kind": "report",
+     "rows": 27,
+     "correct": false,
+     "route": "new",
+     "cost_usd": 0.02664
+    },
+    {
+     "step": {
+      "say": "How many are still open in each building?"
+     },
+     "text": "How many are still open in each building?",
+     "kind": "report",
+     "rows": 12,
+     "correct": false,
+     "route": "new",
+     "cost_usd": 0.01162
+    }
+   ]
+  },
+  {
+   "id": "dc-03",
+   "turns_to_first_correct": 2,
+   "asked": 2,
+   "clarify": 0,
+   "cost_usd": 0.02656,
+   "turns": [
+    {
+     "step": {
+      "say": "Urgent repairs"
+     },
+     "text": "Urgent repairs",
+     "kind": "report",
+     "rows": 98,
+     "correct": false,
+     "route": "new",
+     "cost_usd": 0.01617
+    },
+    {
+     "step": {
+      "pick": 0
+     },
+     "skipped": "does not fit the previous turn"
+    },
+    {
+     "step": {
+      "say": "Urgent requests that are not closed, with the technician assigned"
+     },
+     "text": "Urgent requests that are not closed, with the technician assigned",
+     "kind": "report",
+     "rows": 17,
+     "correct": true,
+     "route": "new",
+     "cost_usd": 0.01039
+    }
+   ]
+  },
+  {
+   "id": "dc-04",
+   "turns_to_first_correct": 2,
+   "asked": 2,
+   "clarify": 0,
+   "cost_usd": 0.02824,
+   "turns": [
+    {
+     "step": {
+      "say": "Rent collected in 2026"
+     },
+     "text": "Rent collected in 2026",
+     "kind": "report",
+     "rows": 1,
+     "correct": false,
+     "route": "new",
+     "cost_usd": 0.01326
+    },
+    {
+     "step": {
+      "say": "Split it per region"
+     },
+     "text": "Split it per region",
+     "kind": "report",
+     "rows": 3,
+     "correct": true,
+     "route": "new",
+     "cost_usd": 0.01498
+    }
+   ]
+  },
+  {
+   "id": "dc-05",
+   "turns_to_first_correct": null,
+   "asked": 2,
+   "clarify": 0,
+   "cost_usd": 0.05176,
+   "turns": [
+    {
+     "step": {
+      "say": "Who pays late?"
+     },
+     "text": "Who pays late?",
+     "kind": "report",
+     "rows": 170,
+     "correct": false,
+     "route": "new",
+     "cost_usd": 0.03887
+    },
+    {
+     "step": {
+      "pick": 0
+     },
+     "skipped": "does not fit the previous turn"
+    },
+    {
+     "step": {
+      "say": "Tenants who paid rent late at least once in 2026, just their names"
+     },
+     "text": "Tenants who paid rent late at least once in 2026, just their names",
+     "kind": "report",
+     "rows": 111,
+     "correct": false,
+     "route": "new",
+     "cost_usd": 0.01289
+    }
+   ]
+  }
+ ]
+}

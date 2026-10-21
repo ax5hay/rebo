@@ -108,6 +108,7 @@ class Deps:
     fanout_retry: bool = False
     shown: set[str] = field(default_factory=set)  # knowledge ids already in the agent's context
     probes: int = 0
+    asked: bool = False  # the previous turn of this conversation was a clarification: answer now
 
 
 INSTRUCTIONS = """\
@@ -130,12 +131,16 @@ How to work
    - Report: the final SELECT. Select readable columns (names, labels, dates), not only ids. Give every
      column a readable alias. Never select columns marked protected. No LIMIT needed. The SQL is executed
      before it is shown; errors come back to you.
-   - Clarify: only when two or more readings are plausible, learned knowledge does not settle it, and the
-     readings give materially different results. Put EVERY open question into this one clarify (at most 3),
-     each with 2-4 concrete options taken from stored values where possible, so the user answers once.
-     If one reading is clearly the most likely, do not ask: answer with it and state it as an assumption.
-     Give option_sql for each question: the report SQL for its first two options (or all of them).
-     Never ask again about something the user already answered in this conversation.
+   - Clarify: ask before running when the request leaves open something that changes the answer
+     materially and neither learned knowledge, <my_defaults> nor this conversation settles it: which
+     population counts (e.g. which stored statuses are "open" or "active"), which measure, which time range
+     for words like "recent", or which of several similar things the user means. Ask ONE round only: put
+     EVERY open question into this one clarify (at most 3), each with 2-4 concrete options taken from stored
+     values (say how many rows each covers when you know it), so the user answers once. Give option_sql for
+     each question: the report SQL for its first two options (or all of them). Do not ask about
+     presentation (columns, order, format) or anything with one obvious reading: answer those and state
+     the reading as an assumption. Once the user has answered a clarification in this conversation, do not
+     ask again: answer with the most likely reading of anything still open and state it as an assumption.
    - Reply: when the message is not asking for data.
 7. assumptions: every interpretation you made, in plain business language. No table or column names.
 8. follow_ups: up to 3 short next questions a person would ask about this result (drill down by a
@@ -355,6 +360,11 @@ def build_agent(model: Model, output: Literal["tool", "prompted"] = "tool", retr
 
     @agent.output_validator
     def validate(ctx: RunContext[Deps], output: Outcome) -> Outcome:
+        if isinstance(output, Clarify) and ctx.deps.asked:  # one round of questions per request, never a loop
+            ctx.deps.asked = False
+            raise ModelRetry("You already asked this person a clarifying question and they answered it. Do not "
+                             "ask again: present the report with the most likely reading of anything still open, "
+                             "and state that reading as an assumption.")
         if not isinstance(output, Report):
             return output
         app, deps = ctx.deps.app, ctx.deps

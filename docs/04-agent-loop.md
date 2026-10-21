@@ -130,6 +130,33 @@ difference → the question is shown as before. `turn.usage.gate` records `asked
 choice. Otherwise answer and state the assumptions. BIRD-Interact shows interactive agents still
 top out around 16–24%, so over-asking is not free.
 
+### 5a. Ask once, ask well (2026-10-21)
+
+The bot is configured with no domain meaning, so a vague request ("open maintenance requests") can
+only be settled by the person. The research (AmbiSQL, BIRD-Interact, "Two Surfaces of Ambiguity", doc 16)
+points to one focused round of multiple-choice questions built from stored values, not a dialogue and
+not a guess. The policy since 2026-10-21:
+
+- **Ask** when something that changes the answer materially is open (which statuses count, which
+  measure, which period for "recent", which of several similar things) and nothing learned settles it.
+  Options come from stored values with their row counts ("Only 'open' (27) / all not yet closed (63)").
+- **Never a second round.** The validator sends a second clarification back once the person has
+  answered one (`Deps.asked`): the bot then answers with the most likely reading and says so.
+- **Suggest instead of asking** when the difference is small: the answer states the reading, and the
+  "Read as" strip offers each value filter as a one-click switch at $0 (B-060).
+- The deterministic ask-gate still answers instead of asking when the readings return the same rows.
+
+Before, the instruction "if one reading is clearly the most likely, do not ask" had made the bot
+answer everything. Demo conversations (5 vague openers, scripted person; `tools/eval_conversations.py`):
+
+| | Reached the intended report | Clarify rate | Cost |
+|---|---|---|---|
+| Before (never asked) | 3/5 | 0 % | $0.185 |
+| Ask once, ask well | **4/5** | 18 % | $0.154 |
+
+Files: `fixtures/demo_property/eval_conversations_before_ask.json`, `eval_conversations_ask_once.json`.
+One run each; the questions asked were the right ones (what counts as open; what counts as late).
+
 ## 6. Corrections and conversation memory
 
 - A conversation's full Pydantic AI message history (including tool calls) is stored as JSON in
