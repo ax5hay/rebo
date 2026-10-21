@@ -20,10 +20,11 @@ needs: offline | docker | llm | gemini | lmstudio | node | browser | human     (
 
 ## Phase P0: repository hygiene
 
-### [ ] B-001 · CI workflow
+### [x] B-001 · CI workflow
 needs: offline
 do: `.github/workflows/ci.yml` runs on push and PR: `uv sync --frozen --all-extras`, `uv run pytest -q`, `uvx ruff check src tests tools mocks --select F,E9,B --ignore E501,B008,B905`. No network beyond PyPI; no secrets.
 done when: the workflow file exists, and running the same commands locally is green.
+result: 2026-10-21, 3854d05 205d27c. Local: 81 passed, ruff clean (after fixing B017/F401). Not run on GitHub (not pushed).
 
 ### [ ] B-002 · Pre-commit hooks
 needs: offline
