@@ -95,10 +95,11 @@ done when:
 - `route: "direct"` appears in usage.
 result: 2026-10-21, 4 commits (`git log --grep B-008`); 106 passed. Exact repeat of own question: 0 requests (route direct); value-only change: 1 fast request, 0 agent (route params); rerun: 0 requests. eval pending: needs llm (cost per repeat question). UI button not browser-tested.
 
-### [ ] B-009 · Question masking for example retrieval
+### [x] B-009 · Question masking for example retrieval
 needs: offline
 do: In `Knowledge.search`, also search `knowledge_fts` with a masked query: words that hit `value_fts` or `schema_fts` are replaced by their table/column type token. Fuse both rankings (RRF).
 done when: an offline test shows "paused customers" retrieves the example saved for "active customers". doc 08 §5 updated.
+result: 2026-10-21, `git log --grep B-009`; 108 passed. Values masked, schema words not (they match literally). eval pending: needs llm.
 
 ### [ ] B-010 · Stable cacheable prefix
 needs: offline
