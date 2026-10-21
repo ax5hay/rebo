@@ -1,0 +1,546 @@
+{
+ "run": "2026-10-21",
+ "questions": "as in the cases file",
+ "model": "openrouter:google/gemini-3.8-flash",
+ "escalate": "",
+ "database": "mysql+pymysql://reports_ro:***@127.0.0.1:3307/jms",
+ "summary": {
+  "reports": 13,
+  "clarify": 3,
+  "clarify_rate": 0.167,
+  "gate_answered": 0,
+  "errors": 2,
+  "escalated": 0,
+  "median_seconds": 104.3,
+  "total_cost_usd": 1.8193
+ },
+ "cases": [
+  {
+   "id": "validated-01",
+   "kind": "error",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 336.7,
+   "question": "Show me all active surrogates in Screening and list their current substage.",
+   "usage": {},
+   "cost_usd": null
+  },
+  {
+   "id": "validated-02",
+   "kind": "report",
+   "rows": 12,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 110.7,
+   "question": "Which IP cases are in matching right now? Include the names and emails for both IPs.",
+   "usage": {
+    "requests": 15,
+    "input_tokens": 242078,
+    "output_tokens": 1299,
+    "cache_read_tokens": 163566,
+    "tool_calls": 14,
+    "model": "openrouter:google/gemini-3.8-flash",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": 0.08362,
+   "title": "IP Cases Currently in Matching",
+   "sql": "SELECT \n    c.case_id AS case_id,\n    c.case_file_name AS case_name,\n    c.stage AS stage,\n    NULLIF(TRIM(CONCAT(COALESCE(c1.first_name, ''), ' ', COALESCE(c1.last_name, ''))), '') AS ip1_name,\n    c1.email AS ip1_email,\n    NULLIF(TRIM(CONCAT(COALESCE(c2.first_name, ''), ' ', COALESCE(c2.last_name, ''))), '') AS ip2_name,\n    c2.email AS ip2_email\nFROM ip_case c\nLEFT JOIN family f ON c.family_id = f.family_id\nLEFT JOIN contact c1 ON f.ip_1_id = c1.contact_id\nLEFT JOIN contact c2 ON f.ip_2_id = c2.contact_id\nWHERE c.stage = 'matching'\n  AND c.active = 1\nORDER BY c.case_id;",
+   "assumptions": [
+    "Identified IP cases currently in matching by filtering for cases with a stage of 'matching' and active status in the Intended Parent cases records.",
+    "Intended parents (IP 1 and optional IP 2) are identified via the case's linked family record."
+   ]
+  },
+  {
+   "id": "validated-03",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 181.0,
+   "question": "List every active case assigned to [admin name].",
+   "usage": {
+    "requests": 14,
+    "input_tokens": 205650,
+    "output_tokens": 1514,
+    "cache_read_tokens": 110724,
+    "tool_calls": 13,
+    "model": "openrouter:google/gemini-3.8-flash",
+    "escalated": false,
+    "route": "new",
+    "gate": "asked"
+   },
+   "cost_usd": 0.09369,
+   "questions": [
+    {
+     "question": "Which admin's assigned cases would you like to view?",
+     "options": [
+      "Autumn Wagner",
+      "Sally Alexander",
+      "Jodi Coleman",
+      "Another admin (please provide name)"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "validated-04",
+   "kind": "report",
+   "rows": 2,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 85.5,
+   "question": "Which cases have had their profiles approved in the last 30 days?",
+   "usage": {
+    "requests": 20,
+    "input_tokens": 345393,
+    "output_tokens": 1188,
+    "cache_read_tokens": 241732,
+    "tool_calls": 19,
+    "model": "openrouter:google/gemini-3.8-flash",
+    "escalated": false,
+    "route": "new",
+    "review": "ok"
+   },
+   "cost_usd": 0.11036,
+   "title": "Cases with Profiles Approved in the Last 30 Days",
+   "sql": "SELECT \n    c.case_id AS `Case ID`,\n    COALESCE(c.case_file_name, CONCAT(ct.first_name, ' ', ct.last_name)) AS `Case Name`,\n    c.stage AS `Stage`,\n    c.status AS `Status`,\n    f.profile_approved AS `Profile Approved Date`\nFROM ip_case c\nJOIN family f ON c.family_id = f.family_id\nLEFT JOIN contact ct ON f.ip_1_id = ct.contact_id\nWHERE f.profile_approved >= '2026-10-21' - INTERVAL 30 DAY\nORDER BY f.profile_approved DESC",
+   "assumptions": [
+    "Today is assumed to be 2026-10-21.",
+    "The last 30 days covers the period from 2026-09-21 to 2026-10-21.",
+    "Case profile approvals are tracked via the profile approval timestamp on the associated family record for intended parent cases."
+   ]
+  },
+  {
+   "id": "validated-05",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 221.8,
+   "question": "Show me the most recent notes on this journey, pinned ones first.",
+   "usage": {
+    "requests": 28,
+    "input_tokens": 553193,
+    "output_tokens": 1320,
+    "cache_read_tokens": 414502,
+    "tool_calls": 27,
+    "model": "openrouter:google/gemini-3.8-flash",
+    "escalated": false,
+    "route": "new",
+    "gate": "asked"
+   },
+   "cost_usd": 0.15406,
+   "questions": [
+    {
+     "question": "Which case or journey's notes would you like to see?",
+     "options": [
+      "All case notes across all journeys/cases",
+      "Notes for a specific case or journey (please specify the case name or ID)"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "validated-06",
+   "kind": "report",
+   "rows": 0,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 216.7,
+   "question": "List all overdue tasks across my journeys.",
+   "usage": {
+    "requests": 38,
+    "input_tokens": 822145,
+    "output_tokens": 3116,
+    "cache_read_tokens": 598660,
+    "tool_calls": 35,
+    "model": "openrouter:google/gemini-3.8-flash",
+    "escalated": false,
+    "route": "new",
+    "review": "concern"
+   },
+   "cost_usd": 0.24662,
+   "title": "Overdue Tasks Across My Journeys",
+   "sql": "SELECT\n    ct.task_id AS \"Task ID\",\n    ct.task_title AS \"Task Title\",\n    ct.task_type AS \"Task Type\",\n    ct.task_status AS \"Task Status\",\n    ct.must_be_completed_by AS \"Due Date\",\n    ct.must_be_completed_time AS \"Due Time\",\n    COALESCE(ipc.case_file_name, gc.case_file_name, CONCAT('Case #', COALESCE(ct.ip_case_id, ct.gc_case_id))) AS \"Journey / Case Name\",\n    CASE\n        WHEN ct.ip_case_id IS NOT NULL THEN 'Intended Parent'\n        WHEN ct.gc_case_id IS NOT NULL THEN 'Gestational Carrier'\n        ELSE 'Other'\n    END AS \"Journey Type\"\nFROM case_task ct\nLEFT JOIN ip_case ipc ON ct.ip_case_id = ipc.case_id\nLEFT JOIN gc_case gc ON ct.gc_case_id = gc.case_id\nLEFT JOIN case_party cp ON (cp.ip_case_id = ipc.case_id OR cp.gc_case_id = gc.case_id)\nLEFT JOIN user u ON (u.user_id = cp.user_id OR u.contact_id = gc.gc_id)\nWHERE ct.must_be_completed_by < '2026-10-21'\n  AND ct.completed IS NULL\n  AND ct.task_status != 'completed'\n  AND (\n      u.user_id = 'eval'\n      OR ipc.assigned_admin = 'eval'\n      OR gc.assigned_admin = 'eval'\n      OR ct.task_assigned_to_id = 'eval'\n  )\nGROUP BY\n    ct.task_id,\n    ct.task_title,\n    ct.task_type,\n    ct.task_status,\n    ct.must_be_completed_by,\n    ct.must_be_completed_time,\n    COALESCE(ipc.case_file_name, gc.case_file_name, CONCAT('Case #', COALESCE(ct.ip_case_id, ct.gc_case_id))),\n    CASE\n        WHEN ct.ip_case_id IS NOT NULL THEN 'Intended Parent'\n        WHEN ct.gc_case_id IS NOT NULL THEN 'Gestational Carrier'\n        ELSE 'Other'\n    END\nORDER BY ct.must_be_completed_by ASC",
+   "assumptions": [
+    "The user ID 'eval' represents an evaluation placeholder account not present in the user or admin records, so no journeys or tasks are linked to it, resulting in 0 rows",
+    "Tasks are considered overdue if their target completion date ('must_be_completed_by') is before 2026-10-21 and they are not marked completed (completed timestamp is null and task status is not 'completed')",
+    "'Journeys' refer to cases (intended-parent cases or gestational carrier cases) and their associated tasks in the case task tracking system",
+    "Check: The query filters by a placeholder evaluation user ID instead of the actual user's account."
+   ]
+  },
+  {
+   "id": "validated-07",
+   "kind": "error",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 344.1,
+   "question": "What tasks are included in the [template name] workflow?",
+   "usage": {},
+   "cost_usd": null
+  },
+  {
+   "id": "validated-08",
+   "kind": "report",
+   "rows": 3,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 104.3,
+   "question": "Which contacts came in through [marketing source] and haven't completed a form since intake?",
+   "usage": {
+    "requests": 21,
+    "input_tokens": 310146,
+    "output_tokens": 2684,
+    "cache_read_tokens": 190994,
+    "tool_calls": 20,
+    "model": "openrouter:google/gemini-3.8-flash",
+    "escalated": false,
+    "route": "new",
+    "review": "ok"
+   },
+   "cost_usd": 0.12513,
+   "title": "Contacts by Marketing Source with No Form Completed Since Intake",
+   "sql": "WITH first_intake AS (\n    SELECT \n        uf.contact_id,\n        MIN(uf.created) AS first_intake_date,\n        SUBSTRING_INDEX(GROUP_CONCAT(COALESCE(f.display_title, f.backend_title, CONCAT('Form #', f.form_id)) ORDER BY uf.created ASC, uf.user_form_id ASC SEPARATOR '||'), '||', 1) AS intake_form_name\n    FROM user_form uf\n    JOIN form f ON uf.parent_form_id = f.form_id\n    WHERE f.is_intake = 1\n    GROUP BY uf.contact_id\n)\nSELECT \n    c.contact_id AS \"Contact ID\",\n    TRIM(CONCAT(COALESCE(c.first_name, ''), ' ', COALESCE(c.last_name, ''))) AS \"Contact Name\",\n    c.email AS \"Email\",\n    c.phone_number AS \"Phone Number\",\n    c.referral_source AS \"Marketing / Referral Source\",\n    fi.intake_form_name AS \"Intake Form\",\n    fi.first_intake_date AS \"Intake Submission Date\"\nFROM contact c\nJOIN first_intake fi ON c.contact_id = fi.contact_id\nLEFT JOIN user_form uf_later \n    ON c.contact_id = uf_later.contact_id \n    AND uf_later.created > fi.first_intake_date\nWHERE c.referral_source IS NOT NULL\n  AND uf_later.user_form_id IS NULL\nORDER BY c.referral_source ASC, \"Contact Name\" ASC;",
+   "assumptions": [
+    "'marketing source' refers to the contact's recorded referral source (e.g., search, Search Engine, Facebook, media, social_media, etc.). Since no specific marketing source was specified in '[marketing source]', all contacts with a recorded referral source are included and grouped/sorted by referral source",
+    "'intake' is identified by form submissions where the form is flagged as an intake form (is_intake = 1), using the contact's earliest intake form submission date",
+    "'haven\\'t completed a form since intake' means the contact has no subsequent form submissions created after their initial intake form submission"
+   ]
+  },
+  {
+   "id": "validated-09",
+   "kind": "report",
+   "rows": 3,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 75.8,
+   "question": "List egg donors available for a cycle who haven't donated before.",
+   "usage": {
+    "requests": 19,
+    "input_tokens": 361550,
+    "output_tokens": 1742,
+    "cache_read_tokens": 259976,
+    "tool_calls": 18,
+    "model": "openrouter:google/gemini-3.8-flash",
+    "escalated": false,
+    "route": "new",
+    "review": "ok"
+   },
+   "cost_usd": 0.11243,
+   "title": "Available First-Time Egg Donors",
+   "sql": "SELECT \n    c.case_id AS case_id,\n    c.case_file_name AS case_name,\n    ct.first_name AS first_name,\n    ct.last_name AS last_name,\n    ct.email AS email,\n    ct.phone_number AS phone_number,\n    c.stage AS current_stage,\n    c.donor_status AS donor_status,\n    ep.profile_id AS profile_id,\n    CASE \n        WHEN ep.past_donor = 0 THEN 'No'\n        WHEN ep.past_donor = 1 THEN 'Yes'\n        ELSE 'Unknown'\n    END AS past_donor\nFROM gc_case c\nJOIN contact ct \n    ON c.gc_id = ct.contact_id\nJOIN ed_profile ep \n    ON c.gc_id = ep.contact_id\nLEFT JOIN retrieval r \n    ON r.ed_case_id = c.case_id\nWHERE c.case_type = 'donor'\n  AND c.active = 1\n  AND c.donor_status = 'available'\n  AND ep.past_donor = 0\n  AND r.retrieval_id IS NULL\nORDER BY c.case_id ASC",
+   "assumptions": [
+    "Egg donors are identified by donor cases in the cases table (case_type = 'donor') linked to an egg donor profile (ed_profile).",
+    "Availability for a cycle is determined by a donor status of 'available' on the donor case record.",
+    "Donors who haven't donated before are identified by ed_profile.past_donor = 0 and having no prior retrieval records.",
+    "Only active cases (active = 1) are included."
+   ]
+  },
+  {
+   "id": "validated-10",
+   "kind": "report",
+   "rows": 42,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 97.9,
+   "question": "Which contracts are still waiting on a signature?",
+   "usage": {
+    "requests": 23,
+    "input_tokens": 268145,
+    "output_tokens": 2035,
+    "cache_read_tokens": 141093,
+    "tool_calls": 22,
+    "model": "openrouter:google/gemini-3.8-flash",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": 0.12485,
+   "title": "Contracts Waiting on Signature",
+   "sql": "SELECT \n    cr.relationship_id AS contract_relationship_id,\n    cr.parent_id AS hellosign_id,\n    h.signature_request_id,\n    cr.status AS signature_status,\n    cr.created AS date_sent,\n    cr.user_type AS signer_type,\n    cr.user_id AS signer_id,\n    CASE \n        WHEN cr.user_type = 'user' THEN CONCAT(u.first_name, ' ', u.last_name)\n        WHEN cr.user_type = 'admin' THEN CONCAT(a.first_name, ' ', a.last_name)\n        WHEN cr.user_type = 'np_user' THEN CONCAT(unp.first_name, ' ', unp.last_name)\n        ELSE NULL\n    END AS signer_name,\n    CASE \n        WHEN cr.user_type = 'user' THEN u.email\n        WHEN cr.user_type = 'admin' THEN a.email\n        WHEN cr.user_type = 'np_user' THEN unp.email\n        ELSE NULL\n    END AS signer_email\nFROM contract_rel cr\nJOIN hellosign h ON cr.parent_id = h.hellosign_id\nLEFT JOIN user u ON cr.user_id = u.user_id AND cr.user_type = 'user'\nLEFT JOIN admin a ON cr.user_id = a.admin_id AND cr.user_type = 'admin'\nLEFT JOIN user_np unp ON cr.user_id = unp.np_user_id AND cr.user_type = 'np_user'\nWHERE cr.status = 'sent'\nORDER BY cr.created DESC",
+   "assumptions": [
+    "Contracts waiting on a signature are identified as contract relationship records in 'sent' status where the signature has not yet been completed.",
+    "Signers are matched based on user type to regular users, non-portal/partner users, or admin staff."
+   ]
+  },
+  {
+   "id": "validated-11",
+   "kind": "report",
+   "rows": 29,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 42.7,
+   "question": "Show me which intended parents have never logged into their portal.",
+   "usage": {
+    "requests": 11,
+    "input_tokens": 142549,
+    "output_tokens": 672,
+    "cache_read_tokens": 76131,
+    "tool_calls": 10,
+    "model": "openrouter:google/gemini-3.8-flash",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": 0.06385,
+   "title": "Intended Parents Who Have Never Logged In",
+   "sql": "SELECT \n  u.user_id AS `User ID`,\n  u.first_name AS `First Name`,\n  u.last_name AS `Last Name`,\n  u.email AS `Email`,\n  c.phone_number AS `Phone Number`,\n  u.created AS `Account Created Date`\nFROM user u\nLEFT JOIN contact c ON u.contact_id = c.contact_id\nWHERE u.user_type = 'IP'\n  AND u.last_login IS NULL\nORDER BY u.created DESC",
+   "assumptions": [
+    "Intended parents are identified by the user account type 'IP' (or 'IP rep' if including representatives; here focused on intended parent user accounts with user_type = 'IP')",
+    "A user who has never logged into their portal has a null last login timestamp"
+   ]
+  },
+  {
+   "id": "validated-12",
+   "kind": "report",
+   "rows": 6,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 83.2,
+   "question": "Which cases have active, incomplete campaigns right now?",
+   "usage": {
+    "requests": 18,
+    "input_tokens": 295946,
+    "output_tokens": 2453,
+    "cache_read_tokens": 226426,
+    "tool_calls": 18,
+    "model": "openrouter:google/gemini-3.8-flash",
+    "escalated": false,
+    "route": "new",
+    "review": "ok"
+   },
+   "cost_usd": 0.08615,
+   "title": "Cases with Active Incomplete Campaigns",
+   "sql": "SELECT \n    COALESCE(gc.case_id, ipc.case_id) AS case_id,\n    COALESCE(gc.case_file_name, ipc.case_file_name) AS case_name,\n    CASE \n        WHEN gc.case_id IS NOT NULL THEN 'GC Case'\n        WHEN ipc.case_id IS NOT NULL THEN 'IP Case'\n    END AS case_type,\n    c.internal_title AS campaign_name,\n    cc.flow_status AS campaign_flow_status,\n    cc.created AS campaign_start_date,\n    cc.flow_date AS next_flow_date\nFROM case_campaign cc\nJOIN campaign c ON cc.campaign_id = c.campaign_id\nLEFT JOIN gc_case gc ON cc.assigned_gc_case = gc.case_id\nLEFT JOIN ip_case ipc ON cc.assigned_ip_case = ipc.case_id\nWHERE cc.active = 1\n  AND c.active = 1\n  AND cc.completed IS NULL\n  AND cc.flow_status NOT IN ('finished', 'finished_by_trigger', 'stopped')\n  AND (gc.case_id IS NOT NULL OR ipc.case_id IS NOT NULL)\nORDER BY cc.created DESC",
+   "assumptions": [
+    "An active campaign refers to campaign definitions where the active flag is set to true (1) and case campaign enrollments marked active (1).",
+    "An incomplete campaign refers to case campaign enrollments that have not been completed (completed timestamp is NULL) and whose workflow status is still pending/active (not finished, finished_by_trigger, or stopped).",
+    "Cases linked through both gestational carrier cases (GC) and intended parent cases (IP) are evaluated and returned."
+   ]
+  },
+  {
+   "id": "validated-13",
+   "kind": "report",
+   "rows": 41,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 152.7,
+   "question": "How many open To Dos does each admin currently have assigned to them?",
+   "usage": {
+    "requests": 30,
+    "input_tokens": 535600,
+    "output_tokens": 1724,
+    "cache_read_tokens": 390723,
+    "tool_calls": 29,
+    "model": "openrouter:google/gemini-3.8-flash",
+    "escalated": false,
+    "route": "new",
+    "review": "ok"
+   },
+   "cost_usd": 0.15887,
+   "title": "Open To-Dos Assigned per Admin",
+   "sql": "SELECT\n    a.admin_id,\n    CONCAT(a.first_name, ' ', a.last_name) AS admin_name,\n    a.email,\n    COUNT(t.task_id) AS open_todos_count\nFROM admin a\nLEFT JOIN (\n    SELECT task_id, task_assigned_to_id\n    FROM case_task\n    WHERE completed IS NULL AND task_status != 'completed'\n    \n    UNION ALL\n    \n    SELECT task_id, task_assigned_to_id\n    FROM general_task\n    WHERE completed IS NULL AND task_status != 'completed'\n    \n    UNION ALL\n    \n    SELECT task_id, task_assigned_to_id\n    FROM contact_task\n    WHERE completed IS NULL AND task_status != 'completed'\n) t ON a.admin_id = t.task_assigned_to_id\nWHERE a.soft_deleted = 0\nGROUP BY\n    a.admin_id,\n    a.first_name,\n    a.last_name,\n    a.email\nORDER BY\n    open_todos_count DESC,\n    admin_name ASC;",
+   "assumptions": [
+    "Tasks/To-Dos include all assigned action items and tasks tracked across cases (case_task), general tasks (general_task), and contact follow-ups (contact_task).",
+    "Open To Dos are defined as tasks that have not been completed (completed timestamp is null and task status is not 'completed').",
+    "All administrators are included, with a count of 0 if they currently have no open To Dos assigned."
+   ]
+  },
+  {
+   "id": "validated-14",
+   "kind": "report",
+   "rows": 101,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 91.7,
+   "question": "Which surrogates are still waiting on their profile to be approved?",
+   "usage": {
+    "requests": 21,
+    "input_tokens": 349497,
+    "output_tokens": 1855,
+    "cache_read_tokens": 249800,
+    "tool_calls": 19,
+    "model": "openrouter:google/gemini-3.8-flash",
+    "escalated": false,
+    "route": "new",
+    "review": "ok"
+   },
+   "cost_usd": 0.11051,
+   "title": "Surrogates Awaiting Profile Approval",
+   "sql": "SELECT \n    c.contact_id AS `Contact ID`,\n    TRIM(CONCAT(COALESCE(c.first_name, ''), ' ', COALESCE(c.last_name, ''))) AS `Surrogate Name`,\n    c.email AS `Email`,\n    c.phone_number AS `Phone Number`,\n    COUNT(gc.case_id) AS `Active Case Count`,\n    GROUP_CONCAT(DISTINCT gc.stage ORDER BY gc.stage SEPARATOR ', ') AS `Stages`,\n    GROUP_CONCAT(DISTINCT s.status ORDER BY s.status SEPARATOR ', ') AS `Statuses`,\n    MIN(gc.created) AS `Earliest Case Created Date`\nFROM contact c\nJOIN gc_case gc ON gc.gc_id = c.contact_id AND gc.case_type = 'surrogate' AND gc.active = 1\nLEFT JOIN status s ON gc.status_id = s.status_id\nWHERE c.gc_profile_approved IS NULL\nGROUP BY \n    c.contact_id,\n    c.first_name,\n    c.last_name,\n    c.email,\n    c.phone_number\nORDER BY `Earliest Case Created Date` DESC",
+   "assumptions": [
+    "Surrogates are identified from contacts linked to active surrogate cases.",
+    "Waiting on profile approval is identified where the profile approval date (gc_profile_approved) is not yet recorded.",
+    "Results are aggregated to one row per surrogate contact, summarizing their associated active surrogate cases, stages, and statuses."
+   ]
+  },
+  {
+   "id": "validated-15",
+   "kind": "report",
+   "rows": 268,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 45.1,
+   "question": "Show me egg donor profiles that haven't been approved by the agency yet.",
+   "usage": {
+    "requests": 14,
+    "input_tokens": 210616,
+    "output_tokens": 1141,
+    "cache_read_tokens": 134844,
+    "tool_calls": 13,
+    "model": "openrouter:google/gemini-3.8-flash",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": 0.07834,
+   "title": "Egg Donor Profiles Pending Agency Approval",
+   "sql": "SELECT \n    p.profile_id AS profile_id,\n    c.contact_id AS contact_id,\n    CONCAT(c.first_name, ' ', c.last_name) AS full_name,\n    c.email AS email,\n    c.phone_number AS phone_number,\n    s.status AS contact_status,\n    p.user_submitted AS is_user_submitted,\n    p.residency_status AS residency_status,\n    p.current_city AS current_city,\n    p.blood_type AS blood_type,\n    p.frozen_egg_count AS frozen_egg_count,\n    c.created AS contact_created_at\nFROM ed_profile p\nJOIN contact c ON p.contact_id = c.contact_id\nLEFT JOIN status s ON c.status_id = s.status_id\nWHERE c.ed_profile_approved IS NULL\nORDER BY p.profile_id ASC",
+   "assumptions": [
+    "Egg donor profiles are identified from the egg donor profile table (ed_profile) linked to their respective contact records.",
+    "Approval by the agency is tracked via the egg donor profile approval timestamp (contact.ed_profile_approved); profiles lacking this timestamp are considered not yet approved."
+   ]
+  },
+  {
+   "id": "validated-16",
+   "kind": "report",
+   "rows": 64,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 106.1,
+   "question": "Pull a list of sperm donors whose profiles are pending approval.",
+   "usage": {
+    "requests": 24,
+    "input_tokens": 327700,
+    "output_tokens": 1747,
+    "cache_read_tokens": 206007,
+    "tool_calls": 22,
+    "model": "openrouter:google/gemini-3.8-flash",
+    "escalated": false,
+    "route": "new",
+    "review": "concern"
+   },
+   "cost_usd": 0.1246,
+   "title": "Sperm Donors Pending Profile Approval",
+   "sql": "SELECT\n    c.contact_id AS donor_id,\n    c.first_name AS first_name,\n    c.last_name AS last_name,\n    c.email AS email,\n    c.phone_number AS phone_number,\n    GROUP_CONCAT(DISTINCT gc.stage ORDER BY gc.stage SEPARATOR ', ') AS case_stages,\n    s.status AS contact_status,\n    c.sd_profile_approved AS profile_approved_date,\n    c.created AS registered_date\nFROM contact c\nJOIN gc_case gc \n    ON c.contact_id = gc.gc_id \n    AND gc.case_type = 'sperm_donor'\nLEFT JOIN status s \n    ON c.status_id = s.status_id\nWHERE c.sd_profile_approved IS NULL\nGROUP BY\n    c.contact_id,\n    c.first_name,\n    c.last_name,\n    c.email,\n    c.phone_number,\n    s.status,\n    c.sd_profile_approved,\n    c.created\nORDER BY c.created DESC",
+   "assumptions": [
+    "Sperm donors are identified by having a sperm donor case record",
+    "A profile is pending approval when the sperm donor profile approval timestamp has not yet been set (is null)",
+    "Results are grouped at the individual donor level to ensure unique records if a donor is associated with multiple cases",
+    "Check: The list includes disqualified donors and those not awaiting approval because it treats any donor without an approval date as pending."
+   ]
+  },
+  {
+   "id": "validated-17",
+   "kind": "report",
+   "rows": 24,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 33.1,
+   "question": "Show me intended parents whose profile has been approved.",
+   "usage": {
+    "requests": 9,
+    "input_tokens": 117989,
+    "output_tokens": 869,
+    "cache_read_tokens": 57982,
+    "tool_calls": 8,
+    "model": "openrouter:google/gemini-3.8-flash",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": 0.05787,
+   "title": "Intended Parents with Approved Profiles",
+   "sql": "SELECT \n    f.family_id AS `Family ID`,\n    CONCAT(c1.first_name, ' ', c1.last_name) AS `Primary Intended Parent`,\n    c1.email AS `Primary IP Email`,\n    c1.phone_number AS `Primary IP Phone`,\n    CONCAT(c2.first_name, ' ', c2.last_name) AS `Secondary Intended Parent`,\n    c2.email AS `Secondary IP Email`,\n    c2.phone_number AS `Secondary IP Phone`,\n    f.profile_approved AS `Profile Approved Date`\nFROM family f\nJOIN contact c1 ON f.ip_1_id = c1.contact_id\nLEFT JOIN contact c2 ON f.ip_2_id = c2.contact_id\nWHERE f.profile_approved IS NOT NULL\nORDER BY f.profile_approved DESC;",
+   "assumptions": [
+    "Intended parents are tracked through family records where the profile approval date is recorded, linked to the primary intended parent (IP 1) and optional second intended parent (IP 2).",
+    "Filtered for intended parent families whose profile approval date is populated."
+   ]
+  },
+  {
+   "id": "validated-18",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 71.2,
+   "question": "Which [GC or IP] cases are missing [specific form]?",
+   "usage": {
+    "requests": 17,
+    "input_tokens": 186413,
+    "output_tokens": 1271,
+    "cache_read_tokens": 95207,
+    "tool_calls": 16,
+    "model": "openrouter:google/gemini-3.8-flash",
+    "escalated": false,
+    "route": "new",
+    "gate": "asked"
+   },
+   "cost_usd": 0.08834,
+   "questions": [
+    {
+     "question": "Which case type and specific form would you like to check for missing submissions?",
+     "options": [
+      "Gestational Carrier (GC) cases missing 'Just SSN' (GC Race + SSN)",
+      "Gestational Carrier (GC) cases missing 'Previous Surrogate' (ED - Background Check Authorization)",
+      "Intended Parent (IP) cases missing 'Testing All Answer Types' (-IP Intake with SMS Opt-In)",
+      "Intended Parent (IP) cases missing 'Basic IP Intake Form'"
+     ]
+    }
+   ]
+  }
+ ]
+}

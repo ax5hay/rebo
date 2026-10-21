@@ -131,6 +131,7 @@ do: In `llm.py`, add a profile per model family:
 - tool-call budget,
 - `parallel_tool_calls`,
 - output mode: ToolOutput, or PromptedOutput for LM Studio models that fail tool calls.
+eval 2026-10-21b: eval_results_gemini_profile.json: 13 reports, 3 clarify, 2 errors (OpenRouter 504s; was 10 budget errors), median 104 s, $1.82.
 
 Apply the profile in `App.ask` (UsageLimits) and in the model settings. **Research first** (AGENTS.md §4): current Gemini thinking parameters in Pydantic AI.
 done when:

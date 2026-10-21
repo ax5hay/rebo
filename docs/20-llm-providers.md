@@ -168,6 +168,12 @@ route, escalation, tokens, cost estimated from the prices above).
 | Gemini 3.8 Flash via OpenRouter (`eval_results_gemini38flash.json`) | 3 | 5 | **10** | 0 (off) | **91.7** | $0.86 (successful turns only) |
 | Sonnet 5.5, second machine, all of B-001…B-044 (`eval_results_sonnet_2026-10-21b.json`) | 13 | 5 | 0 | 0 | 19.3 | **$2.68** |
 | Haiku 5.5 → Sonnet escalation, second machine (`eval_results_haiku_cascade_2026-10-21b.json`) | 9 (+2 plain answers) | 7 | 0 | 0 | 18.0 | **$0.14** |
+| Gemini 3.8 Flash via OpenRouter **with the B-012 profile** (`eval_results_gemini_profile.json`) | 13 | 3 | 2 (both HTTP 504 from OpenRouter) | 0 (off) | 104.3 | $1.82 |
+
+Gemini profile (B-012: thinking `low`, 1.6× tool budget, parallel tool calls), 2026-10-21b: errors
+fell from 10/18 (tool budget exhausted) to 2/18, both upstream timeouts (HTTP 504 from OpenRouter),
+none from the budget; 13 reports vs 3. Still the slowest (median 104 s, up to 344 s) and not cheap
+($1.82 vs Sonnet's $2.68 for the same 18). Data and code also changed since the first Gemini run.
 
 Second-machine Haiku cascade (2026-10-21b): $0.14 for 18 prompts (about 20× cheaper than Sonnet's
 $2.68, 2.6× cheaper than the first cascade run's $0.36), no escalation needed. validated-01, the
