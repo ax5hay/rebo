@@ -1,0 +1,51 @@
+{
+ "run": "2026-10-21",
+ "state": "data/state.db",
+ "results": [
+  {
+   "model": "snowflake/snowflake-arctic-embed-s",
+   "docs": 2976,
+   "embed_seconds": 32.4,
+   "fixtures/jms_staging/gold_custom_reports.jsonl:validated": {
+    "cases": 12,
+    "dense_recall@5": 0.448,
+    "hybrid_recall@5": 0.621
+   },
+   "fixtures/jms_staging/gold_custom_reports.jsonl:drafts": {
+    "cases": 67,
+    "dense_recall@5": 0.414,
+    "hybrid_recall@5": 0.497
+   }
+  },
+  {
+   "model": "snowflake/snowflake-arctic-embed-s+qp",
+   "docs": 2976,
+   "embed_seconds": 30.8,
+   "fixtures/jms_staging/gold_custom_reports.jsonl:validated": {
+    "cases": 12,
+    "dense_recall@5": 0.448,
+    "hybrid_recall@5": 0.621
+   },
+   "fixtures/jms_staging/gold_custom_reports.jsonl:drafts": {
+    "cases": 67,
+    "dense_recall@5": 0.414,
+    "hybrid_recall@5": 0.497
+   }
+  },
+  {
+   "model": "lmstudio:text-embedding-nomic-embed-text-v1.5",
+   "docs": 2976,
+   "embed_seconds": 35.1,
+   "fixtures/jms_staging/gold_custom_reports.jsonl:validated": {
+    "cases": 12,
+    "dense_recall@5": 0.552,
+    "hybrid_recall@5": 0.483
+   },
+   "fixtures/jms_staging/gold_custom_reports.jsonl:drafts": {
+    "cases": 67,
+    "dense_recall@5": 0.419,
+    "hybrid_recall@5": 0.487
+   }
+  }
+ ]
+}

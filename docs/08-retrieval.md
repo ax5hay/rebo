@@ -73,6 +73,17 @@ drafts. Caveats: 12 questions is a small sample, and the local catalogue has no 
 in the documents). Re-run when B-015 adds validated questions. TEI (`embeddings: http://…`) was not
 run here: its CPU image is amd64-only (this machine is arm64).
 
+**Re-run 2026-10-21b** on the re-bootstrapped catalogue (synthetic rows, Haiku table descriptions),
+adding LM Studio's `text-embedding-nomic-embed-text-v1.5` (`embeddings: lmstudio:…`, with its
+`search_query:` / `search_document:` prefixes), `fixtures/jms_staging/embed_compare_2026-10-21b.json`:
+
+| Model | Embed 2,976 docs | Dense, 12 validated / 67 drafts | Hybrid, 12 validated / 67 drafts |
+|---|---|---|---|
+| snowflake-arctic-embed-s (default) | 32 s | 0.448 / 0.414 | **0.621** / **0.497** |
+| nomic-embed-text-v1.5 via LM Studio | 35 s | **0.552** / 0.419 | 0.483 / 0.487 |
+
+Nomic ranks better on its own but worse in the hybrid search the bot uses. Default kept.
+
 ## 5. What is deliberately not here (yet)
 
 *Question masking moved out of this list: it is built (B-009, 2026-10-21).* `Index.masked_query`:
