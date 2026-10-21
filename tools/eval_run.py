@@ -1,7 +1,7 @@
 """Run an eval set with the current settings and save a results file (per-case outcome, turns'
 token usage, escalations, estimated cost). Model choice comes from reportsbot.yaml / REPORTSBOT_* env.
 
-    uv run python tools/eval_run.py fixtures/jms_staging/eval.jsonl fixtures/jms_staging/eval_results_<name>.json
+    uv run python tools/eval_run.py fixtures/jms_staging/eval.jsonl fixtures/jms_staging/eval_results_<name>.json [limit]
 """
 from __future__ import annotations
 
@@ -33,10 +33,10 @@ def cost(usage: dict) -> float | None:
     return round((fresh * pin + cached * pcache + (usage.get("output_tokens") or 0) * pout) / 1e6, 5)
 
 
-async def main(cases: str, out: str) -> None:
+async def main(cases: str, out: str, limit: int = 0) -> None:
     app = App()
     started = time.time()
-    res = await run_eval(app, cases)
+    res = await run_eval(app, cases, limit=limit)
     turns = app.store.all("SELECT question, kind, payload, usage FROM turn WHERE owner='eval' AND created_at >= ?",
                           (started,))
     by_q = {t["question"]: t for t in turns}
@@ -67,4 +67,4 @@ async def main(cases: str, out: str) -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main(sys.argv[1], sys.argv[2]))
+    asyncio.run(main(sys.argv[1], sys.argv[2], int(sys.argv[3]) if len(sys.argv) > 3 else 0))

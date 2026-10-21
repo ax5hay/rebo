@@ -58,5 +58,5 @@ opens view-only. Mocked by `mocks/jms/server.py::builder_grammar_problem` (8 tes
 | `../jms_staging/schema.sql` | full structure of staging (207 tables) | no |
 | `../jms_staging/profile.json` | statistics + filtered categorical value lists + measured implicit references | aggregates only |
 | `../jms_staging/eval.jsonl` | 18 PO-validated prompts (JMS-6723) | no |
-| `../jms_staging/gold_custom_reports.jsonl` | 79 human-built staging reports: prompt + gold SQL | SQL only (screened for personal literals) |
+| `../jms_staging/gold_custom_reports.jsonl` | 79 human-built staging reports: prompt + gold SQL; `prompt_quality` (`question` for 12, `title_only` for 67) and `scorable` (6) | SQL only (screened for personal literals) |
 | `../jms_staging/eval_results_*.json` | measured bot runs | synthetic rows only |

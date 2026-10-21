@@ -1,0 +1,821 @@
+{
+ "run": "2026-10-21",
+ "model": "openrouter:anthropic/claude-sonnet-5.5",
+ "escalate": "",
+ "database": "mysql+pymysql://reports_ro:***@127.0.0.1:3307/jms",
+ "summary": {
+  "reports": 20,
+  "clarify": 4,
+  "errors": 0,
+  "escalated": 0,
+  "median_seconds": 11.5,
+  "total_cost_usd": 1.6868,
+  "execution_match": "0/20",
+  "finding": "Not an accuracy measurement: 22 of these 25 prompts are only 'Show me <report title>' (agency-internal names), and several gold results are empty or truncated at 500 rows locally. The gold set needs real questions written per report (docs/18 P1.1). Of all 79: 12 real questions, 6 scorable."
+ },
+ "cases": [
+  {
+   "id": "cr-1",
+   "kind": "report",
+   "rows": 500,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 10.9,
+   "question": "Give me the email and phone number for all users in my system.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 47300,
+    "output_tokens": 706,
+    "cache_read_tokens": 9261,
+    "tool_calls": 3,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": 0.08406,
+   "title": "User emails and phone numbers",
+   "sql": "SELECT u.first_name AS `First name`, u.last_name AS `Last name`, u.user_type AS `User type`, u.email AS `Email`, c.phone_number AS `Phone number` FROM `user` u LEFT JOIN contact c ON c.contact_id = u.contact_id ORDER BY u.last_name, u.first_name",
+   "assumptions": [
+    "'Users' means the user accounts (donors, surrogates, intended parents, sperm donors, IP reps), not staff/admin accounts.",
+    "Email is the one on the user's own account.",
+    "Phone number comes from the user's linked contact record, since accounts don't store a phone; it is blank when the contact has none (about 60% of contacts).",
+    "All accounts are included, active or not."
+   ]
+  },
+  {
+   "id": "cr-4",
+   "kind": "report",
+   "rows": 80,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 6.4,
+   "question": "Show me NP User.",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 14174,
+    "output_tokens": 463,
+    "cache_read_tokens": 6174,
+    "tool_calls": 2,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": 0.02125,
+   "title": "NP Users",
+   "sql": "SELECT np_user_id AS \"NP User ID\", first_name AS \"First Name\", last_name AS \"Last Name\", email AS \"Email\", phone AS \"Phone\", user_type AS \"User Type\", date_of_birth AS \"Date of Birth\", active AS \"Active\", created AS \"Created\", last_login AS \"Last Login\" FROM user_np ORDER BY last_name, first_name",
+   "assumptions": [
+    "'NP User' is read as the list of NP user accounts (all 80), not a count or a specific person.",
+    "Showing basic identity, contact, type and activity details; password information is excluded.",
+    "No filters applied, including active status, since all users are currently active."
+   ]
+  },
+  {
+   "id": "cr-5",
+   "kind": "report",
+   "rows": 18,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 19.7,
+   "question": "Show me Hellosigns (IP).",
+   "usage": {
+    "requests": 6,
+    "input_tokens": 80053,
+    "output_tokens": 1541,
+    "cache_read_tokens": 18522,
+    "tool_calls": 10,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": 0.14032,
+   "title": "Hellosigns (IP) \u2013 e-signature requests sent to intended parents",
+   "sql": "select h.hellosign_id as 'Request #', h.signature_request_id as 'Signature Request ID', h.created as 'Created', h.completed as 'Completed', concat(a.first_name,' ',a.last_name) as 'Created By', concat(u.first_name,' ',u.last_name) as 'Intended Parent (Recipient)', cr.status as 'Recipient Status' from hellosign h join contract_rel cr on cr.parent_id=h.hellosign_id and cr.user_type='user' join user u on u.user_id=cr.user_id left join admin a on a.admin_id=h.created_by_id where u.user_type='IP' order by h.created desc",
+   "assumptions": [
+    "'Hellosigns (IP)' means e-signature requests where at least one recipient is an intended-parent (IP) user, mirroring the existing 'Hellosigns (GC/ED)' report for surrogates/donors.",
+    "IP rep users and non-platform/admin recipients are excluded.",
+    "A request with several IP recipients appears once per recipient.",
+    "Recipient status is that recipient's own signing status (sent, viewed, signed, undelivered), separate from the request's overall completed date."
+   ]
+  },
+  {
+   "id": "cr-6",
+   "kind": "report",
+   "rows": 71,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 18.7,
+   "question": "Show me Hellosigns (GC/ED).",
+   "usage": {
+    "requests": 6,
+    "input_tokens": 68936,
+    "output_tokens": 1514,
+    "cache_read_tokens": 18522,
+    "tool_calls": 7,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": 0.11782,
+   "title": "Hellosigns (GC/ED) \u2013 signature requests",
+   "sql": "select h.hellosign_id as `Request #`, h.signature_request_id as `Signature Request`, h.created as `Created`, h.completed as `Completed`, concat(a.first_name,' ',a.last_name) as `Created By`,\n count(r.relationship_id) as `Signers`, coalesce(sum(r.status='signed'),0) as `Signed`, coalesce(sum(r.status='sent'),0) as `Sent`, coalesce(sum(r.status='viewed'),0) as `Viewed`, coalesce(sum(r.status='undelivered'),0) as `Undelivered`\nfrom hellosign h left join admin a on a.admin_id=h.created_by_id left join contract_rel r on r.parent_id=h.hellosign_id\ngroup by h.hellosign_id, h.signature_request_id, h.created, h.completed, a.first_name, a.last_name order by h.created desc",
+   "assumptions": [
+    "'Hellosigns (GC/ED)' is the name of a saved report, but its stored definition is unusable, so I rebuilt it as a list of all e-signature requests.",
+    "Each row is one signature request, with the admin who created it and a count of its signers by status (signed, sent, viewed, undelivered).",
+    "I did not split requests into GC versus ED, because the data has no direct link between a request and a case type.",
+    "A blank completed date means the request has not been completed.",
+    "Sorted newest first."
+   ]
+  },
+  {
+   "id": "cr-7",
+   "kind": "report",
+   "rows": 2,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 9.0,
+   "question": "Show me Campaigns (IP).",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 22127,
+    "output_tokens": 1022,
+    "cache_read_tokens": 9261,
+    "tool_calls": 3,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": 0.03688,
+   "title": "Campaigns (IP)",
+   "sql": "SELECT c.campaign_id AS `Campaign ID`, c.internal_title AS `Campaign`, CASE WHEN c.active=1 THEN 'Active' ELSE 'Inactive' END AS `Status`, c.stage AS `Stage`, c.start_trigger AS `Start trigger`, c.start_trigger_val AS `Start trigger value`, c.day_trigger AS `Timing value`, c.start_mode AS `Timing unit`, c.end_trigger AS `End trigger`, c.end_trigger_val AS `End trigger value`,\n(SELECT COUNT(*) FROM campaign_flow f WHERE f.campaign_id=c.campaign_id) AS `Flow steps`,\n(SELECT COUNT(*) FROM case_campaign cc WHERE cc.campaign_id=c.campaign_id) AS `Cases enrolled`\nFROM campaign c WHERE c.case_type='ip'\nORDER BY c.campaign_id",
+   "assumptions": [
+    "'Campaigns (IP)' means the campaign definitions set up for intended-parent (IP) cases.",
+    "Both active and inactive campaigns are included, with status shown.",
+    "Flow steps and cases enrolled are counts per campaign."
+   ]
+  },
+  {
+   "id": "cr-8",
+   "kind": "report",
+   "rows": 6,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 19.3,
+   "question": "Show me Campaigns (GC/ED).",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 51145,
+    "output_tokens": 1763,
+    "cache_read_tokens": 15435,
+    "tool_calls": 6,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": 0.09059,
+   "title": "Campaigns (GC/ED)",
+   "sql": "select c.campaign_id as 'Campaign ID', c.internal_title as 'Campaign', upper(c.case_type) as 'Case Type', case when c.active=1 then 'Active' else 'Inactive' end as 'Campaign Status', c.start_trigger as 'Starts On', c.day_trigger as 'Timing Value', c.start_mode as 'Timing Unit', c.end_trigger as 'Ends On', count(cc.case_campaign_id) as 'Cases Enrolled', coalesce(sum(cc.flow_status in ('starting','flowing','waiting')),0) as 'In Progress', coalesce(sum(cc.flow_status like 'finished%'),0) as 'Finished', coalesce(sum(cc.flow_status='stopped'),0) as 'Stopped' from campaign c left join case_campaign cc on cc.campaign_id=c.campaign_id where c.case_type in ('gc','ed') group by c.campaign_id, c.internal_title, c.case_type, c.active, c.start_trigger, c.day_trigger, c.start_mode, c.end_trigger order by c.case_type, c.campaign_id",
+   "assumptions": [
+    "'Campaigns (GC/ED)' is read as the marketing/communication campaigns set up for gestational carrier (GC) and egg donor (ED) cases.",
+    "The saved report definition with that name contains no usable query, so I built the report from the campaign setup and case enrollment data.",
+    "Each row is one campaign with counts of cases enrolled in it.",
+    "In progress means starting, flowing or waiting; finished includes those ended by a trigger; stopped is shown separately; enrollments with no status are only counted in the total."
+   ]
+  },
+  {
+   "id": "cr-9",
+   "kind": "report",
+   "rows": 175,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 10.4,
+   "question": "Show me GC/ED Confirmed Email & Last Login.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 26579,
+    "output_tokens": 1012,
+    "cache_read_tokens": 9261,
+    "tool_calls": 5,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": 0.04568,
+   "title": "GC/ED Confirmed Email & Last Login",
+   "sql": "SELECT u.first_name AS \"First Name\", u.last_name AS \"Last Name\", CASE u.user_type WHEN 'surrogate' THEN 'GC' ELSE 'ED' END AS \"Type\", u.email AS \"Email\", u.last_login AS \"Last Login\" FROM user u WHERE u.user_type IN ('surrogate','donor') AND u.confirmed_email = 1 ORDER BY u.last_login DESC",
+   "assumptions": [
+    "GC means users of type surrogate (gestational carriers); ED means users of type donor (egg donors). Sperm donors and intended parents are excluded.",
+    "Only users who have confirmed their email address are listed.",
+    "Last login is shown as stored; users who have never logged in show it blank and appear last.",
+    "Inactive accounts are not excluded."
+   ]
+  },
+  {
+   "id": "cr-10",
+   "kind": "report",
+   "rows": 500,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 6.8,
+   "question": "Show me All Users.",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 14937,
+    "output_tokens": 560,
+    "cache_read_tokens": 6174,
+    "tool_calls": 2,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": 0.02374,
+   "title": "All Users",
+   "sql": "SELECT user_id AS `User ID`, first_name AS `First Name`, last_name AS `Last Name`, email AS `Email`, user_type AS `User Type`, CASE WHEN active = 1 THEN 'Active' ELSE 'Inactive' END AS `Status`, created AS `Created`, last_login AS `Last Login` FROM `user` ORDER BY last_name, first_name",
+   "assumptions": [
+    "'All Users' means every user account in the system, regardless of type or whether it is active.",
+    "Showing name, email, user type, active/inactive status, creation date and last login; users who never logged in have an empty last login.",
+    "Sorted by last name, then first name."
+   ]
+  },
+  {
+   "id": "cr-11",
+   "kind": "report",
+   "rows": 2,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 12.9,
+   "question": "Show me Another NP User lookup.",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 31467,
+    "output_tokens": 1248,
+    "cache_read_tokens": 12348,
+    "tool_calls": 3,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": 0.05195,
+   "title": "Saved report \"Another NP User lookup\"",
+   "sql": "SELECT custom_report_id AS `Report ID`, report_title AS `Report title`, active AS `Active (1=yes)`, widget AS `Dashboard widget (1=yes)`, warning AS `Has warning (1=yes)`, created AS `Created`, date_depricated AS `Deprecated on`, hyperlink AS `Link`, report_headers AS `Report headers`, report_query AS `Report query` FROM custom_report WHERE report_title = 'Another NP User lookup' ORDER BY created",
+   "assumptions": [
+    "Read 'Another NP User lookup' as the title of a saved custom report, so this shows the report's definition rather than a list of NP users.",
+    "Two saved reports have this title: one active and one deprecated. Both are shown.",
+    "The stored headers and query text for these reports are placeholder-like text, so they can't be run as a real report."
+   ]
+  },
+  {
+   "id": "cr-12",
+   "kind": "report",
+   "rows": 4,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 12.6,
+   "question": "Show me IP Workflow.Snippet.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 23080,
+    "output_tokens": 827,
+    "cache_read_tokens": 9261,
+    "tool_calls": 3,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": 0.03683,
+   "title": "IP Workflow.Snippet custom reports",
+   "sql": "SELECT custom_report_id AS `Report ID`, report_title AS `Report title`, CASE WHEN active = 1 THEN 'Yes' ELSE 'No' END AS `Active`, CASE WHEN widget = 1 THEN 'Yes' ELSE 'No' END AS `Dashboard widget`, created AS `Created`, date_depricated AS `Deprecated on`, hyperlink AS `Hyperlink`, report_headers AS `Report headers` FROM custom_report WHERE report_title = 'IP Workflow.Snippet' ORDER BY created",
+   "assumptions": [
+    "'IP Workflow.Snippet' is read as the title of a saved custom report, so this lists the report definitions with that title (there are 4).",
+    "The reports' stored query text is not run or shown; only descriptive details such as status, creation and deprecation dates are listed.",
+    "Deprecated reports are included, with their deprecation date shown."
+   ]
+  },
+  {
+   "id": "cr-13",
+   "kind": "report",
+   "rows": 1,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 8.3,
+   "question": "Show me IP Snippet.Workflow.",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 18677,
+    "output_tokens": 927,
+    "cache_read_tokens": 6174,
+    "tool_calls": 2,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": 0.03489,
+   "title": "IP Snippet.Workflow \u2013 saved report definition",
+   "sql": "SELECT custom_report_id AS `Report ID`, report_title AS `Report title`, CASE WHEN active = 1 THEN 'Yes' ELSE 'No' END AS `Active`, CASE WHEN widget = 1 THEN 'Yes' ELSE 'No' END AS `Shown as dashboard widget`, CASE WHEN warning = 1 THEN 'Yes' ELSE 'No' END AS `Has warning`, created AS `Created`, date_depricated AS `Deprecated on`, hyperlink AS `Hyperlink`, report_headers AS `Report headers` FROM custom_report WHERE report_title = 'IP Snippet.Workflow'",
+   "assumptions": [
+    "'IP Snippet.Workflow' is read as the name of a saved custom report, not a request for case data. Exactly one report has that title.",
+    "The result shows the report's details (status, creation date, headers). It does not run the report's own stored query, because that text isn't a usable query.",
+    "I did not look up IP cases or to-do snippets. Tell me if that's what you meant."
+   ]
+  },
+  {
+   "id": "cr-14",
+   "kind": "report",
+   "rows": 500,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 7.3,
+   "question": "Show me General Form Submission.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 23467,
+    "output_tokens": 578,
+    "cache_read_tokens": 9261,
+    "tool_calls": 2,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": 0.03512,
+   "title": "General Form Submissions",
+   "sql": "SELECT g.general_form_submission_id AS `Submission ID`, g.form_id AS `Form ID`, f.display_title AS `Form Title`, f.backend_title AS `Internal Form Title`, f.form_type AS `Form Type`, g.created AS `Submitted At`, g.browser AS `Browser`, CASE WHEN g.has_files = 1 THEN 'Yes' ELSE 'No' END AS `Has Files`\nFROM general_form_submission g\nLEFT JOIN form f ON f.form_id = g.form_id\nORDER BY g.general_form_submission_id",
+   "assumptions": [
+    "Showing every general form submission, one row per submission, with the title and type of the form it belongs to.",
+    "The raw submitted form content is left out because it is long and unreadable; it can be added if needed.",
+    "The submitting contact is left out because it is empty for all submissions.",
+    "Every submission has the same recorded time, so the list is ordered by submission number."
+   ]
+  },
+  {
+   "id": "cr-15",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false,
+    "ExecutionMatch": false
+   },
+   "seconds": 8.4,
+   "question": "Show me cycle report.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 23931,
+    "output_tokens": 601,
+    "cache_read_tokens": 9261,
+    "tool_calls": 4,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": 0.03628,
+   "questions": [
+    {
+     "question": "Which cycle data do you want in the cycle report?",
+     "options": [
+      "Embryo transfers (dates, clinic, outcome)",
+      "Egg retrievals (donor retrieval cycles)",
+      "Sperm retrievals",
+      "Pregnancies / deliveries"
+     ]
+    },
+    {
+     "question": "What time range?",
+     "options": [
+      "All time",
+      "Last 12 months",
+      "Year to date (2026)"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "cr-16",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false,
+    "ExecutionMatch": false
+   },
+   "seconds": 12.9,
+   "question": "Show me IP SSN.",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 33456,
+    "output_tokens": 813,
+    "cache_read_tokens": 12348,
+    "tool_calls": 4,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": 0.05158,
+   "questions": [
+    {
+     "question": "What would you like to see under \"IP SSN\"?",
+     "options": [
+      "The saved report definition named \"IP SSN\" (title, status, created date) \u2013 its stored query text is not usable",
+      "A list of intended-parent contacts showing whether an SSN is on file (yes/no; the number itself is protected and cannot be shown)",
+      "The \"SSN + Relationship\" / \"Just SSN\" forms and their submission status for intended-parent cases"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "cr-17",
+   "kind": "answer",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false,
+    "ExecutionMatch": false
+   },
+   "seconds": 10.6,
+   "question": "Show me GC SSN.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 36241,
+    "output_tokens": 940,
+    "cache_read_tokens": 9261,
+    "tool_calls": 2,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": 0.06429
+  },
+  {
+   "id": "cr-18",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false,
+    "ExecutionMatch": false
+   },
+   "seconds": 5.8,
+   "question": "Show me calculator.",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 14791,
+    "output_tokens": 402,
+    "cache_read_tokens": 6174,
+    "tool_calls": 2,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": 0.02187,
+   "questions": [
+    {
+     "question": "Which \"calculator\" do you want to see?",
+     "options": [
+      "The custom report called \"Case Calculator\" (its definition and status)",
+      "The baby growth calculator's custom responses (agency-specific labels, images and texts)"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "cr-19",
+   "kind": "report",
+   "rows": 1,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 8.5,
+   "question": "Show me Case Calculator.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 21806,
+    "output_tokens": 643,
+    "cache_read_tokens": 9261,
+    "tool_calls": 3,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": 0.03245,
+   "title": "Case Calculator report definition",
+   "sql": "SELECT custom_report_id AS \"Report ID\", report_title AS \"Report title\", active AS \"Active (1=yes)\", widget AS \"Dashboard widget (1=yes)\", date_depricated AS \"Date deprecated\", created AS \"Created\", report_headers AS \"Report headers\", report_query AS \"Report query text\" FROM custom_report WHERE report_title = 'Case Calculator'",
+   "assumptions": [
+    "'Case Calculator' is read as the saved custom report with that exact title, not as a data calculation.",
+    "There is only one such report, and its stored query text is placeholder-like prose, so it can't be run as a real report.",
+    "The report is flagged active but has a deprecation date of 2026-08-06."
+   ]
+  },
+  {
+   "id": "cr-20",
+   "kind": "report",
+   "rows": 20,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 13.0,
+   "question": "Show me GC Monitoring.",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 45615,
+    "output_tokens": 1161,
+    "cache_read_tokens": 12348,
+    "tool_calls": 7,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": 0.07938,
+   "title": "GC Monitoring \u2013 lab/monitoring records for gestational carriers",
+   "sql": "SELECT g.case_file_name AS `GC Case`, g.case_type AS `Case Type`, g.stage AS `Stage`, e.event_name AS `Monitoring Event`, l.date_labs_drawn AS `Labs Drawn`, l.time_labs_drawn AS `Time Drawn`, l.clinic_name AS `Clinic`, l.result AS `Result`, l.notes AS `Notes`, a.first_name AS `Created By (First Name)`, a.last_name AS `Created By (Last Name)`\nFROM lab l\nJOIN gc_case g ON g.case_id = l.gc_case_id\nJOIN event e ON e.event_id = l.event_id\nLEFT JOIN admin a ON a.admin_id = l.created_by_id\nORDER BY l.date_labs_drawn DESC",
+   "assumptions": [
+    "'GC Monitoring' is interpreted as the monitoring (lab draw) records recorded against gestational carrier cases, newest first.",
+    "The saved report called 'GC Monitoring' has no usable definition (its text is placeholder content), so I built this from the lab records instead.",
+    "Only lab records linked to a gestational carrier case are included; those linked only to intended parents or egg donor cases are excluded.",
+    "Monitoring event is the lab event type (e.g. Beta, Ultrasound, HCG, FDA)."
+   ]
+  },
+  {
+   "id": "cr-22",
+   "kind": "report",
+   "rows": 42,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 14.4,
+   "question": "Show me Sperm Donor Matches.",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 71391,
+    "output_tokens": 1232,
+    "cache_read_tokens": 12348,
+    "tool_calls": 6,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": 0.13164,
+   "title": "Sperm Donor Matches",
+   "sql": "select mq.matching_queue_id as `Match ID`, ip.case_file_name as `Intended Parent`, sd.case_file_name as `Sperm Donor`, mq.status as `Match Status`, mq.donation_type as `Donation Type`, mq.created as `Created`, mq.ip_sent_date as `Sent to IP`, mq.match_accepted as `Match Accepted`, mq.match_break as `Match Broken` from matching_queue mq join ip_case ip on ip.case_id = mq.case_id join gc_case sd on sd.case_id = mq.gc_case_id where mq.matching_type = 'sperm_donor' order by mq.created desc",
+   "assumptions": [
+    "'Sperm Donor Matches' means every sperm donor match entry in the matching queue, pairing an intended parent with a sperm donor.",
+    "All statuses are included (matched, broken, archived, sent, and so on). The status is shown so you can filter it.",
+    "Newest entries are listed first.",
+    "A saved custom report with this name exists, but its definition is placeholder text and not usable, so I built the report from the matching data."
+   ]
+  },
+  {
+   "id": "cr-23",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false,
+    "ExecutionMatch": false
+   },
+   "seconds": 24.5,
+   "question": "Show me GC Average Days in Screening Sample report.",
+   "usage": {
+    "requests": 7,
+    "input_tokens": 114001,
+    "output_tokens": 1722,
+    "cache_read_tokens": 21609,
+    "tool_calls": 10,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": 0.20416,
+   "questions": [
+    {
+     "question": "The saved \"GC Average Days in Screening Sample\" report has no usable definition (its text is placeholder filler), and the database does not record the date a case entered screening. How should I calculate days in screening?",
+     "options": [
+      "Average days from today back to the earliest completed screening step, for cases currently in the screening stage",
+      "Average days between the earliest and latest completed screening steps per case",
+      "Just list the cases currently in screening with their screening steps completed (no average)"
+     ]
+    },
+    {
+     "question": "Which cases count as GCs?",
+     "options": [
+      "Surrogates only",
+      "Surrogates, egg donors and sperm donors (all cases)"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "cr-24",
+   "kind": "report",
+   "rows": 1,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 13.5,
+   "question": "Show me IP Average Days in Matching sample.",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 31879,
+    "output_tokens": 1283,
+    "cache_read_tokens": 12348,
+    "tool_calls": 5,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": 0.05313,
+   "title": "IP Average Days in Matching",
+   "sql": "SELECT COUNT(*) AS `Matching Entries Counted`, COUNT(DISTINCT ip_case_id) AS `IP Cases`, ROUND(AVG(DATEDIFF(match_fully_approved, move_to_matching)), 1) AS `Average Days in Matching`, MIN(DATEDIFF(match_fully_approved, move_to_matching)) AS `Shortest (Days)`, MAX(DATEDIFF(match_fully_approved, move_to_matching)) AS `Longest (Days)` FROM matching_days_report WHERE move_to_matching IS NOT NULL AND match_fully_approved IS NOT NULL AND match_fully_approved >= move_to_matching",
+   "assumptions": [
+    "Days in matching = days from when the IP case moved into matching to when the match was fully approved.",
+    "Only entries with both dates are counted; entries still waiting on either date are left out.",
+    "Entries where the approval date is earlier than the move-to-matching date look like data errors and are excluded.",
+    "Each entry is counted separately, so a case with more than one entry counts more than once in the average.",
+    "I read 'sample' as part of the report's name, not as a request for a data sample."
+   ]
+  },
+  {
+   "id": "cr-25",
+   "kind": "report",
+   "rows": 58,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 17.1,
+   "question": "Show me Egg Donor Matches.",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 67328,
+    "output_tokens": 1233,
+    "cache_read_tokens": 15435,
+    "tool_calls": 6,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": 0.11766,
+   "title": "Egg Donor Matches",
+   "sql": "SELECT mq.matching_queue_id AS `Queue Entry`, ip.case_file_name AS `Intended Parent Case`, ed.case_file_name AS `Egg Donor Case`, mq.status AS `Match Status`, mq.donation_type AS `Donation Type`, mq.created AS `Queued On`, mq.ip_sent_date AS `Sent to IP`, mq.match_accepted AS `Match Accepted`, mq.match_break AS `Match Broken`, mq.active AS `Active` FROM matching_queue mq JOIN ip_case ip ON ip.case_id = mq.case_id JOIN gc_case ed ON ed.case_id = mq.gc_case_id WHERE mq.matching_type = 'donor' ORDER BY mq.created DESC",
+   "assumptions": [
+    "'Egg Donor Matches' means every pairing of an intended-parent case with an egg donor case in the matching queue.",
+    "All statuses are included (matched, broken, archived, queued, etc.); the status column lets you filter to actual matches.",
+    "The saved report named 'Egg Donor Matches' contains no usable definition, so the report was built from the matching queue data.",
+    "Newest entries are listed first."
+   ]
+  },
+  {
+   "id": "cr-26",
+   "kind": "report",
+   "rows": 15,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 11.5,
+   "question": "Show me Test matchsheet mapping.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 27439,
+    "output_tokens": 1236,
+    "cache_read_tokens": 9261,
+    "tool_calls": 6,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": 0.04964,
+   "title": "Test match sheet header \u2013 question mapping",
+   "sql": "SELECT t.title AS match_sheet_template, h.section_name AS section, h.header_name AS header, h.active AS header_active, q.question_order AS question_order, q.question_text AS question, q.question_type AS question_type, q.active AS question_active, q.mapped_table AS mapped_table, q.mapped_column AS mapped_column, fq.form_question_id AS mapped_form_question_id FROM match_sheet_header h JOIN match_sheet_template t ON t.match_sheet_id = h.match_sheet_id LEFT JOIN match_sheet_question q ON q.header_id = h.header_id LEFT JOIN form_question fq ON fq.form_question_id = q.mapped_form_question_id WHERE h.header_name = 'Test' ORDER BY t.title, h.section_order, h.header_order, q.question_order",
+   "assumptions": [
+    "'Test matchsheet mapping' is read as the mapping of questions under match sheet headers named 'Test' (4 headers across several templates).",
+    "Mapping means the target table and column each question fills, plus any linked form question.",
+    "Both active and inactive headers and questions are shown, with their active flags, so you can filter them.",
+    "Questions with no mapping are included, with blank mapping columns."
+   ]
+  },
+  {
+   "id": "cr-27",
+   "kind": "report",
+   "rows": 74,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 21.5,
+   "question": "Show me ED Matchsheet Mapping.",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 56862,
+    "output_tokens": 2295,
+    "cache_read_tokens": 15435,
+    "tool_calls": 7,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": 0.10735,
+   "title": "ED Match Sheet Mapping (questions mapped to data fields)",
+   "sql": "select t.title as \"Match Sheet\", case when t.active = 1 then 'Active' else 'Inactive' end as \"Sheet Status\", h.section_name as \"Section\", h.header_name as \"Header\", q.question_order as \"Question Order\", q.question_text as \"Question\", q.question_type as \"Input Type\", q.mapped_table as \"Mapped To (Record Type)\", q.mapped_column as \"Mapped To (Field)\", q.mapped_form_question_id as \"Mapped Form Question ID\", case when q.active = 1 then 'Active' else 'Inactive' end as \"Question Status\" from match_sheet_template t join match_sheet_header h on h.match_sheet_id = t.match_sheet_id join match_sheet_question q on q.header_id = h.header_id where (t.title like '%ED Match Sheet%' or t.title like '%IP/ED%') and (q.mapped_table is not null or q.mapped_column is not null or q.mapped_form_question_id is not null) order by t.match_sheet_id, h.section_order, h.header_order, q.question_order",
+   "assumptions": [
+    "Read 'ED Matchsheet Mapping' as the match sheet questions that are mapped to a record type, field or intake form question, rather than the separate 'ED - Mapping' intake form.",
+    "Included every match sheet whose name refers to ED: 'ED Match Sheet', 'Copy 1 ED Match Sheet' and '(DEFAULT) Escrow Match Sheet IP/ED'.",
+    "Included both active and inactive sheets and questions, and labelled their status.",
+    "Showed only questions that have at least one mapping; unmapped questions are left out."
+   ]
+  },
+  {
+   "id": "cr-28",
+   "kind": "report",
+   "rows": 96,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 5.3,
+   "question": "Show me Status.",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 13213,
+    "output_tokens": 354,
+    "cache_read_tokens": 6174,
+    "tool_calls": 1,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": 0.01824,
+   "title": "Status list",
+   "sql": "SELECT status AS `Status`, stage AS `Stage`, contact_type AS `Contact type`, active AS `Active` FROM status ORDER BY stage, contact_type, status",
+   "assumptions": [
+    "Interpreted 'Status' as the list of workflow statuses defined in the system, not a count of cases or contacts per status.",
+    "Showing every status with its stage and contact type; all are active."
+   ]
+  }
+ ]
+}
