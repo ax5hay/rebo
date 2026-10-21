@@ -79,3 +79,19 @@ def ask_span(**attributes):
             span.set_attribute(f"rebo.{k}", str(v))
         out["span"] = span
         yield out
+
+
+def trace_link(trace_id: str) -> str | None:
+    """Browser link to one trace in Phoenix: {PHOENIX_URL}/projects/{project id}/traces/{trace id}. The
+    project id is looked up by name (openinference.project.name, "rebo") through Phoenix's REST API,
+    reached at the OTLP endpoint; the link uses PHOENIX_URL, which the browser can open."""
+    api = (os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT") or "").rstrip("/")
+    public = (os.environ.get("PHOENIX_URL") or api).rstrip("/")
+    if not api:
+        return None
+    attrs = dict(kv.split("=", 1) for kv in os.environ.get("OTEL_RESOURCE_ATTRIBUTES", "").split(",") if "=" in kv)
+    name = attrs.get("openinference.project.name", "default")
+    import httpx2
+    projects = httpx2.get(f"{api}/v1/projects", timeout=3).json()["data"]
+    project = next((p for p in projects if p["name"] == name), None) or next(p for p in projects if p["name"] == "default")
+    return f"{public}/projects/{project['id']}/traces/{trace_id}"

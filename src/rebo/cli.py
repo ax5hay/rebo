@@ -15,10 +15,11 @@ def main(argv: list[str] | None = None) -> int:
     sub = ap.add_subparsers(dest="cmd", required=True)
     b = sub.add_parser("bootstrap", help="read, profile and index the target database")
     b.add_argument("--describe", action="store_true", help="also draft table/column descriptions with the fast LLM")
-    s = sub.add_parser("serve", help="HTTP API + chat UI")
+    s = sub.add_parser("serve", help="HTTP API + the web app (web/, at /app/)")
     s.add_argument("--host", default="127.0.0.1")
     s.add_argument("--port", type=int, default=8080)
-    s.add_argument("--no-ui", action="store_true")
+    s.add_argument("--no-ui", action="store_true", help="API only")
+    s.add_argument("--nicegui", action="store_true", help="also mount the older NiceGUI pages at /")
     a = sub.add_parser("ask", help="one question from the terminal")
     a.add_argument("text")
     a.add_argument("--user", default="cli")
@@ -59,7 +60,9 @@ def main(argv: list[str] | None = None) -> int:
     elif args.cmd == "serve":
         import uvicorn
         from .api import create_app
-        uvicorn.run(create_app(app, with_ui=not args.no_ui, with_worker=True), host=args.host, port=args.port)
+        from .api import web_built
+        nicegui = not args.no_ui and (args.nicegui or not web_built())  # the React app when it is built
+        uvicorn.run(create_app(app, with_ui=nicegui, with_worker=True), host=args.host, port=args.port)
     elif args.cmd == "ask":
         from .knowledge import User
         r = asyncio.run(app.ask(User(args.user, args.role), args.text))

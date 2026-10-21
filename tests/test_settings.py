@@ -89,3 +89,21 @@ def test_behind_the_proxy_roles_come_from_groups_and_x_user_headers_are_ignored(
     forged = {**proxy, "X-User-Id": "olga", "X-User-Role": "owner"}                       # sent by the client
     assert client.get("/api/review", headers=forged).status_code == 403
     assert client.get("/api/admin/config", headers={**proxy, "X-Forwarded-Groups": "rebo-owners"}).status_code != 403
+
+
+def test_the_web_app_serves_its_pages_and_files(app, tmp_path, monkeypatch):
+    from pathlib import Path
+
+    from fastapi.testclient import TestClient
+
+    from rebo.api import create_app
+    dist = Path(__file__).resolve().parents[1] / "web" / "dist"
+    if not (dist / "index.html").is_file():
+        import pytest
+        pytest.skip("web app not built (cd web && npm run build)")
+    client = TestClient(create_app(app, with_ui=False))
+    index = client.get("/app/").text
+    assert client.get("/app/insights").text == index                     # a page reload gets the app
+    asset = next((dist / "assets").glob("*.css")).name
+    assert client.get(f"/app/assets/{asset}").headers["content-type"].startswith("text/css")
+    assert client.get("/app/../pyproject.toml").text == index or client.get("/app/../pyproject.toml").status_code == 404

@@ -131,13 +131,13 @@ class App:
 
     @cached_property
     def param_agent(self) -> Agent:
-        return Agent(output_type=ToolOutput(ParamFill, name="fill_parameters"), retries=1, instructions=(
+        return Agent(name="fill-values", output_type=ToolOutput(ParamFill, name="fill_parameters"), retries=1, instructions=(
             "A user's new request is compared with a saved report. Decide whether it asks for the same report "
             "with only different values, and if so give the new value for every placeholder."))
 
     @cached_property
     def review_agent(self) -> Agent:
-        return Agent(output_type=ToolOutput(Review, name="review"), retries=1, instructions=(
+        return Agent(name="second-opinion", output_type=ToolOutput(Review, name="review"), retries=1, instructions=(
             "You check a database report before a business user sees it. Given the question, the SQL, the "
             "assumptions made and the first rows, decide whether the report answers the question. Flag only a "
             "concrete problem a person should check (wrong filter, wrong grain, missing condition, a reading "

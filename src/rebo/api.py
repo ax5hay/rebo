@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 from pathlib import Path
 from typing import Literal
 
@@ -15,6 +16,7 @@ from pydantic import BaseModel
 from .knowledge import ROLE_ALIASES, User, normalise_role  # noqa: F401
 from . import admin
 from . import messages as msg
+from .observability import trace_link
 from .service import App, RateLimited
 
 
@@ -196,6 +198,21 @@ def router(app: App) -> APIRouter:
     @r.get("/conversations/{conversation_id}")
     def conversation(conversation_id: str, user: User = Depends(current_user)):
         return guard_errors(lambda: app.conversation(user, conversation_id))
+
+    @r.get("/trace/{trace_id}")
+    def trace(trace_id: str, user: User = Depends(current_user)):
+        """Where to open one answer's trace (Phoenix). Admins and owners."""
+        if not user.is_admin:
+            raise HTTPException(403, "Only admins and owners can open traces.")
+        if not re.fullmatch(r"[0-9a-f]{32}", trace_id):
+            raise HTTPException(400, "Not a trace id.")
+        try:
+            url = trace_link(trace_id)
+        except Exception as e:
+            raise HTTPException(503, f"Phoenix did not answer: {str(e)[:120]}") from e
+        if not url:
+            raise HTTPException(404, "Tracing is off: start Phoenix (docker compose up -d phoenix).")
+        return {"url": url}
 
     @r.get("/insights")
     def insights(days: int = 90, user: User = Depends(current_user)):
@@ -423,6 +440,13 @@ def router(app: App) -> APIRouter:
     return r
 
 
+WEB = Path(__file__).resolve().parents[2] / "web" / "dist"  # the React app, when built (cd web && npm run build)
+
+
+def web_built() -> bool:
+    return (WEB / "index.html").is_file()
+
+
 def create_app(app: App, *, with_ui: bool = True, with_worker: bool = False) -> FastAPI:
     """with_worker: run the background job worker (scheduled reports, async answers) with the server."""
     from contextlib import asynccontextmanager
@@ -439,10 +463,26 @@ def create_app(app: App, *, with_ui: bool = True, with_worker: bool = False) -> 
     for name in app.settings.adapters:  # optional host contracts (src/rebo/adapters/<name>.py)
         import importlib
         api.include_router(importlib.import_module(f".adapters.{name}", __package__).router(app))
-    web = Path(__file__).resolve().parents[2] / "web" / "dist"  # the React Ask page, when built (web/)
-    if web.is_dir():
-        from fastapi.staticfiles import StaticFiles
-        api.mount("/app", StaticFiles(directory=web, html=True), name="web")
+    web = WEB
+    if web_built():
+        from fastapi.responses import FileResponse, RedirectResponse
+
+        if not with_ui:  # without the NiceGUI pages, the root opens the app
+            @api.get("/", include_in_schema=False)
+            def root():
+                return RedirectResponse("/app/")
+
+        @api.get("/app", include_in_schema=False)
+        def web_root():
+            return RedirectResponse("/app/")
+
+        @api.get("/app/{path:path}", include_in_schema=False)
+        def web_page(path: str):
+            """Files of the built app, and index.html for its pages (so /app/insights can be reloaded)."""
+            target = (web / path).resolve()
+            if path and target.is_file() and web.resolve() in target.parents:
+                return FileResponse(target)
+            return FileResponse(web / "index.html")
     if with_ui:
         from .ui import mount_ui
         mount_ui(api, app)
