@@ -75,12 +75,13 @@ done when:
 - doc 04 §5 and doc 06 §6 updated.
 result: 2026-10-21, `git log --grep B-006`; offline tests both paths; 98 passed. Implemented option 1 (option_sql in the same run). eval pending: needs llm (record the 18 JMS prompts' clarify count and gate_answered).
 
-### [ ] B-007 · Remember clarification answers per user (aid)
+### [x] B-007 · Remember clarification answers per user (aid)
 needs: offline
 do: When a user answers a clarification (the UI/adapter sends `Q → A`), store a personal `note` titled with the question, `body` = the answer, `source_turn` = that turn. No card: it applies only to that user. Visible and undoable in My knowledge. The prompt already gives personal notes to the model.
 done when:
 - Offline test: the same clarifying question is not asked twice. Use a FunctionModel that asks only when the note is absent from the context block.
 - doc 22 §2 moves this from §3.
+result: 2026-10-21, `git log --grep B-007`; 100 passed. Only answers matching an offered option are stored.
 
 ### [ ] B-008 · Parameterised examples and no-LLM reuse; "Re-run with today's data" (aid)
 needs: offline
