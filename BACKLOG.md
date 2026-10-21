@@ -264,13 +264,14 @@ do: **Research first** (Pydantic AI AG-UI adapter). Then add a `/api/agui` endpo
 done when: offline test with TestClient streaming and a FunctionModel.
 result: 2026-10-21, `git log --grep B-029`; 134 passed. Also fixed: conversations could be continued by another user (separate fix commit). UI progress not browser-tested.
 
-### [ ] B-030 · Durable jobs, scheduled reports, mock JMS async push
+### [x] B-030 · Durable jobs, scheduled reports, mock JMS async push
 needs: offline
 do: **Research first** (DBOS). Then:
 1. Long turns and scheduled reports ("every Monday") run as durable jobs.
 2. Mock the JMS SQS + WebSocket push in `mocks/jms`, using the `reports.ready` message (fixtures/jms_contract README §3).
 3. The adapter can answer asynchronously.
 done when: offline tests, including a restart in the middle of a job.
+result: 2026-10-21, `git log --grep B-030`; 139 passed (228 with Postgres). Own job table instead of DBOS (reasons in jobs.py). No schedule UI yet; one worker per store.
 
 ### [ ] B-031 · Exact answer cache
 needs: offline
