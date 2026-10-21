@@ -103,12 +103,27 @@ class KnowledgeEdit(BaseModel):
     sql: str | None = None
 
 
+# Behind the login proxy (deploy/auth, compose.prod.yml) roles come from IdP groups with these names.
+OWNER_GROUP, ADMIN_GROUP = "reportsbot-owners", "reportsbot-admins"
+
+
+def role_from_groups(groups: str | None) -> str:
+    names = {g.strip().lower() for g in (groups or "").split(",")}
+    return "owner" if OWNER_GROUP in names else "admin" if ADMIN_GROUP in names else "user"
+
+
 def user_from_headers(x_user_id: str | None = Header(None), x_user_role: str = Header("user"),
                       x_user_team: str | None = Header(None), x_forwarded_user: str | None = Header(None),
-                      x_forwarded_email: str | None = Header(None)) -> User:
-    """auth.mode=headers: identity comes from the host app's gateway. Never expose without one.
-    X-User-Id wins; behind oauth2-proxy (compose.prod.yml) X-Forwarded-Email / -User are used."""
-    x_user_id = x_user_id or x_forwarded_email or x_forwarded_user
+                      x_forwarded_email: str | None = Header(None),
+                      x_forwarded_groups: str | None = Header(None)) -> User:
+    """auth.mode=headers: identity comes from a trusted gateway. Never expose the bot without one.
+
+    Behind oauth2-proxy (X-Forwarded-Email / -User present): the user is the proxy's, the role comes
+    only from X-Forwarded-Groups (reportsbot-owners / reportsbot-admins), and any X-User-* header is
+    ignored, because the proxy forwards headers it does not set and a client could forge them.
+    Otherwise (a host application's gateway, e.g. JMS): X-User-Id / -Role / -Team."""
+    if x_forwarded_email or x_forwarded_user:
+        return User(id=(x_forwarded_email or x_forwarded_user).strip(), role=role_from_groups(x_forwarded_groups))  # type: ignore[arg-type]
     if not x_user_id:
         raise HTTPException(401, "No user identity: send X-User-Id (or run behind the login proxy)")
     if x_user_role.strip().lower() not in {"user", "admin", "owner", *ROLE_ALIASES}:

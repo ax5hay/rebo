@@ -76,3 +76,16 @@ def test_identity_from_the_login_proxy_headers(app):
                                                 "X-Forwarded-User": "ann"}).json()
     assert mine and mine[0]["value"] == "2026"
     assert client.get("/api/defaults").status_code == 401                     # no identity at all
+
+
+def test_behind_the_proxy_roles_come_from_groups_and_x_user_headers_are_ignored(app):
+    from fastapi.testclient import TestClient
+
+    from reportsbot.api import create_app
+    client = TestClient(create_app(app, with_ui=False))
+    proxy = {"X-Forwarded-Email": "ann@example.com"}
+    assert client.get("/api/review", headers=proxy).status_code == 403                   # a plain user
+    assert client.get("/api/review", headers={**proxy, "X-Forwarded-Groups": "staff,reportsbot-admins"}).status_code == 200
+    forged = {**proxy, "X-User-Id": "olga", "X-User-Role": "owner"}                       # sent by the client
+    assert client.get("/api/review", headers=forged).status_code == 403
+    assert client.get("/api/admin/config", headers={**proxy, "X-Forwarded-Groups": "reportsbot-owners"}).status_code != 403
