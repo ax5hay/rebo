@@ -404,3 +404,33 @@ result: 2026-10-21, 9764522 + this commit. Retrieval 13/17 vs 1/17 (skeleton vs 
 ### [x] B-051 · Optional cross-encoder rerank
 do: fastembed `TextCrossEncoder` (ms-marco-MiniLM-L-6-v2, Apache, 80 MB) over the RRF top 30 in `search_knowledge` and `search_schema`, behind one setting, default off. Measure recall@5 with `tools/embed_compare.py` first; adopt only if recall moves.
 result: 2026-10-21, rejected. `tools/rerank_compare.py`: all four rerankers lowered recall@5 (JMS 0.621 → 0.483–0.586; demo 0.969 → 0.906–0.938) and added 0.13–2.6 s per question. doc 08.
+
+## Production cost and the next leap (doc 26, 2026-10-21)
+
+### [~] B-052 · Cache the growing turn
+do: `openrouter_cache_messages` / `anthropic_cache_messages` for Claude models (llm.build_one). Measure the cache-read ratio and cost on demo gold and JMS 18 against 0.53–0.64 and 0.17.
+
+### [ ] B-053 · Verifier-gated cascade
+needs: llm
+do: Haiku as the agent by default; escalate to Sonnet when a trap, grain, second-opinion concern, agreement disagreement or clarification fires. Demo gold 3 runs per arm against Sonnet 8–10/12; record the escalation rate and cost.
+
+### [ ] B-054 · Tool result budgets
+do: per-tool token budgets; describe_table returns the columns relevant to the question first (by retrieval score) and a count of the rest. Measure input tokens per question and schema recall@5 (doc 08).
+
+### [~] B-055 · Learned part library (doc 26 §3)
+do: offline first: decompose gold reports (entity/grain, filters, measures, dimensions, join paths), count recurring parts, and measure leave-one-out coverage. Build the compiler only if coverage is meaningful.
+step 1, 2026-10-21: JMS 72 reports: 69 % of parts recur (joins 93/144, entities 63/72, filters 5/16); 30/72 fully composable. Demo 12: 61 %, 1/12. Next: join-and-entity library, agent writes filters only (doc 26 §3).
+
+### [ ] B-056 · Clarify only the part that disagrees
+needs: llm
+do: when candidates disagree (B-048), build a multiple-choice question from the syntax-tree diff.
+
+### [ ] B-057 · Metamorphic proofs on the synthetic shadow database
+do: mutate gold SQL into known-wrong variants; measure detection and false-alarm rates of grain/NULL/date invariants on tools/synth data.
+
+### [ ] B-058 · EXPLAIN gate and row-level security passthrough
+do: dialect-aware EXPLAIN (never ANALYZE) rejects cartesian or huge plans with a hint to the agent; optional run-as-user database role. Offline tests on known bad plans.
+
+### [ ] B-059 · Nightly regression from confirmed reports
+needs: llm
+do: replay shared confirmed reports through the agent nightly (batch pricing), compare with columns_match, record an eval_run.

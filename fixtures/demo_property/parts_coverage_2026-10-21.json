@@ -1,0 +1,117 @@
+{
+ "run": "2026-10-21",
+ "cases": "fixtures/demo_property/gold.jsonl",
+ "reports": 12,
+ "parts": 56,
+ "distinct_parts": 35,
+ "parts_in_2plus_reports": 13,
+ "part_coverage_exact": 0.607,
+ "part_coverage_with_values": 0.607,
+ "reports_composable_exact": "1/12",
+ "reports_composable_with_values": "1/12",
+ "coverage_by_kind": {
+  "E": "10/12",
+  "J": "16/18",
+  "F": "4/18",
+  "M": "2/4",
+  "D": "2/4"
+ },
+ "rows": [
+  {
+   "id": "gp-01",
+   "parts": 3,
+   "exact": 1,
+   "with_values": 1,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "gp-02",
+   "parts": 5,
+   "exact": 4,
+   "with_values": 4,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "gp-03",
+   "parts": 6,
+   "exact": 6,
+   "with_values": 6,
+   "composable_exact": true,
+   "composable_with_values": true
+  },
+  {
+   "id": "gp-04",
+   "parts": 5,
+   "exact": 3,
+   "with_values": 3,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "gp-05",
+   "parts": 9,
+   "exact": 4,
+   "with_values": 4,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "gp-06",
+   "parts": 4,
+   "exact": 2,
+   "with_values": 2,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "gp-07",
+   "parts": 4,
+   "exact": 2,
+   "with_values": 2,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "gp-08",
+   "parts": 3,
+   "exact": 2,
+   "with_values": 2,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "gp-09",
+   "parts": 5,
+   "exact": 2,
+   "with_values": 2,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "gp-10",
+   "parts": 4,
+   "exact": 3,
+   "with_values": 3,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "gp-11",
+   "parts": 4,
+   "exact": 3,
+   "with_values": 3,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "gp-12",
+   "parts": 4,
+   "exact": 2,
+   "with_values": 2,
+   "composable_exact": false,
+   "composable_with_values": false
+  }
+ ]
+}

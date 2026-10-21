@@ -1,0 +1,595 @@
+{
+ "run": "2026-10-21",
+ "cases": "fixtures/jms_staging/gold_custom_reports.jsonl",
+ "reports": 72,
+ "parts": 232,
+ "distinct_parts": 116,
+ "parts_in_2plus_reports": 32,
+ "part_coverage_exact": 0.638,
+ "part_coverage_with_values": 0.694,
+ "reports_composable_exact": "20/72",
+ "reports_composable_with_values": "30/72",
+ "coverage_by_kind": {
+  "E": "63/72",
+  "J": "93/144",
+  "F": "5/16"
+ },
+ "rows": [
+  {
+   "id": "cr-1",
+   "parts": 1,
+   "exact": 1,
+   "with_values": 1,
+   "composable_exact": true,
+   "composable_with_values": true
+  },
+  {
+   "id": "cr-4",
+   "parts": 3,
+   "exact": 3,
+   "with_values": 3,
+   "composable_exact": true,
+   "composable_with_values": true
+  },
+  {
+   "id": "cr-5",
+   "parts": 8,
+   "exact": 8,
+   "with_values": 8,
+   "composable_exact": true,
+   "composable_with_values": true
+  },
+  {
+   "id": "cr-6",
+   "parts": 7,
+   "exact": 7,
+   "with_values": 7,
+   "composable_exact": true,
+   "composable_with_values": true
+  },
+  {
+   "id": "cr-7",
+   "parts": 5,
+   "exact": 4,
+   "with_values": 4,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-8",
+   "parts": 3,
+   "exact": 2,
+   "with_values": 2,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-9",
+   "parts": 3,
+   "exact": 2,
+   "with_values": 2,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-10",
+   "parts": 1,
+   "exact": 0,
+   "with_values": 0,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-11",
+   "parts": 2,
+   "exact": 2,
+   "with_values": 2,
+   "composable_exact": true,
+   "composable_with_values": true
+  },
+  {
+   "id": "cr-12",
+   "parts": 2,
+   "exact": 2,
+   "with_values": 2,
+   "composable_exact": true,
+   "composable_with_values": true
+  },
+  {
+   "id": "cr-13",
+   "parts": 2,
+   "exact": 2,
+   "with_values": 2,
+   "composable_exact": true,
+   "composable_with_values": true
+  },
+  {
+   "id": "cr-14",
+   "parts": 1,
+   "exact": 0,
+   "with_values": 0,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-15",
+   "parts": 4,
+   "exact": 2,
+   "with_values": 3,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-16",
+   "parts": 4,
+   "exact": 4,
+   "with_values": 4,
+   "composable_exact": true,
+   "composable_with_values": true
+  },
+  {
+   "id": "cr-17",
+   "parts": 2,
+   "exact": 2,
+   "with_values": 2,
+   "composable_exact": true,
+   "composable_with_values": true
+  },
+  {
+   "id": "cr-18",
+   "parts": 2,
+   "exact": 0,
+   "with_values": 0,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-19",
+   "parts": 3,
+   "exact": 2,
+   "with_values": 2,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-20",
+   "parts": 5,
+   "exact": 2,
+   "with_values": 2,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-22",
+   "parts": 3,
+   "exact": 2,
+   "with_values": 3,
+   "composable_exact": false,
+   "composable_with_values": true
+  },
+  {
+   "id": "cr-23",
+   "parts": 3,
+   "exact": 1,
+   "with_values": 1,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-24",
+   "parts": 3,
+   "exact": 1,
+   "with_values": 1,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-25",
+   "parts": 3,
+   "exact": 2,
+   "with_values": 3,
+   "composable_exact": false,
+   "composable_with_values": true
+  },
+  {
+   "id": "cr-26",
+   "parts": 2,
+   "exact": 1,
+   "with_values": 2,
+   "composable_exact": false,
+   "composable_with_values": true
+  },
+  {
+   "id": "cr-27",
+   "parts": 2,
+   "exact": 1,
+   "with_values": 2,
+   "composable_exact": false,
+   "composable_with_values": true
+  },
+  {
+   "id": "cr-28",
+   "parts": 3,
+   "exact": 3,
+   "with_values": 3,
+   "composable_exact": true,
+   "composable_with_values": true
+  },
+  {
+   "id": "cr-29",
+   "parts": 1,
+   "exact": 0,
+   "with_values": 0,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-30",
+   "parts": 7,
+   "exact": 1,
+   "with_values": 1,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-31",
+   "parts": 3,
+   "exact": 3,
+   "with_values": 3,
+   "composable_exact": true,
+   "composable_with_values": true
+  },
+  {
+   "id": "cr-32",
+   "parts": 2,
+   "exact": 2,
+   "with_values": 2,
+   "composable_exact": true,
+   "composable_with_values": true
+  },
+  {
+   "id": "cr-33",
+   "parts": 2,
+   "exact": 1,
+   "with_values": 1,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-37",
+   "parts": 1,
+   "exact": 0,
+   "with_values": 0,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-38",
+   "parts": 2,
+   "exact": 0,
+   "with_values": 0,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-39",
+   "parts": 1,
+   "exact": 1,
+   "with_values": 1,
+   "composable_exact": true,
+   "composable_with_values": true
+  },
+  {
+   "id": "cr-40",
+   "parts": 4,
+   "exact": 0,
+   "with_values": 0,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-41",
+   "parts": 2,
+   "exact": 2,
+   "with_values": 2,
+   "composable_exact": true,
+   "composable_with_values": true
+  },
+  {
+   "id": "cr-42",
+   "parts": 2,
+   "exact": 1,
+   "with_values": 1,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-44",
+   "parts": 2,
+   "exact": 1,
+   "with_values": 1,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-45",
+   "parts": 2,
+   "exact": 1,
+   "with_values": 2,
+   "composable_exact": false,
+   "composable_with_values": true
+  },
+  {
+   "id": "cr-46",
+   "parts": 2,
+   "exact": 1,
+   "with_values": 2,
+   "composable_exact": false,
+   "composable_with_values": true
+  },
+  {
+   "id": "cr-47",
+   "parts": 2,
+   "exact": 2,
+   "with_values": 2,
+   "composable_exact": true,
+   "composable_with_values": true
+  },
+  {
+   "id": "cr-48",
+   "parts": 4,
+   "exact": 2,
+   "with_values": 2,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-49",
+   "parts": 6,
+   "exact": 3,
+   "with_values": 3,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-50",
+   "parts": 2,
+   "exact": 0,
+   "with_values": 0,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-51",
+   "parts": 2,
+   "exact": 1,
+   "with_values": 1,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-52",
+   "parts": 3,
+   "exact": 2,
+   "with_values": 2,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-53",
+   "parts": 2,
+   "exact": 1,
+   "with_values": 1,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-54",
+   "parts": 2,
+   "exact": 1,
+   "with_values": 1,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-55",
+   "parts": 1,
+   "exact": 1,
+   "with_values": 1,
+   "composable_exact": true,
+   "composable_with_values": true
+  },
+  {
+   "id": "cr-56",
+   "parts": 11,
+   "exact": 4,
+   "with_values": 4,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-57",
+   "parts": 2,
+   "exact": 2,
+   "with_values": 2,
+   "composable_exact": true,
+   "composable_with_values": true
+  },
+  {
+   "id": "cr-58",
+   "parts": 4,
+   "exact": 2,
+   "with_values": 3,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-59",
+   "parts": 2,
+   "exact": 1,
+   "with_values": 2,
+   "composable_exact": false,
+   "composable_with_values": true
+  },
+  {
+   "id": "cr-60",
+   "parts": 4,
+   "exact": 3,
+   "with_values": 3,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-63",
+   "parts": 6,
+   "exact": 4,
+   "with_values": 4,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-64",
+   "parts": 2,
+   "exact": 2,
+   "with_values": 2,
+   "composable_exact": true,
+   "composable_with_values": true
+  },
+  {
+   "id": "cr-65",
+   "parts": 4,
+   "exact": 2,
+   "with_values": 3,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-66",
+   "parts": 4,
+   "exact": 4,
+   "with_values": 4,
+   "composable_exact": true,
+   "composable_with_values": true
+  },
+  {
+   "id": "cr-73",
+   "parts": 3,
+   "exact": 2,
+   "with_values": 3,
+   "composable_exact": false,
+   "composable_with_values": true
+  },
+  {
+   "id": "cr-74",
+   "parts": 3,
+   "exact": 2,
+   "with_values": 3,
+   "composable_exact": false,
+   "composable_with_values": true
+  },
+  {
+   "id": "cr-75",
+   "parts": 3,
+   "exact": 1,
+   "with_values": 1,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-76",
+   "parts": 5,
+   "exact": 4,
+   "with_values": 4,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-77",
+   "parts": 5,
+   "exact": 4,
+   "with_values": 4,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-78",
+   "parts": 6,
+   "exact": 5,
+   "with_values": 6,
+   "composable_exact": false,
+   "composable_with_values": true
+  },
+  {
+   "id": "cr-79",
+   "parts": 3,
+   "exact": 2,
+   "with_values": 2,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-80",
+   "parts": 3,
+   "exact": 2,
+   "with_values": 2,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-81",
+   "parts": 1,
+   "exact": 0,
+   "with_values": 0,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-82",
+   "parts": 3,
+   "exact": 2,
+   "with_values": 2,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-83",
+   "parts": 4,
+   "exact": 3,
+   "with_values": 3,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-84",
+   "parts": 4,
+   "exact": 2,
+   "with_values": 2,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-85",
+   "parts": 5,
+   "exact": 5,
+   "with_values": 5,
+   "composable_exact": true,
+   "composable_with_values": true
+  },
+  {
+   "id": "cr-86",
+   "parts": 5,
+   "exact": 3,
+   "with_values": 3,
+   "composable_exact": false,
+   "composable_with_values": false
+  },
+  {
+   "id": "cr-91",
+   "parts": 6,
+   "exact": 4,
+   "with_values": 4,
+   "composable_exact": false,
+   "composable_with_values": false
+  }
+ ]
+}
