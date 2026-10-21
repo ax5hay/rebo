@@ -11,7 +11,7 @@ models:                                    # "<provider>:<model>"
                                            # openrouter:anthropic/claude-sonnet-5.5 (cost cascade)
   fallback: []                             # tried in order if the agent model's API is down, e.g.
                                            # [google:gemini-3.8-flash, lmstudio:<local model id>]
-lmstudio_url: http://127.0.0.1:1234/v1     # only used by "lmstudio:" models
+# lmstudio_url: http://127.0.0.1:1234/v1   # only for "lmstudio:" models (this is the default)
 
 state_dir: data                            # the bot's memory (back this up)
 state_url: ""                              # or postgresql://user:pw@host/db for the memory (extra "postgres")
@@ -21,6 +21,8 @@ limits:
   probe_rows: 20                           # rows per exploratory query
   query_timeout_s: 30
   tool_calls: 25                           # per user turn
+  cost_per_turn_usd: 0                     # stop a turn that would cost more (list prices); 0 = no cap
+  per_user_per_minute: 0                   # questions per person per minute; 0 = no limit
 
 allowed_tables: []                         # empty = every table the database user can read
 protected_columns: ""                      # regex on table.column, added to auto-detected secrets
@@ -32,7 +34,7 @@ embeddings: true                           # local vectors ("embed" extra); fals
 
 auth:
   mode: headers                            # headers (X-User-* from a trusted gateway) | jwt
-  issuer: orchid                           # expected "iss" claim when mode is jwt
+  # issuer: orchid                         # expected "iss" claim when mode is jwt (this is the default)
 
 adapters: []                               # host contracts to expose, e.g. [jms] (needs auth.mode jwt)
 notify_url: ""                             # optional webhook for requests and shared/stale items

@@ -55,7 +55,7 @@ The folder needs nothing from the parent repo. JMS appears only as:
 | 2 | `models.agent` / `models.fast` / `models.escalate` / `models.fallback` | `openrouter:anthropic/claude-sonnet-5.5` … | who answers new questions / reuse turns and descriptions / failed turns / API outages |
 | 3 | `lmstudio_url` | `http://127.0.0.1:1234/v1` | offline inference endpoint |
 | 4 | `state_dir` | `data` | the bot's memory |
-| 5 | `limits` (rows, probe_rows, query_timeout_s, tool_calls) | `500, 20, 30, 25` | safety and cost ceilings |
+| 5 | `limits` (rows, probe_rows, query_timeout_s, tool_calls, cost_per_turn_usd, per_user_per_minute) | `500, 20, 30, 25, 0, 0` | safety and cost ceilings; a cost cap in list prices and a per-person rate limit (0 = off, B-032) |
 | 6 | `allowed_tables` | `[]` | optional allowlist |
 | 7 | `protected_columns` | `"(salary\|dob)"` | extra columns to hide (secrets are auto-detected) |
 | 8 | `sharing.threshold` | `3` | people agreeing before something is proposed to everyone |
@@ -72,7 +72,8 @@ behaviour unchanged): `state_url` (Postgres instead of SQLite, P2.1), `embedding
 `tracing_url` (P3.2). `notify_url` (B-025) was added on 2026-10-21 as the backlog item specified,
 so with all three the groups total 14; the binding limit is **≤ 20 settings** in
 `reportsbot.example.yaml`, enforced by `tests/test_settings.py::test_example_config_stays_small`
-(19 today).
+(20 today). To fit B-032's two limits, `lmstudio_url` and `auth.issuer` are shown as comments in
+the example (both still valid keys, with the defaults shown); every setting remains documented there.
 
 ## 3. Where the build stands (done, on branch `feat/reports-bot-standalone`)
 

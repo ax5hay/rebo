@@ -29,6 +29,8 @@ _YAML_KEYS = {
     ("limits", "probe_rows"): "probe_row_limit",
     ("limits", "query_timeout_s"): "query_timeout_s",
     ("limits", "tool_calls"): "max_tool_calls",
+    ("limits", "cost_per_turn_usd"): "cost_per_turn_usd",
+    ("limits", "per_user_per_minute"): "per_user_per_minute",
     ("allowed_tables",): "allow_tables",
     ("protected_columns",): "deny_columns",
     ("sharing", "threshold"): "share_threshold",
@@ -119,6 +121,8 @@ class Settings(BaseSettings):
     probe_row_limit: int = 20
     query_timeout_s: int = 30
     max_tool_calls: int = 25
+    cost_per_turn_usd: float = 0.0   # 0 = no cap; list prices (llm.PRICES), see llm.turn_limits
+    per_user_per_minute: int = 0     # 0 = no limit; questions one user may ask per minute
     allow_tables: str = ""  # comma-separated allowlist; empty = every table the DB user can see
     deny_columns: str = ""  # regex on table.column, on top of auto-detected secrets
     # 5. Learning.

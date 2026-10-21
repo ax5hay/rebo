@@ -13,7 +13,7 @@ from pydantic import BaseModel
 
 from .knowledge import ROLE_ALIASES, User, normalise_role  # noqa: F401
 from . import admin
-from .service import App
+from .service import App, RateLimited
 
 
 class AskIn(BaseModel):
@@ -168,6 +168,8 @@ def router(app: App) -> APIRouter:
             return await app.ask(user, body.text, body.conversation_id)
         except PermissionError as e:
             raise HTTPException(403, str(e)) from e
+        except RateLimited as e:
+            raise HTTPException(429, str(e)) from e
 
     @r.post("/jobs")
     def ask_later(body: JobIn, user: User = Depends(current_user)):

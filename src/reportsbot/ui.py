@@ -21,7 +21,7 @@ from nicegui import ui
 from . import admin as admin_ops
 from . import messages as msg
 from .knowledge import User
-from .service import App
+from .service import App, RateLimited
 
 _BADGE = {"verified": "positive", "yours": "primary", "adapted": "info", "new": "grey-7"}
 _KINDS = ["term", "note", "join", "example"]
@@ -165,8 +165,13 @@ def mount_ui(api: FastAPI, app: App) -> None:
                     ui.spinner(size="lg")
                     status = ui.label(msg.say("progress_start")).classes("text-sm opacity-70")
             box.value = ""
-            result = await app.ask(u, text, state["conversation_id"],
-                                   progress=lambda s: status.set_text(msg.progress(s.get("tool", ""))))
+            try:
+                result = await app.ask(u, text, state["conversation_id"],
+                                       progress=lambda s: status.set_text(msg.progress(s.get("tool", ""))))
+            except (RateLimited, PermissionError) as e:
+                working.delete()
+                ui.notify(str(e), type="warning")
+                return
             working.delete()
             state["conversation_id"] = result["conversation_id"]
             with feed:

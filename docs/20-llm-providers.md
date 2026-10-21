@@ -77,6 +77,19 @@ by Google and OpenRouter, and maps `low` to Gemini's `LOW` thinking level (sourc
 guess: **not measured** (needs an LLM key; target file `eval_results_gemini_profile.json`).
 No LM Studio entry is set: which local models need `prompted` is unknown until one is run.
 
+### 2.2 Cost cap per turn and rate limit (B-032)
+
+`limits.cost_per_turn_usd` (0 = off) stops a turn that would cost more, in **list prices** (`llm.PRICES`,
+equal to `openrouter.ai/api/v1/models` on 2026-10-21). Pydantic AI's `UsageLimits(cost_limit=…)`
+prices responses with genai-prices (0.1.13, 2026-10-15, MIT), which on 2026-10-21 covered every
+configured model but disagreed for some: for 1M input + 0.1M output, Sonnet 5.5 $3.00 (same),
+Haiku 5.5 $0.75 vs $0.15 list (5× high), Gemini 3.8 Flash $1.125 vs $1.2375 (9% low). So
+`llm.turn_limits` scales the cap by genai-prices ÷ list price for that model; a model genai-prices
+does not know is capped by token limits from the list (80% of the cap for input, 20% for output);
+`lmstudio:` (no price) is not capped. Exceeding it ends the turn with the usual budget message.
+`limits.per_user_per_minute` (0 = off) limits questions per person in a sliding minute (in-process;
+HTTP 429). Not measured against a real API (needs a key).
+
 ## 3. Current models and prices (checked 2026-10-21)
 
 | Model | API id | OpenRouter id | $/1M in · cache read · out | Notes |

@@ -11,7 +11,8 @@ import datetime as dt
 import hashlib
 import json
 import logging
-from collections import Counter
+import time
+from collections import Counter, deque
 from functools import cached_property
 from typing import Any, Callable
 
@@ -25,7 +26,7 @@ from . import messages as msg
 from .agent import Clarify, Deps, Report, Reply, Trace, build_agent
 from .catalog import Catalog, bootstrap
 from .knowledge import Knowledge, User
-from .llm import build_model, cost, credentials_present, profile
+from .llm import build_model, cost, credentials_present, profile, turn_limits
 from .observability import setup_tracing
 from .retrieval import Index, fts_query, get_embedder
 from .safety import canonical_hash, drill_sql, fill_params, guard
@@ -64,6 +65,10 @@ class ParamFill(BaseModel):
         "unchanged ones copied as they are"))
 
 
+class RateLimited(Exception):
+    """Too many questions from one person in a minute (limits.per_user_per_minute)."""
+
+
 class Review(BaseModel):
     ok: bool = Field(description="true when the report answers the question as asked")
     concern: str = Field("", description="When not ok: the one thing a person should check, in plain words")
@@ -82,6 +87,7 @@ class App:
         self.knowledge.on_status = self._status_changed
         # Adapters add formatters for where background results go, e.g. {"jms": fn(deliver, result)}.
         self.deliver_formatters: dict[str, Callable[[dict, dict], Any]] = {}
+        self._recent: dict[str, deque] = {}  # per-user question times for per_user_per_minute
         setup_tracing()
 
     @cached_property
@@ -275,6 +281,7 @@ class App:
     async def ask(self, user: User, text: str, conversation_id: str | None = None,
                   progress: Callable[[dict[str, Any]], None] | None = None) -> dict[str, Any]:
         """Answer one message. `progress` (optional) is called with each tool step as it happens."""
+        self._check_rate(user)
         conv_id = conversation_id or new_id("conv")
         conv = self.store.one("SELECT owner FROM conversation WHERE id=?", (conv_id,))
         if conv and conv["owner"] != user.id:  # never continue (or read the history of) someone else's
@@ -409,7 +416,20 @@ class App:
 
     def _limits(self, model_spec: str) -> UsageLimits:
         tool_calls = round(self.settings.max_tool_calls * profile(model_spec).tool_call_factor)
-        return UsageLimits(request_limit=40, tool_calls_limit=tool_calls)
+        return turn_limits(model_spec, tool_calls=tool_calls, cost_cap_usd=self.settings.cost_per_turn_usd)
+
+    def _check_rate(self, user: User) -> None:
+        """per_user_per_minute: a sliding one-minute window per person (in this process)."""
+        cap = self.settings.per_user_per_minute
+        if cap <= 0:
+            return
+        window = self._recent.setdefault(user.id, deque())
+        t = time.monotonic()
+        while window and t - window[0] > 60:
+            window.popleft()
+        if len(window) >= cap:
+            raise RateLimited(msg.say("rate_limited", n=cap))
+        window.append(t)
 
     def _run_report_sql(self, sql: str) -> QueryResult:
         g = guard(sql, dialect=self.target.dialect, schema=self.catalog.schema, sensitive=self.catalog.sensitive,

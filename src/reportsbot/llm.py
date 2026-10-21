@@ -15,8 +15,10 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from decimal import Decimal
 from typing import Any, Literal
 
+from pydantic_ai import UsageLimits
 from pydantic_ai.models import Model
 
 from .settings import Settings
@@ -75,6 +77,41 @@ def cost(usage: dict) -> float | None:
     cached = usage.get("cache_read_tokens") or 0
     fresh = max((usage.get("input_tokens") or 0) - cached, 0)
     return round((fresh * pin + cached * pcache + (usage.get("output_tokens") or 0) * pout) / 1e6, 5)
+
+
+_GENAI_PROVIDER = {"openrouter": "openrouter", "anthropic": "anthropic", "google": "google", "openai": "openai"}
+
+
+def genai_price(spec: str, input_tokens: int = 1_000_000, output_tokens: int = 100_000) -> float | None:
+    """Price genai-prices (what Pydantic AI's cost_limit uses) gives a reference usage; None if unknown."""
+    provider, name = parse(spec)
+    if provider not in _GENAI_PROVIDER:
+        return None
+    try:
+        from genai_prices import Usage, calc_price
+        return float(calc_price(Usage(input_tokens=input_tokens, output_tokens=output_tokens), model_ref=name,
+                                provider_id=_GENAI_PROVIDER[provider]).total_price)
+    except Exception:
+        return None
+
+
+def turn_limits(spec: str, *, tool_calls: int, cost_cap_usd: float) -> UsageLimits:
+    """Usage limits for one turn on `spec`. A cost cap is meant in list prices (PRICES, checked against
+    OpenRouter). Pydantic AI enforces cost_limit with genai-prices, which can differ (2026-10-21: Haiku 5.5
+    5x higher, Gemini 3.8 Flash 9% lower), so the cap is scaled by their ratio. A model genai-prices does
+    not know falls back to token limits from PRICES (80% of the cap for input, 20% for output); a model
+    with no price at all (e.g. lmstudio:, local) gets no cost cap."""
+    limits = UsageLimits(request_limit=40, tool_calls_limit=tool_calls)
+    if cost_cap_usd <= 0:
+        return limits
+    ours, theirs = cost({"model": spec, "input_tokens": 1_000_000, "output_tokens": 100_000}), genai_price(spec)
+    if theirs and ours:
+        limits.cost_limit = Decimal(str(round(cost_cap_usd * theirs / ours, 6)))
+    elif ours:
+        pin, _, pout = PRICES[parse(spec)[1]]
+        limits.input_tokens_limit = int(cost_cap_usd * 0.8 / pin * 1e6)
+        limits.output_tokens_limit = int(cost_cap_usd * 0.2 / pout * 1e6)
+    return limits
 
 
 def _env(*names: str) -> str:

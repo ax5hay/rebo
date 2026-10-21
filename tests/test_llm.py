@@ -423,3 +423,44 @@ async def test_exact_answer_cache_hits_and_invalidates(app):
     app.feedback(alice, hit["turn_id"], "wrong")                           # a wrong answer leaves the cache
     await app.ask(alice, "who is paused")
     assert len(seen) == 5
+
+
+def test_turn_limits_put_the_cost_cap_in_list_prices(monkeypatch):
+    from decimal import Decimal
+
+    from reportsbot import llm
+    sonnet = llm.turn_limits("openrouter:anthropic/claude-sonnet-5.5", tool_calls=25, cost_cap_usd=0.5)
+    assert sonnet.cost_limit == Decimal("0.5") and sonnet.tool_calls_limit == 25   # genai-prices agrees here
+    haiku = llm.turn_limits("openrouter:anthropic/claude-haiku-5.5", tool_calls=25, cost_cap_usd=0.5)
+    theirs, ours = llm.genai_price("openrouter:anthropic/claude-haiku-5.5"), 0.15
+    assert haiku.cost_limit == Decimal(str(round(0.5 * theirs / ours, 6)))
+    assert llm.turn_limits("lmstudio:qwen", tool_calls=25, cost_cap_usd=0.5).cost_limit is None
+    assert llm.turn_limits("openrouter:anthropic/claude-sonnet-5.5", tool_calls=25, cost_cap_usd=0).cost_limit is None
+    monkeypatch.setattr(llm, "genai_price", lambda spec, **kw: None)           # not covered: token limits instead
+    fallback = llm.turn_limits("openrouter:anthropic/claude-sonnet-5.5", tool_calls=25, cost_cap_usd=0.5)
+    assert fallback.cost_limit is None and fallback.input_tokens_limit == 200_000 and fallback.output_tokens_limit == 10_000
+
+
+async def test_a_turn_over_its_cost_cap_stops_with_the_budget_message(app, monkeypatch):
+    from reportsbot import llm, messages
+    monkeypatch.setattr(llm, "genai_price", lambda spec, **kw: None)           # enforce via token limits
+    _scripted(app, [_completion("search_values", {"text": "paused"})])        # would keep exploring
+    app.settings.cost_per_turn_usd = 0.0001                                    # about 40 input tokens of Sonnet
+    r = await app.ask(User("alice"), "paused customers")
+    assert r["kind"] == "error" and r["message"] == messages.say("error_budget")
+
+
+async def test_per_user_rate_limit(app):
+    from fastapi.testclient import TestClient
+
+    from reportsbot.api import create_app
+    from reportsbot.service import RateLimited
+    _scripted(app, [_completion("reply", {"text": "hi"})])
+    app.settings.per_user_per_minute = 2
+    await app.ask(User("alice"), "one")
+    await app.ask(User("alice"), "two")
+    with pytest.raises(RateLimited):
+        await app.ask(User("alice"), "three")
+    await app.ask(User("bob"), "one")                                          # per person
+    r = TestClient(create_app(app, with_ui=False)).post("/api/ask", json={"text": "four"}, headers={"X-User-Id": "alice"})
+    assert r.status_code == 429

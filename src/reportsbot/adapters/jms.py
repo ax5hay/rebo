@@ -24,7 +24,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from ..api import decode_jwt, user_from_claims
 from ..knowledge import User
-from ..service import App
+from ..service import App, RateLimited
 from ..store import new_id
 
 
@@ -141,5 +141,7 @@ def router(app: App) -> APIRouter:
             return to_jms(contact_id, await app.ask(user, text, conv))
         except PermissionError as e:
             raise HTTPException(403, str(e)) from e
+        except RateLimited as e:
+            raise HTTPException(429, str(e)) from e
 
     return r
