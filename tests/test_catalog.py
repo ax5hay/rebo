@@ -112,3 +112,10 @@ def test_dense_search_on_both_state_backends(app):
     if app.store.dialect == "postgresql":
         assert app.store.pgvector and app.store.one(
             "SELECT COUNT(*) AS n FROM embedding WHERE vec IS NOT NULL")["n"] == 3
+
+
+def test_value_search_falls_back_to_spelling_when_full_text_finds_nothing(app):
+    hits = app.index.search_values("shiped")                     # misspelled; FTS finds no token
+    assert hits and hits[0]["value"] == "shipped" and hits[0]["table"] == "orders" and "spelled like" in hits[0]["match"]
+    assert app.index.search_values("zzzzqqq") == []                # nothing close: nothing invented
+    assert "match" not in app.index.search_values("paused")[0]     # exact hits stay exact

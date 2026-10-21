@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 import numpy as np
+from rapidfuzz import fuzz, process, utils
 
 from .store import Store
 
@@ -151,6 +152,7 @@ class Index:
         self.store = store
         self.embedder = embedder
         self._matrix: dict[str, tuple[list[str], np.ndarray]] = {}
+        self._values: tuple[int, list[dict], list[str]] | None = None
 
     # ---- writes ------------------------------------------------------------------------
     def put_vectors(self, refs: list[str], texts: list[str]) -> None:
@@ -206,8 +208,25 @@ class Index:
         return out
 
     def search_values(self, text: str, top: int = 15) -> list[dict]:
-        return self.store.match("value_fts", fts_query(text),
+        hits = self.store.match("value_fts", fts_query(text),
                                 'value, table_name AS "table", column_name AS "column", freq', limit=top)
+        return hits or self.fuzzy_values(text, top)
+
+    def fuzzy_values(self, text: str, top: int = 15, cutoff: float = 85) -> list[dict]:
+        """Stored values spelled like `text` ("Grenleaf" finds "Greenleaf"), for when full text finds
+        nothing. RapidFuzz WRatio over every indexed value, in process; each hit carries its score so the
+        agent knows it is approximate. The value list is cached until the index changes size."""
+        text = text.strip()
+        if len(text) < 4:
+            return []
+        n = self.store.one("SELECT COUNT(*) AS n FROM value_fts")["n"]
+        if self._values is None or self._values[0] != n:
+            rows = self.store.all('SELECT value, table_name AS "table", column_name AS "column", freq FROM value_fts')
+            self._values = (n, rows, [r["value"] or "" for r in rows])
+        _, rows, choices = self._values
+        found = process.extract(text, choices, scorer=fuzz.WRatio, processor=utils.default_process,
+                                limit=top, score_cutoff=cutoff)
+        return [{**rows[i], "match": f"spelled like '{text}' ({round(score)}%)"} for _, score, i in found]
 
     def masked_query(self, text: str, siblings: int = 30) -> str | None:
         """Question masking (DAIL-SQL): a word that is a stored value stands for its column, so it is

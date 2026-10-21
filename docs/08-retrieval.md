@@ -99,3 +99,11 @@ sets (needs an LLM key and saved examples).
   retrieval misses show up in the eval traces (doc 15).
 - **MinHash/LSH over values.** FTS5 prefix search covers the categorical values profiled here.
   LSH matters for high-cardinality free text, which is intentionally not indexed.
+
+## Misspelled values (2026-10-21)
+
+When full text finds no stored value, `Index.fuzzy_values` compares the text with every indexed value
+using RapidFuzz 3.14.6 (MIT, in process, `WRatio`, cutoff 85; queries under 4 characters are skipped).
+Hits carry `match: "spelled like '…' (NN%)"` so the agent treats them as approximate. The value list
+is cached and reloaded when the index changes size; 37,303 values on the JMS-shaped database. Not
+measured on gold yet: no gold case has a misspelling. Research and alternatives: doc 16 §5.
