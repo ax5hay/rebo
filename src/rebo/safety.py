@@ -439,3 +439,36 @@ def join_edges(sql: str, dialect: str) -> list[tuple[str, str, str, str]]:
                     l, r = sorted([(ta, a.name.lower()), (tb, b.name.lower())])
                     out.add((l[0], l[1], r[0], r[1]))
     return sorted(out)
+
+
+def fanout_probes(sql: str, dialect: str) -> list[tuple[str, str]]:
+    """Metamorphic fan-out check (B-057). For each joined table that contributes no column to the query
+    (it appears only in its own ON condition), the same query with that join rewritten as an EXISTS
+    filter. If the two return different rows, the join was multiplying them: rows repeat or sums grow.
+    Returns (table, rewritten SQL) pairs; empty when nothing qualifies or the SQL does not parse."""
+    try:
+        tree = sqlglot.parse_one(sql, read=dialect)
+    except ParseError:
+        return []
+    if not isinstance(tree, exp.Select) or not tree.args.get("joins"):
+        return []
+    # COUNT(*) / COUNT(1) counts the joined rows on purpose ("buildings with more than 10 units")
+    if any(isinstance(c.this, (exp.Star, exp.Literal)) for c in tree.find_all(exp.Count)):
+        return []
+    out = []
+    for i, j in enumerate(tree.args["joins"]):
+        t, on = j.this, j.args.get("on")
+        if not isinstance(t, exp.Table) or on is None or isinstance(on, exp.Boolean) or j.args.get("using"):
+            continue
+        alias = t.alias_or_name.lower()
+        rest = tree.copy()
+        rest.args["joins"][i].pop()
+        if any(c.table.lower() == alias for c in rest.find_all(exp.Column) if c.table):
+            continue  # its columns are used: not a pure multiplier
+        if (j.side or "").upper() == "LEFT":
+            rewritten = rest  # an unused LEFT JOIN can only add duplicates
+        else:
+            sub = exp.select("1").from_(t.copy()).where(on.copy())
+            rewritten = rest.where(exp.Exists(this=sub))
+        out.append((t.name, rewritten.sql(dialect=dialect)))
+    return out

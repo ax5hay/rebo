@@ -1,0 +1,102 @@
+{
+ "run": "2026-10-21",
+ "mutants": 11,
+ "real_errors": 10,
+ "caught_before": "2/10",
+ "caught_with_probe": "7/10",
+ "by_trap": 0,
+ "by_grain": 2,
+ "by_probe": 7,
+ "false_alarms_on_harmless_mutants": 0,
+ "probe_false_alarms_on_correct_gold": "0/12",
+ "rows": [
+  {
+   "id": "gp-01",
+   "mutant": "unit->maintenance",
+   "real": true,
+   "trap": false,
+   "grain": true,
+   "probe": true
+  },
+  {
+   "id": "gp-02",
+   "mutant": "lease->payment",
+   "real": true,
+   "trap": false,
+   "grain": false,
+   "probe": true
+  },
+  {
+   "id": "gp-02",
+   "mutant": "unit->maintenance",
+   "real": true,
+   "trap": false,
+   "grain": false,
+   "probe": true
+  },
+  {
+   "id": "gp-03",
+   "mutant": "unit->lease",
+   "real": true,
+   "trap": false,
+   "grain": false,
+   "probe": false
+  },
+  {
+   "id": "gp-05",
+   "mutant": "unit->maintenance",
+   "real": true,
+   "trap": false,
+   "grain": false,
+   "probe": true
+  },
+  {
+   "id": "gp-05",
+   "mutant": "region->staff",
+   "real": true,
+   "trap": false,
+   "grain": false,
+   "probe": true
+  },
+  {
+   "id": "gp-08",
+   "mutant": "lease->payment",
+   "real": true,
+   "trap": false,
+   "grain": true,
+   "probe": true
+  },
+  {
+   "id": "gp-09",
+   "mutant": "unit->lease",
+   "real": true,
+   "trap": false,
+   "grain": false,
+   "probe": false
+  },
+  {
+   "id": "gp-09",
+   "mutant": "unit->maintenance",
+   "real": true,
+   "trap": false,
+   "grain": false,
+   "probe": false
+  },
+  {
+   "id": "gp-10",
+   "mutant": "lease->payment",
+   "real": true,
+   "trap": false,
+   "grain": false,
+   "probe": true
+  },
+  {
+   "id": "gp-12",
+   "mutant": "unit->lease",
+   "real": false,
+   "trap": false,
+   "grain": false,
+   "probe": false
+  }
+ ]
+}

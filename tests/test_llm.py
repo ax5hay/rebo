@@ -719,3 +719,22 @@ def test_cost_counts_the_discarded_run():
     first = {"model": "anthropic/claude-haiku-5.5", "input_tokens": 1_000_000, "output_tokens": 0}
     both = {"model": "anthropic/claude-sonnet-5.5", "input_tokens": 1_000_000, "output_tokens": 0, "before": first}
     assert cost(both) == round(cost({**both, "before": None}) + cost(first), 5)
+
+
+async def test_a_join_that_only_multiplies_rows_gets_one_retry(app):
+    fanned = {"title": "Customers with orders", "assumptions": [],
+              "sql": "SELECT c.full_name FROM customer c JOIN orders o ON o.customer_id = c.customer_id"}
+    fixed = {**fanned, "sql": "SELECT c.full_name FROM customer c WHERE EXISTS "
+                              "(SELECT 1 FROM orders o WHERE o.customer_id = c.customer_id)"}
+    seen = _scripted(app, [_completion("present_report", fanned), _completion("present_report", fixed)])
+    r = await app.ask(User("alice"), "customers who ordered")
+    assert len(seen) == 2 and "multiplies" in seen[1] and len(r["rows"]) == 40
+
+
+def test_fanout_probes_skip_used_joins_and_counted_rows():
+    from rebo.safety import fanout_probes
+    assert fanout_probes("SELECT c.full_name, o.amount FROM customer c JOIN orders o ON o.customer_id = c.customer_id", "sqlite") == []
+    assert fanout_probes("SELECT c.full_name, COUNT(*) FROM customer c JOIN orders o ON o.customer_id = c.customer_id "
+                         "GROUP BY c.full_name", "sqlite") == []
+    [(table, probe)] = fanout_probes("SELECT c.full_name FROM customer c JOIN orders o ON o.customer_id = c.customer_id", "sqlite")
+    assert table == "orders" and "EXISTS" in probe

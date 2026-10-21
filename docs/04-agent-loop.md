@@ -271,3 +271,22 @@ offers the agent, once, the two visible saved reports ≥ 45 % alike that were n
 The retrieval signal is strong but did not become better answers on this set (one run per arm, draft
 questions are agent-written, not PO-validated), and it costs about 22 % more. Kept off. Where it could
 pay: as a retrieval signal for a second pass that does not need an extra model turn (doc 16 §5).
+
+### Metamorphic fan-out probe (2026-10-21, B-057)
+
+A joined table that contributes no column (it appears only in its own ON condition) must not change
+the result when the join becomes an `EXISTS` filter (`safety.fanout_probes`); if it does, the join
+multiplied the rows and the validator asks once. Not applied when the query counts rows with
+`COUNT(*)`/`COUNT(1)` (counting the joined rows on purpose). It needs no gold answer and costs one
+extra read-only query, only when such a join exists. Mutation test (`tools/fanout_mutants.py`: every
+gold report with each declared child table joined in, no LLM):
+
+| Set | Real fan-out errors | Caught before | Caught with the probe | False alarms on correct gold |
+|---|---|---|---|---|
+| Demo, 12 reports | 10 | 2 (grain check) | **7** | 0/12 |
+| JMS, 77 reports | 3,191 | 1,591 (50 %) | **1,836 (58 %)** | 1/77 |
+
+Answers, demo gold, one run: 9/12 at $0.191 (previous run 11/12). The two changed cases are not the
+probe's doing: one is variance (same request count), the other a false alarm of the older grain check
+(a building id repeating per unit). Files: `fixtures/*/fanout_mutants_2026-10-21.json`,
+`fixtures/demo_property/eval_results_sonnet_fanout_probe.json`.

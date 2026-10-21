@@ -22,7 +22,7 @@ from pydantic_ai import Agent, ModelRetry, PromptedOutput, RunContext, ToolOutpu
 from pydantic_ai.models import Model
 from sqlglot import exp
 
-from .safety import GuardError, guard
+from .safety import GuardError, fanout_probes, guard
 from .target import QueryResult
 
 if TYPE_CHECKING:
@@ -105,6 +105,7 @@ class Deps:
     grain_retry: bool = False
     trap_retry: bool = False
     shape_retry: bool = False
+    fanout_retry: bool = False
     shown: set[str] = field(default_factory=set)  # knowledge ids already in the agent's context
     probes: int = 0
 
@@ -376,6 +377,20 @@ def build_agent(model: Model, output: Literal["tool", "prompted"] = "tool", retr
                              f"has several rows for each. One row per {key[1]} was probably intended: aggregate or "
                              f"pick one row. If one row per joined record is intended, present it again and say so "
                              "in the assumptions.")
+        if not deps.fanout_retry:  # metamorphic: an unused join must not change the rows (B-057)
+            from .evals import columns_match  # evals imports the service layer; import here, not at the top
+            for table, probe in fanout_probes(g.sql, app.target.dialect):
+                try:
+                    alike = columns_match(res.rows, app.target.run(probe, max_rows=app.settings.row_limit).rows)
+                except Exception:
+                    continue
+                if not alike:
+                    deps.fanout_retry = True
+                    raise ModelRetry(f"The report joins {table} but uses none of its columns, and that join multiplies "
+                                     "the rows: used only as a filter (EXISTS) the result is different, so rows repeat or "
+                                     "totals grow. If it is a filter, use EXISTS; if you mean to count it, count it "
+                                     "explicitly. If the repetition is intended, present it again and say so in the "
+                                     "assumptions.")
         near = [] if deps.shape_retry or output.used_knowledge or not app.settings.shape_check \
             else app.shape_matches(deps.user, g.sql, exclude=deps.shown)
         if near:

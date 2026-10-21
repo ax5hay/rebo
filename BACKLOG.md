@@ -425,12 +425,15 @@ do: offline first: decompose gold reports (entity/grain, filters, measures, dime
 step 1, 2026-10-21: JMS 72 reports: 69 % of parts recur (joins 93/144, entities 63/72, filters 5/16); 30/72 fully composable. Demo 12: 61 %, 1/12. Next: join-and-entity library, agent writes filters only (doc 26 §3).
 result: 2026-10-21. Join library offline: 134/145 today vs 128/145 (all confirmed joins preferred) vs 133/145 (consistent pairs only): no gain, not wired into the agent. Filters/measures need a larger confirmed history to test. Fixed a join_path crash on ties.
 
-### [ ] B-056 · Clarify only the part that disagrees
+### [!] B-056 · Clarify only the part that disagrees
 needs: llm
 do: when candidates disagree (B-048), build a multiple-choice question from the syntax-tree diff.
+deferred 2026-10-21: it depends on B-048's disagreement signal, which is off (no measured gain; it fired on 4 of 20 turns). Building and measuring it now would spend on a path that rarely runs. Revisit when B-048 is turned on or a cheaper ambiguity signal exists.
 
-### [ ] B-057 · Metamorphic proofs on the synthetic shadow database
+### [x] B-057 · Metamorphic proofs on the synthetic shadow database
 do: mutate gold SQL into known-wrong variants; measure detection and false-alarm rates of grain/NULL/date invariants on tools/synth data.
+result: 2026-10-21. Fan-out probe (join vs EXISTS) in the validator. Mutation test: demo 2/10 → 7/10 caught, 0/12 false alarms on gold; JMS 50 % → 58 % of 3,191, 1/77. Demo answers 9/12 (variance and an older grain-check false alarm, not the probe). doc 04.
+follow-up: the grain check fires when an id of a parent table repeats per child row (gp-01); consider skipping it when the repeated key is not the report's first table.
 
 ### [!] B-058 · EXPLAIN gate and row-level security passthrough
 do: dialect-aware EXPLAIN (never ANALYZE) rejects cartesian or huge plans with a hint to the agent; optional run-as-user database role. Offline tests on known bad plans.
