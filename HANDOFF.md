@@ -30,6 +30,9 @@ also in git history; this file is the short version a new session reads first.
   highlighted queries; Table/Chart toggle; Docker image now ships the web app; research pass recorded
   in doc 16 §5 with B-046…B-051 (046 SQL traps and 047 spelling fallback done; 048–051 open).
   Evals now ask as a new person per run (the answer cache had been replaying repeat runs).
+  Measured after: B-047 spelling fallback no gain on Sonnet (kept, free); B-051 rerankers rejected
+  (recall@5 fell on both sets); B-049 back-translation adopted (false alarms 3 → 0/1, recall unsteady).
+  Open: B-048 (candidates + execution agreement, needs llm, behind a flag) and B-050 (skeleton similarity).
 - **Direction and rules:** `AGENTS.md`. Plan and gates: `docs/18-production-build.md`.
 
 ## 2. Measured facts (do not re-derive; re-measure only when a change could affect them)
@@ -108,3 +111,4 @@ on gold answers, not on row counts of unconfirmed answers.
 |---|---|---|---|
 | 2026-10-21 | original machine | everything up to the "continue" protocol; a fresh-machine simulation (unzip → `uv sync` → doctor) found and fixed two bugs: the demo config was never shipped, and keys in `.env` were invisible to the bot. Verified: history restored, 81 tests pass, NEXT = B-001 | B-001 |
 | 2026-10-21 | second machine (macOS) | installed uv (brew); CRLF noise stashed; B-001…B-044 done in small commits; keys arrived: pending measurements run; renamed to ReBo; private GitHub repo; full product UI in React; observability by default (Phoenix traces, annotations, Insights); pgvector; PatientModel for rate limits; Pillow 13 security override; fixed: conversation access by others, X-User-* spoofing behind the proxy | Gemini free-tier staggered runs; B-008/009/019 measurements; B-015/041 need a person |
+| 2026-10-21 | third pass (macOS) | house-style README/OPERATIONS/SECURITY, repo topics; Markdown on every surface; palette v3; CodeMirror editors; Table/Chart; Docker image ships the UI; research pass (doc 16 §5): B-046 SQL traps, B-047 spelling fallback, B-049 back-translation adopted, B-051 rerank rejected; eval cache-replay bug fixed | B-048, B-050 |
