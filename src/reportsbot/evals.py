@@ -4,8 +4,7 @@
    "min_rows": 1, "max_rows": null, "tables": ["optional", "expected", "tables"]}
 
 Scores per case: produced a report, SQL ran, rows within range, expected tables used, and
-(when gold_sql is given) execution match = same multiset of rows, ignoring column order and
-names. Confirmed reports can be exported as gold cases, so the eval set grows with use.
+(when gold_sql is given) execution match = Spider 2.0-style column match (see columns_match). Confirmed reports can be exported as gold cases, so the eval set grows with use.
 See docs/10-evals-and-observability.md.
 """
 from __future__ import annotations
@@ -24,8 +23,56 @@ from .safety import guard, tables_in
 from .service import App
 
 
-def _rows_key(columns: list[str], rows: list[list[Any]]) -> Counter:
-    return Counter(tuple(sorted(map(str, r))) for r in rows)
+def _norm(v: Any) -> str:
+    if v is None:
+        return ""
+    if isinstance(v, (int, float)) or (isinstance(v, str) and v.replace(".", "", 1).lstrip("-").isdigit()):
+        try:
+            return f"{float(v):.1f}"
+        except ValueError:
+            pass
+    return str(v).strip()
+
+
+def columns_match(gold_rows: list[list[Any]], pred_rows: list[list[Any]],
+                  gold_columns: list[str] | None = None) -> bool:
+    """Judge the answer's content, not its presentation (Spider 2.0-style, with stated tolerances):
+      * same number of rows;
+      * every gold column's values (as an order-free multiset) appear as some predicted column;
+      * extra predicted columns are fine (a report that adds readable columns is not wrong);
+      * two adjacent gold text columns may match one predicted column holding them joined by a space
+        (first + last name shown as one "Name" column);
+      * gold columns named *_id / id are optional (people want names, not surrogate keys);
+      * numbers compare at one-decimal precision (a rounded average is the same answer)."""
+    if len(gold_rows) != len(pred_rows):
+        return False
+    if not gold_rows:
+        return True
+    names = gold_columns or [""] * len(gold_rows[0])
+    pred_cols = [Counter(_norm(r[i]) for r in pred_rows) for i in range(len(pred_rows[0]))] if pred_rows[0] else []
+    used: set[int] = set()
+
+    def find(want: Counter) -> int | None:
+        return next((pi for pi, c in enumerate(pred_cols) if pi not in used and c == want), None)
+
+    gi, width = 0, len(gold_rows[0])
+    while gi < width:
+        if gi + 1 < width:  # joined form first: a coincidental joined match is far less likely than a single one
+            joined = Counter(" ".join(x for x in (_norm(r[gi]), _norm(r[gi + 1])) if x) for r in gold_rows)
+            if (hit := find(joined)) is not None:
+                used.add(hit)
+                gi += 2
+                continue
+        hit = find(Counter(_norm(r[gi]) for r in gold_rows))
+        if hit is None:
+            name = names[gi].lower()
+            if name == "id" or name.endswith("_id"):
+                gi += 1
+                continue
+            return False
+        used.add(hit)
+        gi += 1
+    return True
 
 
 @dataclass
@@ -68,7 +115,7 @@ class ExecutionMatch(Evaluator):
         ref = a.target.run(g.sql, max_rows=a.settings.row_limit)
         if not ref.rows or ref.truncated:
             return {}  # an empty or truncated gold result proves nothing: not scored
-        return _rows_key(ref.columns, ref.rows) == _rows_key(ctx.output["columns"], ctx.output["rows"])
+        return columns_match(ref.rows, ctx.output["rows"], ref.columns)
 
 
 async def run_eval(app: App, path: str, *, limit: int = 0, user: str = "eval") -> dict[str, Any]:

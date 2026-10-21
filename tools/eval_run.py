@@ -61,7 +61,7 @@ async def main(cases: str, out: str) -> None:
     if scored:
         summary["execution_match"] = f"{sum(bool(x) for x in scored)}/{len(scored)}"
     doc = {"run": time.strftime("%Y-%m-%d"), "model": app.settings.model, "escalate": app.settings.escalate_model,
-           "database": "local synthetic copy of JMS staging (seed 7, cap 3000)", "summary": summary, "cases": res["cases"]}
+           "database": app.target.engine.url.render_as_string(hide_password=True), "summary": summary, "cases": res["cases"]}
     Path(out).write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
     print(json.dumps(summary))
 
