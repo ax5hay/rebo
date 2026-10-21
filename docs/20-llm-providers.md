@@ -167,6 +167,14 @@ route, escalation, tokens, cost estimated from the prices above).
 | Haiku 5.5 → Sonnet escalation (`eval_results_haiku_cascade.json`) | 11 (+1 plain answer) | 6 | 0 | 2 | 13.7 | **$0.36** |
 | Gemini 3.8 Flash via OpenRouter (`eval_results_gemini38flash.json`) | 3 | 5 | **10** | 0 (off) | **91.7** | $0.86 (successful turns only) |
 | Sonnet 5.5, second machine, all of B-001…B-044 (`eval_results_sonnet_2026-10-21b.json`) | 13 | 5 | 0 | 0 | 19.3 | **$2.68** |
+| Haiku 5.5 → Sonnet escalation, second machine (`eval_results_haiku_cascade_2026-10-21b.json`) | 9 (+2 plain answers) | 7 | 0 | 0 | 18.0 | **$0.14** |
+
+Second-machine Haiku cascade (2026-10-21b): $0.14 for 18 prompts (about 20× cheaper than Sonnet's
+$2.68, 2.6× cheaper than the first cascade run's $0.36), no escalation needed. validated-01, the
+earlier fan-out case (15 rows, one per sub-stage), now returns 3 rows, the same as Sonnet; whether
+the grain check (B-005) fired or the new data avoided it is not recorded (retries are not logged).
+Haiku asks more (7 clarifications vs Sonnet's 5) and answers two prompts in words instead of a
+report. Row counts agree with Sonnet on 8 of the 9 prompts both answered with a report.
 
 Second-machine Sonnet run (2026-10-21b): new synthetic data with ordered dates (B-042), a
 re-bootstrapped catalogue with Haiku descriptions, and every change since (grain check, ask-gate,

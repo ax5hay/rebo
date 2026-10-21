@@ -1,0 +1,597 @@
+{
+ "run": "2026-10-21",
+ "questions": "as in the cases file",
+ "model": "openrouter:anthropic/claude-haiku-5.5",
+ "escalate": "openrouter:anthropic/claude-sonnet-5.5",
+ "database": "mysql+pymysql://reports_ro:***@127.0.0.1:3307/jms",
+ "summary": {
+  "reports": 9,
+  "clarify": 7,
+  "clarify_rate": 0.389,
+  "gate_answered": 0,
+  "errors": 0,
+  "escalated": 0,
+  "median_seconds": 18.0,
+  "total_cost_usd": 0.1364
+ },
+ "cases": [
+  {
+   "id": "validated-01",
+   "kind": "report",
+   "rows": 3,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 18.9,
+   "question": "Show me all active surrogates in Screening and list their current substage.",
+   "usage": {
+    "requests": 6,
+    "input_tokens": 88065,
+    "output_tokens": 1744,
+    "cache_read_tokens": 16590,
+    "tool_calls": 8,
+    "model": "openrouter:anthropic/claude-haiku-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "concern"
+   },
+   "cost_usd": 0.00819,
+   "title": "Active surrogate cases in Screening with current substage",
+   "sql": "SELECT g.case_id AS case_number, g.case_file_name AS case_name, g.stage AS case_stage, s.status AS current_substage, s.stage AS substage_group FROM gc_case g LEFT JOIN status s ON s.status_id = g.status_id WHERE g.case_type = 'surrogate' AND g.active = 1 AND g.stage = 'screening' ORDER BY g.case_file_name",
+   "assumptions": [
+    "'Surrogates' means gestational carrier cases with case type 'surrogate'.",
+    "'Active' means the case's active flag is on (not archived).",
+    "'Screening' means the case's workflow stage is screening.",
+    "'Current substage' means the status label currently assigned to the case.",
+    "The status group column shows which workflow group that status belongs to; for one case it is 'contact', which differs from the case stage, so the substage label is kept as stored.",
+    "Individual workflow task sub-stages were not used because many are open at once and do not give a single current position.",
+    "Check: One returned case is in Screening but its current substage (\"Post Transfer Rematch\") belongs to the contact group, which suggests the case stage or status is stale. Check that case's stage and status before the report goes out."
+   ]
+  },
+  {
+   "id": "validated-02",
+   "kind": "report",
+   "rows": 12,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 13.2,
+   "question": "Which IP cases are in matching right now? Include the names and emails for both IPs.",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 71255,
+    "output_tokens": 1357,
+    "cache_read_tokens": 6636,
+    "tool_calls": 6,
+    "model": "openrouter:anthropic/claude-haiku-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok"
+   },
+   "cost_usd": 0.00721,
+   "title": "IP cases currently in matching stage, with both IPs' names and emails",
+   "sql": "SELECT ic.case_id AS case_id, ic.case_file_name AS case_name, ic.matching_type AS matching_type, ic.assigned_admin AS assigned_admin_id, CONCAT(c1.first_name, ' ', c1.last_name) AS ip_1_name, c1.email AS ip_1_email, CONCAT(c2.first_name, ' ', c2.last_name) AS ip_2_name, c2.email AS ip_2_email FROM ip_case ic JOIN family f ON f.family_id = ic.family_id LEFT JOIN contact c1 ON c1.contact_id = f.ip_1_id LEFT JOIN contact c2 ON c2.contact_id = f.ip_2_id WHERE ic.stage = 'matching' ORDER BY ic.case_id",
+   "assumptions": [
+    "'In matching right now' means the IP case's current workflow stage is matching (12 cases). Cases in other stages (intake, screening, case management) are excluded.",
+    "Both IPs are taken from the case's family record: the primary IP and the optional second IP.",
+    "All cases in the matching stage are included, including any flagged inactive.",
+    "Case name is the case's display name; it may differ from the contact names if they were entered differently."
+   ]
+  },
+  {
+   "id": "validated-03",
+   "kind": "answer",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 5.5,
+   "question": "List every active case assigned to [admin name].",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 12858,
+    "output_tokens": 618,
+    "cache_read_tokens": 3318,
+    "tool_calls": 0,
+    "model": "openrouter:anthropic/claude-haiku-5.5",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": 0.0013
+  },
+  {
+   "id": "validated-04",
+   "kind": "report",
+   "rows": 2,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 18.9,
+   "question": "Which cases have had their profiles approved in the last 30 days?",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 112685,
+    "output_tokens": 2272,
+    "cache_read_tokens": 13272,
+    "tool_calls": 10,
+    "model": "openrouter:anthropic/claude-haiku-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok"
+   },
+   "cost_usd": 0.01121,
+   "title": "Intended-parent cases with profiles approved in the last 30 days",
+   "sql": "SELECT ic.case_id AS ip_case_id, ic.case_file_name AS case_name, ic.stage AS case_stage, f.family_id, f.profile_approved AS profile_approved_at, ic.assigned_admin AS assigned_admin_id FROM family f JOIN ip_case ic ON ic.family_id = f.family_id WHERE f.profile_approved >= '2026-09-21' AND f.profile_approved < '2026-10-22' ORDER BY f.profile_approved DESC",
+   "assumptions": [
+    "'Cases' means intended-parent (IP) cases, linked to their family record, whose family profile approval date falls in the last 30 days (2026-09-21 through today, 2026-10-21).",
+    "Profile approval is taken from the family's profile approved date; gestational-carrier and donor profile approval dates on contacts have no approvals in this window.",
+    "Only the 'IP' side was reported; the 'assigned to me' filter was not applied since the question did not ask for it."
+   ]
+  },
+  {
+   "id": "validated-05",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 12.5,
+   "question": "Show me the most recent notes on this journey, pinned ones first.",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 44089,
+    "output_tokens": 1272,
+    "cache_read_tokens": 13272,
+    "tool_calls": 5,
+    "model": "openrouter:anthropic/claude-haiku-5.5",
+    "escalated": false,
+    "route": "new",
+    "gate": "asked"
+   },
+   "cost_usd": 0.00385,
+   "questions": [
+    {
+     "question": "Which journey do you mean? The request names no case.",
+     "options": [
+      "All case notes across every journey, most recent and pinned first",
+      "A specific intended-parent case (tell me its case number)",
+      "A specific gestational carrier case (tell me its case number)"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "validated-06",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 23.0,
+   "question": "List all overdue tasks across my journeys.",
+   "usage": {
+    "requests": 7,
+    "input_tokens": 161675,
+    "output_tokens": 3336,
+    "cache_read_tokens": 19908,
+    "tool_calls": 14,
+    "model": "openrouter:anthropic/claude-haiku-5.5",
+    "escalated": false,
+    "route": "new",
+    "gate": "asked"
+   },
+   "cost_usd": 0.01604,
+   "questions": [
+    {
+     "question": "Which journeys should count? Overdue = due date before today (2026-10-21) and not completed.",
+     "options": [
+      "Intended-parent journeys only (72 overdue tasks)",
+      "Gestational carrier / donor cases only (23 overdue tasks)",
+      "Both kinds of journey together (95 overdue tasks)"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "validated-07",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 8.5,
+   "question": "What tasks are included in the [template name] workflow?",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 25192,
+    "output_tokens": 1401,
+    "cache_read_tokens": 9954,
+    "tool_calls": 3,
+    "model": "openrouter:anthropic/claude-haiku-5.5",
+    "escalated": false,
+    "route": "new",
+    "gate": "asked"
+   },
+   "cost_usd": 0.00232,
+   "questions": [
+    {
+     "question": "Which workflow template do you mean? Your message still has the placeholder '[template name]'.",
+     "options": [
+      "Gestational Carrier Workflow (DEFAULT)",
+      "Intended Parent Workflow - (IP/GC) (DEFAULT)",
+      "Intended Parent Workflow - (IP/ED) (DEFAULT)"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "validated-08",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 20.2,
+   "question": "Which contacts came in through [marketing source] and haven't completed a form since intake?",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 76356,
+    "output_tokens": 3186,
+    "cache_read_tokens": 16590,
+    "tool_calls": 8,
+    "model": "openrouter:anthropic/claude-haiku-5.5",
+    "escalated": false,
+    "route": "new",
+    "gate": "asked"
+   },
+   "cost_usd": 0.00774,
+   "questions": [
+    {
+     "question": "Which marketing source do you mean? The contact record stores it as the referral source. Here are the stored values (the count of contacts is in brackets, and the report will show the matching contacts who have no form submitted after their contact record was created):",
+     "options": [
+      "search (7 contacts)",
+      "Search Engine (4 contacts)",
+      "personal (7 contacts)",
+      "Personal Referral (5 contacts)"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "validated-09",
+   "kind": "report",
+   "rows": 3,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 22.5,
+   "question": "List egg donors available for a cycle who haven't donated before.",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 90288,
+    "output_tokens": 3227,
+    "cache_read_tokens": 16590,
+    "tool_calls": 10,
+    "model": "openrouter:anthropic/claude-haiku-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok"
+   },
+   "cost_usd": 0.00915,
+   "title": "Available egg donors who have not donated before",
+   "sql": "SELECT g.case_id AS donor_case_id, g.case_file_name AS donor_name, g.donor_status AS donor_status, g.stage AS case_stage, g.created AS case_created, (SELECT COUNT(*) FROM ed_profile p WHERE p.contact_id = g.gc_id) AS profile_count, (SELECT COUNT(*) FROM retrieval r WHERE r.ed_case_id = g.case_id) AS past_retrievals FROM gc_case g WHERE g.case_type = 'donor' AND g.donor_status = 'available' AND g.active = 1 AND EXISTS (SELECT 1 FROM ed_profile p WHERE p.contact_id = g.gc_id AND p.past_donor = 0) AND NOT EXISTS (SELECT 1 FROM ed_profile p WHERE p.contact_id = g.gc_id AND p.past_donor = 1) AND NOT EXISTS (SELECT 1 FROM retrieval r WHERE r.ed_case_id = g.case_id)",
+   "assumptions": [
+    "'Available for a cycle' means the donor case's donor status is 'available' (not 'in cycle', 'under review' or 'temporarily unavailable').",
+    "Only active donor cases are included.",
+    "'Haven't donated before' means the donor's profile is marked as not a past donor, no profile for that person is marked as a past donor, and there is no past egg retrieval recorded for the case.",
+    "Donors with no stated past-donor answer are excluded, since we cannot confirm they have not donated."
+   ]
+  },
+  {
+   "id": "validated-10",
+   "kind": "report",
+   "rows": 42,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 18.0,
+   "question": "Which contracts are still waiting on a signature?",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 61633,
+    "output_tokens": 2085,
+    "cache_read_tokens": 16590,
+    "tool_calls": 8,
+    "model": "openrouter:anthropic/claude-haiku-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "concern"
+   },
+   "cost_usd": 0.00571,
+   "title": "Contract signatures still waiting",
+   "sql": "SELECT cr.relationship_id AS signature_link_id, cr.parent_id AS signature_request_id, h.created AS request_sent_on, CASE WHEN h.completed IS NULL THEN 'Open' ELSE 'Request completed' END AS request_state, cr.user_type AS signer_type, COALESCE(CONCAT(u.first_name, ' ', u.last_name), CONCAT(n.first_name, ' ', n.last_name), CONCAT(a.first_name, ' ', a.last_name)) AS signer_name, cr.created AS link_created_on, cr.case_task_id AS case_task_id FROM contract_rel cr LEFT JOIN hellosign h ON h.hellosign_id = cr.parent_id LEFT JOIN user u ON cr.user_type = 'user' AND u.user_id = cr.user_id LEFT JOIN user_np n ON cr.user_type = 'np_user' AND n.np_user_id = cr.user_id LEFT JOIN admin a ON cr.user_type = 'admin' AND a.admin_id = cr.user_id WHERE cr.status = 'sent' ORDER BY h.created, cr.created",
+   "assumptions": [
+    "'Waiting on a signature' means the signer's status is 'sent' (request delivered, not yet signed). Signed and undelivered rows are excluded.",
+    "Each row is one signer's signature link; a single contract can have several signers, so one contract may appear more than once.",
+    "Signature links whose parent request is already marked completed are still listed, flagged as 'Request completed', because this signer's status was never updated to signed.",
+    "Signer names come from the user, np_user or admin record that matches the signer type.",
+    "Check: The report includes signature links whose request is already completed, so it lists contracts that are no longer waiting on a signature; filter to open requests only before showing it."
+   ]
+  },
+  {
+   "id": "validated-11",
+   "kind": "report",
+   "rows": 29,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 15.2,
+   "question": "Show me which intended parents have never logged into their portal.",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 53817,
+    "output_tokens": 1430,
+    "cache_read_tokens": 13272,
+    "tool_calls": 6,
+    "model": "openrouter:anthropic/claude-haiku-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "concern"
+   },
+   "cost_usd": 0.0049,
+   "title": "Intended parent accounts that have never logged in",
+   "sql": "SELECT u.user_id AS user_id, CONCAT(u.first_name, ' ', u.last_name) AS intended_parent_name, u.email AS email, u.created AS account_created, CASE WHEN u.confirmed_email = 1 THEN 'Yes' ELSE 'No' END AS email_confirmed FROM user u WHERE u.user_type = 'IP' AND u.last_login IS NULL ORDER BY u.created",
+   "assumptions": [
+    "'Intended parent' means user accounts with user type 'IP' (96 accounts in total; 'IP rep' accounts are excluded).",
+    "'Never logged into their portal' means the account has no last login recorded.",
+    "Result: 29 of the 96 intended parent accounts have never logged in.",
+    "Three intended parent accounts show a last login date later than today (2026-10-21). They are treated as having logged in and are excluded; this date looks like a data error worth checking.",
+    "All accounts are included whether or not they are active, since every account is flagged active.",
+    "Check: Three intended parent accounts have a last-login date in the future and are counted as having logged in, so they are left out; if that date is corrupt, the true never-logged-in count could be up to 32 rather than 29, so confirm those three records before relying on the total."
+   ]
+  },
+  {
+   "id": "validated-12",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 15.2,
+   "question": "Which cases have active, incomplete campaigns right now?",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 61971,
+    "output_tokens": 2386,
+    "cache_read_tokens": 16590,
+    "tool_calls": 7,
+    "model": "openrouter:anthropic/claude-haiku-5.5",
+    "escalated": false,
+    "route": "new",
+    "gate": "asked"
+   },
+   "cost_usd": 0.0059,
+   "questions": [
+    {
+     "question": "How should 'incomplete' be defined for a case's campaign enrollment?",
+     "options": [
+      "No completion date recorded (completed is empty)",
+      "Flow status is still in progress (not finished or stopped)"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "validated-13",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 14.4,
+   "question": "How many open To Dos does each admin currently have assigned to them?",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 72382,
+    "output_tokens": 2342,
+    "cache_read_tokens": 16590,
+    "tool_calls": 8,
+    "model": "openrouter:anthropic/claude-haiku-5.5",
+    "escalated": false,
+    "route": "new",
+    "gate": "asked"
+   },
+   "cost_usd": 0.00692,
+   "questions": [
+    {
+     "question": "Which kind of To Do do you mean?",
+     "options": [
+      "Case to-dos (case tasks linked to IP or GC cases)",
+      "General to-dos (standalone tasks not tied to a case)",
+      "Case, general and contact to-dos combined"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "validated-14",
+   "kind": "report",
+   "rows": 122,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 24.3,
+   "question": "Which surrogates are still waiting on their profile to be approved?",
+   "usage": {
+    "requests": 7,
+    "input_tokens": 156138,
+    "output_tokens": 2699,
+    "cache_read_tokens": 23226,
+    "tool_calls": 14,
+    "model": "openrouter:anthropic/claude-haiku-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "concern"
+   },
+   "cost_usd": 0.01487,
+   "title": "Surrogates still waiting on profile approval",
+   "sql": "SELECT g.case_file_name AS case_name, CONCAT(ct.first_name, ' ', ct.last_name) AS surrogate_name, g.stage AS case_stage, st.status AS case_status, CASE WHEN g.ip_case_id IS NULL THEN 'No' ELSE 'Yes' END AS matched_to_intended_parent, DATE(g.created) AS case_created_date FROM gc_case g JOIN contact ct ON ct.contact_id = g.gc_id LEFT JOIN status st ON st.status_id = g.status_id WHERE g.case_type = 'surrogate' AND g.active = 1 AND ct.gc_profile_approved IS NULL ORDER BY g.stage, g.created",
+   "assumptions": [
+    "'Surrogates' means active gestational-carrier cases whose case type is surrogate (not donor or sperm donor cases).",
+    "'Waiting on profile approval' means the contact's GC profile approval date is empty.",
+    "Only active cases are included; inactive/archived cases are excluded.",
+    "The result is broad: 123 of 125 active surrogate cases have no GC profile approval date, so this list is most of the surrogate caseload.",
+    "Check: Check the approval logic before using this: the report treats an empty approval date as \"waiting,\" but it returns 122 of about 125 surrogate cases, and some rows show statuses like \"Not Qualified\" or \"Ready to be Matched,\" which don't look like cases waiting on profile approval."
+   ]
+  },
+  {
+   "id": "validated-15",
+   "kind": "report",
+   "rows": 268,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 19.7,
+   "question": "Show me egg donor profiles that haven't been approved by the agency yet.",
+   "usage": {
+    "requests": 6,
+    "input_tokens": 112167,
+    "output_tokens": 1886,
+    "cache_read_tokens": 19908,
+    "tool_calls": 9,
+    "model": "openrouter:anthropic/claude-haiku-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "concern"
+   },
+   "cost_usd": 0.01037,
+   "title": "Egg donor profiles not yet approved by the agency",
+   "sql": "SELECT p.profile_id AS profile_id, CONCAT(c.first_name, ' ', c.last_name) AS donor_name, c.email AS donor_email, c.phone_number AS donor_phone, p.current_city AS city, p.birth_state AS birth_state, p.blood_type AS blood_type, CASE WHEN p.user_submitted = 1 THEN 'Yes' ELSE 'No' END AS submitted_by_donor, p.frozen_egg_count AS frozen_egg_count FROM ed_profile p JOIN contact c ON c.contact_id = p.contact_id WHERE c.ed_profile_approved IS NULL ORDER BY c.last_name, c.first_name, p.profile_id",
+   "assumptions": [
+    "An egg donor profile is a row in the egg donor profile table (280 profiles).",
+    "'Approved by the agency' means the contact's egg donor approval date is filled in; profiles whose contact has no approval date are treated as not yet approved.",
+    "Result: 268 of 280 profiles are not approved, belonging to 197 contacts.",
+    "Approval is tracked per contact, so every profile of an unapproved contact is listed.",
+    "Check: Several rows show a blank donor name even though the contact has an email, which suggests CONCAT is returning NULL when either first or last name is missing. Check whether those contacts really lack names in the data, and consider showing whichever name part exists so donors aren't listed without a name."
+   ]
+  },
+  {
+   "id": "validated-16",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 22.2,
+   "question": "Pull a list of sperm donors whose profiles are pending approval.",
+   "usage": {
+    "requests": 7,
+    "input_tokens": 128410,
+    "output_tokens": 2646,
+    "cache_read_tokens": 23226,
+    "tool_calls": 11,
+    "model": "openrouter:anthropic/claude-haiku-5.5",
+    "escalated": false,
+    "route": "new",
+    "gate": "asked"
+   },
+   "cost_usd": 0.01207,
+   "questions": [
+    {
+     "question": "How should I decide a sperm donor's profile is 'pending approval'?",
+     "options": [
+      "Sperm donor profile has no approval date yet (sd profile approved is empty)",
+      "Contact status is 'Pending IP Approval'"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "validated-17",
+   "kind": "report",
+   "rows": 22,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 17.5,
+   "question": "Show me intended parents whose profile has been approved.",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 72176,
+    "output_tokens": 1873,
+    "cache_read_tokens": 16590,
+    "tool_calls": 9,
+    "model": "openrouter:anthropic/claude-haiku-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok"
+   },
+   "cost_usd": 0.00666,
+   "title": "Intended parents with an approved profile",
+   "sql": "SELECT c.case_id AS ip_case_id, c.case_file_name AS intended_parent_case, c.stage AS current_stage, f.family_id AS family_id, f.profile_approved AS profile_approved_on FROM ip_case c JOIN family f ON f.family_id = c.family_id WHERE f.profile_approved IS NOT NULL ORDER BY f.profile_approved DESC",
+   "assumptions": [
+    "An intended parent's profile counts as approved when the approval date is recorded on their family record (the family's profile approved date is filled in).",
+    "Each intended parent case is linked to its family, and the approval date is taken from that family.",
+    "All intended parent cases are included, whether active or not, and whatever their current stage is.",
+    "Cases without an approval date are excluded."
+   ]
+  },
+  {
+   "id": "validated-18",
+   "kind": "answer",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 9.3,
+   "question": "Which [GC or IP] cases are missing [specific form]?",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 22693,
+    "output_tokens": 1200,
+    "cache_read_tokens": 9954,
+    "tool_calls": 2,
+    "model": "openrouter:anthropic/claude-haiku-5.5",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": 0.00197
+  }
+ ]
+}
