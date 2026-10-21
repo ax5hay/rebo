@@ -288,8 +288,10 @@ class App:
         if t["kind"] != "report":
             raise ValueError("Only reports can be confirmed or rejected.")
         payload = json.loads(t["payload"])
+        if t["feedback"]:
+            self.undo_feedback(user, turn_id)  # changing your mind replaces the earlier feedback
         with self.store.tx() as db:
-            db.execute("UPDATE turn SET feedback=? WHERE id=?", (verdict, turn_id))
+            db.execute("UPDATE turn SET feedback=?, feedback_note=? WHERE id=?", (verdict, note.strip() or None, turn_id))
         if verdict == "correct":
             o = self.knowledge.confirm_report(
                 user, question=t["question"], title=payload["title"], sql=t["sql"], turn_id=turn_id,
@@ -301,10 +303,64 @@ class App:
                 text += " " + msg.say("confirm_auto_proposed", n=o.extra["auto_proposed"])
             return {"message": text, "item": o.item}
         prov = json.loads(t["provenance"] or "{}")
-        outcomes = self.knowledge.reject(user, prov.get("item_ids", []), note)
+        outcomes = self.knowledge.reject(user, prov.get("item_ids", []), note, turn_id=turn_id)
         texts = [msg.say(o.message) for o in outcomes]
-        return {"message": " ".join([*texts, msg.say("fix_prompt")]), "items": [o.item for o in outcomes],
-                "next": "correction"}
+        out = {"message": " ".join([*texts, msg.say("fix_prompt")]), "items": [o.item for o in outcomes],
+               "next": "correction"}
+        if note.strip():  # feedback given in full words doubles as the correction to run next
+            out["correction"] = f"Correction to the previous report: {note.strip()}"
+            out["message"] = " ".join([*texts, msg.say("fix_with_words")])
+        return out
+
+    def undo_feedback(self, user: User, turn_id: str) -> dict[str, Any]:
+        t = self._turn(user, turn_id)
+        if not t["feedback"]:
+            raise ValueError("There is no feedback on this answer to undo.")
+        touched = self.knowledge.undo_feedback(user, turn_id)
+        with self.store.tx() as db:
+            db.execute("UPDATE turn SET feedback=NULL, feedback_note=NULL WHERE id=?", (turn_id,))
+        return {"message": msg.say("feedback_undone"), "items": touched}
+
+    # ---- requests: asking someone else to change what you can't ------------------------------
+    def create_request(self, user: User, *, kind: str, text: str, item_id: str | None = None,
+                       turn_id: str | None = None) -> dict[str, Any]:
+        if kind not in ("fix_knowledge", "fix_report", "access", "config", "other"):
+            raise ValueError("kind must be fix_knowledge, fix_report, access, config or other")
+        if not text.strip():
+            raise ValueError("Describe what should change, in your own words.")
+        target = "owner" if kind in ("access", "config") else "admin"
+        rid = new_id("rq")
+        with self.store.tx() as db:
+            db.execute("INSERT INTO request(id, kind, target, requester, item_id, turn_id, text, created_at, updated_at) "
+                       "VALUES(?,?,?,?,?,?,?,?,?)", (rid, kind, target, user.id, item_id, turn_id, text.strip(), now(), now()))
+        return {"message": msg.say("request_sent", who="an owner" if target == "owner" else "an admin"),
+                "request": self.store.one("SELECT * FROM request WHERE id=?", (rid,))}
+
+    def list_requests(self, user: User, status: str | None = "open") -> list[dict[str, Any]]:
+        if user.is_owner:
+            where, args = "1=1", ()
+        elif user.is_admin:
+            where, args = "(target='admin' OR requester=?)", (user.id,)
+        else:
+            where, args = "requester=?", (user.id,)
+        if status:
+            where += " AND status=?"
+            args = (*args, status)
+        return self.store.all(f"SELECT * FROM request WHERE {where} ORDER BY created_at", args)
+
+    def resolve_request(self, user: User, request_id: str, status: str, resolution: str = "") -> dict[str, Any]:
+        r = self.store.one("SELECT * FROM request WHERE id=?", (request_id,))
+        if not r:
+            raise KeyError(request_id)
+        if not (user.is_owner or (user.is_admin and r["target"] == "admin")):
+            raise PermissionError("Only an admin (or an owner, for access and configuration) can resolve this.")
+        if status not in ("done", "declined"):
+            raise ValueError("status must be done or declined")
+        with self.store.tx() as db:
+            db.execute("UPDATE request SET status=?, resolver=?, resolution=?, updated_at=? WHERE id=?",
+                       (status, user.id, resolution, now(), request_id))
+        return {"message": msg.say(f"request_{status}"), "request": self.store.one("SELECT * FROM request WHERE id=?",
+                                                                                  (request_id,))}
 
     def remember(self, user: User, suggestion_id: str, accept: bool) -> dict[str, Any]:
         s = self.store.one("SELECT * FROM suggestion WHERE id=? AND owner=?", (suggestion_id, user.id))

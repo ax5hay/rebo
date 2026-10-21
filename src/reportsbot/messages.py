@@ -59,6 +59,13 @@ MESSAGES: dict[str, str] = {
     "retired": "Withdrawn. It's no longer used. You can undo this from its history.",
     "restored": "Restored. \"{title}\" is back to {status}.",
 
+    # --- undoing feedback, feedback in words, requests ------------------------------------
+    "feedback_undone": "Your feedback on this answer is undone. Anything it changed has been put back.",
+    "fix_with_words": "Thanks. I'm reworking the report with what you wrote.",
+    "request_sent": "Sent to {who}. You'll see the answer under My requests; nothing changes until they act on it.",
+    "request_done": "Marked done. The person who asked will see your note.",
+    "request_declined": "Declined. The person who asked will see your note.",
+
     # --- direct editing ------------------------------------------------------------------
     "edited": "Saved. \"{title}\" now reads as you wrote it. The previous version is kept; use Undo to go back.",
     "edit_nothing": "Nothing changed.",

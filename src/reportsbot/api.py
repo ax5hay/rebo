@@ -43,6 +43,18 @@ class KnowledgeIn(BaseModel):
     scope: Literal["org", "team"] = "org"
 
 
+class RequestIn(BaseModel):
+    kind: Literal["fix_knowledge", "fix_report", "access", "config", "other"]
+    text: str
+    item_id: str | None = None
+    turn_id: str | None = None
+
+
+class ResolveIn(BaseModel):
+    status: Literal["done", "declined"]
+    resolution: str = ""
+
+
 class KnowledgeEdit(BaseModel):
     title: str | None = None
     question: str | None = None
@@ -118,6 +130,22 @@ def router(app: App) -> APIRouter:
     @r.post("/turns/{turn_id}/feedback")
     def feedback(turn_id: str, body: FeedbackIn, user: User = Depends(current_user)):
         return guard_errors(lambda: app.feedback(user, turn_id, body.verdict, body.note))
+
+    @r.delete("/turns/{turn_id}/feedback")
+    def undo_feedback(turn_id: str, user: User = Depends(current_user)):
+        return guard_errors(lambda: app.undo_feedback(user, turn_id))
+
+    @r.post("/requests")
+    def create_request(body: RequestIn, user: User = Depends(current_user)):
+        return guard_errors(lambda: app.create_request(user, **body.model_dump()))
+
+    @r.get("/requests")
+    def list_requests(status: str | None = "open", user: User = Depends(current_user)):
+        return app.list_requests(user, status or None)
+
+    @r.post("/requests/{request_id}/resolve")
+    def resolve_request(request_id: str, body: ResolveIn, user: User = Depends(current_user)):
+        return guard_errors(lambda: app.resolve_request(user, request_id, body.status, body.resolution))
 
     @r.post("/suggestions/{suggestion_id}")
     def remember(suggestion_id: str, body: RememberIn, user: User = Depends(current_user)):

@@ -210,7 +210,7 @@ class Knowledge:
                  json.dumps(result_signature) if result_signature else None,
                  1 if kind == "example" else 0, json.dumps([user.id] if kind == "example" else []),
                  source_turn, supersedes, ts, ts))
-            self._event(db, item_id, user.id, "created", None, status, note)
+            self._event(db, item_id, user.id, "created", None, status, note, turn_id=source_turn)
         item = self.get(item_id)
         self._index_item(item)
         return item
@@ -257,7 +257,7 @@ class Knowledge:
             with self.store.tx() as db:
                 db.execute("UPDATE knowledge SET confirmations=confirmations+1, confirmers=?, updated_at=? WHERE id=?",
                            (json.dumps(confirmers), now(), item["id"]))
-                self._event(db, item["id"], user.id, "confirmed", item["status"], item["status"])
+                self._event(db, item["id"], user.id, "confirmed", item["status"], item["status"], turn_id=turn_id)
             outcome = Outcome("confirm_matches_verified" if item["status"] == "verified" else "confirm_reinforced",
                               self.get(item["id"]))
         else:
@@ -268,12 +268,12 @@ class Knowledge:
         people = {p for i in [*same, outcome.item] if i for p in (i.get("confirmers") or [])}
         if len(people) >= self.share_threshold and not any(i["status"] in ("proposed", "verified") for i in same):
             target = same[0] if same else outcome.item
-            self._set_status(target["id"], "proposed", actor="system",
+            self._set_status(target["id"], "proposed", actor="system", turn_id=turn_id,
                              note=f"{len(people)} people confirmed this same query independently")
             outcome.extra["auto_proposed"] = len(people)
         return outcome
 
-    def reject(self, user: User, item_ids: list[str], reason: str) -> list[Outcome]:
+    def reject(self, user: User, item_ids: list[str], reason: str, turn_id: str | None = None) -> list[Outcome]:
         """A person said a report built from these items was wrong."""
         out = []
         for item_id in item_ids:
@@ -282,12 +282,12 @@ class Knowledge:
                 continue
             with self.store.tx() as db:
                 db.execute("UPDATE knowledge SET rejections=rejections+1, updated_at=? WHERE id=?", (now(), item_id))
-                self._event(db, item_id, user.id, "reported_wrong", item["status"], item["status"], reason)
+                self._event(db, item_id, user.id, "reported_wrong", item["status"], item["status"], reason, turn_id=turn_id)
             if item["owner"] == user.id and item["status"] != "verified":
-                self._set_status(item_id, "retired", actor=user.id, note="owner reported it wrong")
+                self._set_status(item_id, "retired", actor=user.id, note="owner reported it wrong", turn_id=turn_id)
                 out.append(Outcome("reject_retired_own", self.get(item_id)))
             elif user.is_admin or item["rejections"] + 1 >= 2:
-                self._set_status(item_id, "quarantined", actor=user.id, note=reason)
+                self._set_status(item_id, "quarantined", actor=user.id, note=reason, turn_id=turn_id)
                 out.append(Outcome("reject_quarantined", self.get(item_id)))
             else:
                 out.append(Outcome("reject_flagged", self.get(item_id)))
@@ -310,14 +310,15 @@ class Knowledge:
             return Outcome("teach_replaced_own", item, {"previous": own})
         return Outcome("teach_saved_personal", item)
 
-    def _set_status(self, item_id: str, status: str, *, actor: str, note: str = "", scope: str | None = None) -> dict:
+    def _set_status(self, item_id: str, status: str, *, actor: str, note: str = "", scope: str | None = None,
+                    turn_id: str | None = None) -> dict:
         item = self.get(item_id)
         ts = now()
         with self.store.tx() as db:
             db.execute("UPDATE knowledge SET status=?, scope=COALESCE(?, scope), updated_at=?, "
                        "valid_to=CASE WHEN ?='retired' THEN ? ELSE NULL END WHERE id=?",
                        (status, scope, ts, status, ts, item_id))
-            self._event(db, item_id, actor, f"status:{status}", item["status"], status, note)
+            self._event(db, item_id, actor, f"status:{status}", item["status"], status, note, turn_id=turn_id)
         return self.get(item_id)
 
     def share(self, user: User, item_id: str) -> Outcome:
@@ -375,6 +376,36 @@ class Knowledge:
         if back == "verified" and not user.is_admin:
             back = "proposed"
         return Outcome("restored", self._set_status(item_id, back, actor=user.id, note="undo"))
+
+    def undo_feedback(self, user: User, turn_id: str) -> list[dict[str, Any]]:
+        """Reverse everything one piece of feedback did, newest first: items it created are withdrawn,
+        confirmations and wrong-reports are taken back, status changes it caused are reversed."""
+        events = self.store.all("SELECT * FROM knowledge_event WHERE turn_id=? AND action NOT LIKE 'undo:%' "
+                                "ORDER BY id DESC", (turn_id,))
+        touched = []
+        for e in events:
+            item = self.get(e["item_id"])
+            if not item:
+                continue
+            if e["action"] == "created" and e["actor"] == user.id and item["kind"] == "example":  # not remembered terms
+                self._set_status(item["id"], "retired", actor=user.id, note="feedback undone", turn_id=None)
+            elif e["action"] == "confirmed" and e["actor"] == user.id:
+                confirmers = [p for p in item["confirmers"] if p != user.id]
+                with self.store.tx() as db:
+                    db.execute("UPDATE knowledge SET confirmations=MAX(confirmations-1,0), confirmers=?, updated_at=? "
+                               "WHERE id=?", (json.dumps(confirmers), now(), item["id"]))
+            elif e["action"] == "reported_wrong" and e["actor"] == user.id:
+                with self.store.tx() as db:
+                    db.execute("UPDATE knowledge SET rejections=MAX(rejections-1,0), updated_at=? WHERE id=?",
+                               (now(), item["id"]))
+            elif e["action"].startswith("status:") and item["status"] == e["to_status"]:
+                self._set_status(item["id"], e["from_status"] or "active", actor=user.id, note="feedback undone")
+            else:
+                continue
+            with self.store.tx() as db:
+                self._event(db, item["id"], user.id, f"undo:{e['action']}", None, None, "feedback undone", turn_id=turn_id)
+            touched.append(self.get(item["id"]))
+        return touched
 
     def mark_used(self, item_ids: list[str]) -> None:
         if item_ids:
