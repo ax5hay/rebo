@@ -23,7 +23,7 @@ import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXCLUDE_DIRS = {".venv", "data", "__pycache__", ".pytest_cache", ".ruff_cache", ".mypy_cache", ".git", "models"}
+EXCLUDE_DIRS = {".venv", "data", "__pycache__", ".pytest_cache", ".ruff_cache", ".mypy_cache", ".git", "models", ".vscode", ".idea"}
 EXCLUDE_FILES = {".env", "reportsbot.yaml"}
 EXCLUDE_SUFFIXES = {".db", ".db-wal", ".db-shm", ".pyc", ".zip"}
 SECRETS = {

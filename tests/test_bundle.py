@@ -30,7 +30,7 @@ def test_secrets_block_and_example_values_pass(tmp_path, monkeypatch):
 
 def test_local_state_and_secrets_are_never_included(tmp_path, monkeypatch):
     monkeypatch.setattr(bundle, "ROOT", tmp_path)
-    for rel in (".env", "reportsbot.yaml", "data/state.db", ".venv/x.py", "fixtures/demo/greenleaf.db", "src/a.py",
+    for rel in (".env", "reportsbot.yaml", "data/state.db", ".venv/x.py", ".vscode/s.json", "fixtures/demo/greenleaf.db", "src/a.py",
                 ".env.example", "reportsbot.example.yaml", "fixtures/demo/reportsbot.yaml", "BUNDLE_MANIFEST.json",
                 "reportsbot.git.bundle"):
         p = tmp_path / rel
