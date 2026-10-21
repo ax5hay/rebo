@@ -294,10 +294,11 @@ result: 2026-10-21, `git log --grep B-033`; stack started locally, all healthy (
 
 ## Phase P3: product UI and operations
 
-### [ ] B-034 · Product front end (React, assistant-ui on AG-UI)
+### [x] B-034 · Product front end (React, assistant-ui on AG-UI)
 needs: node
 do: **Research first** (assistant-ui vs CopilotKit vs alternatives). Build `web/` with Vite: report card, option and follow-up chips, feedback (words, undo), remember cards, requests. Serve the build from FastAPI. NiceGUI stays for admin.
 done when: `npm run build` works, and Playwright smoke tests cover the main flows against a FunctionModel-backed server.
+result: 2026-10-21, `git log --grep B-034`; npm run build OK, Playwright 2/2 passed. No chat framework (research in doc 10). Pins, drill, schedules and My knowledge are not in the React page yet (NiceGUI has them).
 
 ### [ ] B-035 · Tracing on by default in compose (Phoenix)
 needs: docker
