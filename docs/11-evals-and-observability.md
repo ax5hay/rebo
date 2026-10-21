@@ -96,6 +96,16 @@ viewer. Langfuse works too but needs Postgres, ClickHouse, Redis and S3 to self-
 Content is excluded from traces by default because prompts and tool results contain the target
 database's data.
 
+### Tracing on by default in the compose files (B-035)
+
+Both `docker-compose.yml` (profile `bot`) and `compose.prod.yml` run Phoenix 20.23.0 and give the bot
+`OTEL_EXPORTER_OTLP_ENDPOINT=http://phoenix:6006` plus `openinference.project.name=reportsbot`; the
+image installs the `otel` extra. Content stays out of spans unless `REPORTSBOT_TRACE_CONTENT=true`.
+Verified 2026-10-21: one scripted turn (tests/web_server.py model) exported to a Phoenix 20.23.0
+container showed the spans `invoke_agent reportsbot` (AGENT) and the model call (LLM) through
+Phoenix's REST API (`/v1/projects/default/spans`, run without the project attribute). A trace from the
+containerised bot with a real model was not produced (no LLM key).
+
 ## 5. Always-on lightweight telemetry
 
 - Every turn stores `usage` (`requests`, `input_tokens`, `output_tokens`, `tool_calls`) and the

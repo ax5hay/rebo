@@ -44,10 +44,17 @@ services:
     environment:
       REPORTSBOT_DATABASE_URL: mysql+pymysql://reports_ro:reports_ro@db:3306/jms
       REPORTSBOT_STATE_DIR: /data
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://phoenix:6006
+      OTEL_RESOURCE_ATTRIBUTES: openinference.project.name=reportsbot
     ports: ["8080:8080"]
     volumes: ["botstate:/data"]
     depends_on:
       db: {condition: service_healthy}
+
+  phoenix:                                 # traces of the bot (profile bot): http://127.0.0.1:6006
+    image: arizephoenix/phoenix:version-20.23.0
+    profiles: ["bot"]
+    ports: ["127.0.0.1:6006:6006"]
 
 volumes:
   dbdata:

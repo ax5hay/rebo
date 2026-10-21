@@ -4,7 +4,8 @@
 #      STATE_DB_PASSWORD.
 #   2. docker compose -f compose.prod.yml up -d          -> http://localhost:4180 (login first)
 #   Optional local embeddings server:  --profile tei  and  REPORTSBOT_EMBEDDINGS=http://tei:80
-# Only the proxy is published. Phoenix (traces) is bound to localhost:6006.
+# Only the proxy is published. Phoenix (traces, on by default; prompts and rows are left out unless
+# REPORTSBOT_TRACE_CONTENT=true) is bound to localhost:6006.
 services:
   bot:
     build: .
@@ -13,6 +14,8 @@ services:
       REPORTSBOT_STATE_URL: postgresql://reportsbot:${STATE_DB_PASSWORD:-change-me}@state-db:5432/reportsbot
       REPORTSBOT_STATE_DIR: /data
       REPORTSBOT_AUTH_MODE: headers          # identity comes from oauth2-proxy (X-Forwarded-User / -Email)
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://phoenix:6006   # traces: agent runs, model calls, tool calls
+      OTEL_RESOURCE_ATTRIBUTES: openinference.project.name=reportsbot
     expose: ["8080"]
     volumes: ["botdata:/data"]
     depends_on:
