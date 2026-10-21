@@ -67,6 +67,30 @@ async def test_failed_turn_escalates_once_to_the_stronger_model(app):
     assert usage["escalated"] is True and usage["model"] == "lmstudio:strong"
 
 
+async def test_trusted_saved_example_routes_to_fast_model_new_questions_to_agent_model(app):
+    good = _completion("present_report", {"title": "Paused", "assumptions": [],
+                                          "sql": "SELECT full_name FROM customer WHERE status = 'paused'"})
+    calls = {"fast": 0, "big": 0}
+
+    def client(name):
+        def handler(req):
+            calls[name] += 1
+            return httpx.Response(200, json=good)
+        return httpx.AsyncClient(transport=httpx.MockTransport(handler))
+
+    app.settings.model, app.settings.fast_model = "lmstudio:big", "lmstudio:fast"
+    app.__dict__["agent"] = build_agent(build_model("lmstudio:big", app.settings, http_client=client("big")))
+    app.__dict__["fast_agent_model"] = build_model("lmstudio:fast", app.settings, http_client=client("fast"))
+    alice, bob = User("alice"), User("bob")
+    first = await app.ask(alice, "show the paused customers")          # nothing saved yet -> agent model
+    app.feedback(alice, first["turn_id"], "correct")
+    again = await app.ask(alice, "paused customers please show")       # trusted own example -> fast model
+    other = await app.ask(bob, "show the paused customers")            # bob cannot see alice's item -> agent model
+    route = lambda r: json.loads(app.store.one("SELECT usage FROM turn WHERE id=?", (r["turn_id"],))["usage"])["route"]
+    assert [route(first), route(again), route(other)] == ["new", "reuse", "new"]
+    assert calls == {"fast": 1, "big": 2}
+
+
 async def test_lmstudio_wire_protocol_end_to_end(app):
     """A stand-in for LM Studio's OpenAI-compatible server: one tool call, then a validated report."""
     seen = []

@@ -24,7 +24,7 @@ from .catalog import Catalog, bootstrap
 from .knowledge import Knowledge, User
 from .llm import build_model, credentials_present
 from .observability import setup_tracing
-from .retrieval import Index, get_embedder
+from .retrieval import Index, fts_query, get_embedder
 from .safety import canonical_hash, guard
 from .settings import Settings, get_settings
 from .store import Store, new_id, now
@@ -64,6 +64,11 @@ class App:
         if not credentials_present(s.model, s):
             raise RuntimeError(f"No API key in the environment for model '{s.model}' (see .env.example)")
         return build_agent(build_model(s.model, s, s.fallback_models))
+
+    @cached_property
+    def fast_agent_model(self):
+        s = self.settings
+        return build_model(s.fast_model, s)
 
     @cached_property
     def escalation_model(self):
@@ -129,8 +134,20 @@ class App:
             out["confirmed_by"] = len(item.get("confirmers") or [])
         return out
 
-    def _context_block(self, user: User, text: str) -> str:
-        items = self.knowledge.search(user, text, top=6)
+    def _reuse_match(self, user: User, text: str, items: list[dict[str, Any]]) -> dict[str, Any] | None:
+        """A trusted saved example (verified, or the user's own) whose question shares >= 60% of its
+        content words with this one. Such turns only adapt saved SQL, so the fast model handles them."""
+        words = set(fts_query(text).replace('"', "").replace("*", "").split(" OR "))
+        for i in items:
+            if i["kind"] != "example" or not (i["status"] == "verified" or i["owner"] == user.id):
+                continue
+            theirs = set(fts_query(i.get("question") or "").replace('"', "").replace("*", "").split(" OR "))
+            if words and theirs and len(words & theirs) / len(words | theirs) >= 0.6:
+                return i
+        return None
+
+    def _context_block(self, user: User, text: str, items: list[dict[str, Any]] | None = None) -> str:
+        items = self.knowledge.search(user, text, top=6) if items is None else items
         hits = self.index.search_schema(text, top=20)
         tables = list(dict.fromkeys(h["table"] for h in hits))[:8]
         values = self.index.search_values(text, top=8)
@@ -195,11 +212,16 @@ class App:
         deps = Deps(app=self, user=user)
         turn_id = new_id("turn")
         limits = UsageLimits(request_limit=40, tool_calls_limit=self.settings.max_tool_calls)
-        prompt = self._context_block(user, text)
+        items = self.knowledge.search(user, text, top=6)
+        prompt = self._context_block(user, text, items)
+        # Routing: adapting a trusted saved report -> fast model; anything new -> agent model.
+        reuse = self._reuse_match(user, text, items) if self.settings.fast_model != self.settings.model else None
+        first_model, first_name = (self.fast_agent_model, self.settings.fast_model) if reuse else (None, self.settings.model)
         escalated = False
         try:
             try:
-                result = await self.agent.run(prompt, deps=deps, message_history=history, usage_limits=limits)
+                result = await self.agent.run(prompt, deps=deps, message_history=history, usage_limits=limits,
+                                              model=first_model)
             except Exception as first:
                 # Cost cascade: the cheap model failed (SQL never validated, budget, API error) ->
                 # one retry on the stronger escalation model, from a clean slate.
@@ -224,7 +246,8 @@ class App:
         usage = result.usage
         usage_d = {"requests": usage.requests, "input_tokens": usage.input_tokens, "output_tokens": usage.output_tokens,
                    "cache_read_tokens": getattr(usage, "cache_read_tokens", None), "tool_calls": usage.tool_calls,
-                   "model": self.settings.escalate_model if escalated else self.settings.model, "escalated": escalated}
+                   "model": self.settings.escalate_model if escalated else first_name, "escalated": escalated,
+                   "route": "reuse" if reuse and not escalated else "new"}
         if isinstance(out, Report) and deps.final is not None:
             prov = self._provenance(user, out.sql, out.used_knowledge)
             self.knowledge.mark_used(prov["item_ids"])
