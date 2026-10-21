@@ -81,8 +81,10 @@ async def test_regression_replays_shared_confirmed_reports_and_records_the_run(a
     from rebo.knowledge import User
     sql = "SELECT full_name AS customer FROM customer WHERE status = 'paused'"
     app.add_knowledge(User("ada", role="admin"), kind="example", title="Paused", question="paused customers", sql=sql)
-    app.__dict__["agent"] = build_agent(FunctionModel(lambda m, i: ModelResponse(parts=[ToolCallPart(
-        "present_report", {"title": "Paused", "sql": sql, "assumptions": []})])))
+    model = FunctionModel(lambda m, i: ModelResponse(parts=[ToolCallPart(
+        "present_report", {"title": "Paused", "sql": sql, "assumptions": []})]))
+    # the question matches the saved report, so the turn runs on the fast model: script that one too
+    app.__dict__.update(agent=build_agent(model), fast_agent_model=model, escalation_model=None)
     res = await run_regression(app)
     assert res["summary"] == {"reports": 1, "errors": 0, "execution_match": "1/1"}
     run = app.store.one("SELECT kind, summary FROM eval_run ORDER BY at DESC LIMIT 1")
