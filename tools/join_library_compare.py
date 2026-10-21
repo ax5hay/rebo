@@ -35,7 +35,7 @@ def run(state: Path, path: str, dialect: str) -> dict:
         for e in mine:
             total += 1
             want = {(e[0], e[1], e[2], e[3])}
-            def right(p):
+            def right(p, want=want):
                 if p is None or len(p) != 1:
                     return False
                 j = p[0]
