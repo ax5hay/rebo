@@ -167,3 +167,31 @@ async def test_no_grain_retry_when_the_entity_key_is_unique(app):
 def test_entity_key(app, sql, expected):
     from reportsbot.agent import entity_key
     assert entity_key(sql, "sqlite", app.catalog.primary_keys) == expected
+
+
+def _clarify(sqls):
+    return _completion("ask_clarifying_question", {"why": "Two readings.", "questions": [
+        {"question": "Which customers?", "options": ["paused", "on hold"], "option_sql": sqls}]})
+
+
+def _gate(app, r):
+    return json.loads(app.store.one("SELECT usage FROM turn WHERE id=?", (r["turn_id"],))["usage"])["gate"]
+
+
+async def test_ask_gate_answers_when_every_reading_gives_the_same_rows(app):
+    _scripted(app, [_clarify(["SELECT full_name FROM customer WHERE status = 'paused'",
+                              "SELECT full_name FROM customer WHERE status IN ('paused')"])])
+    r = await app.ask(User("alice"), "customers on hold")
+    assert r["kind"] == "report" and len(r["rows"]) == 10 and _gate(app, r) == "answered"
+    assert any("“paused”" in a and "“on hold”" in a for a in r["assumptions"])
+
+
+@pytest.mark.parametrize("sqls", [
+    ["SELECT full_name FROM customer WHERE status = 'paused'", "SELECT full_name FROM customer WHERE status = 'closed'"],
+    [],                                                             # no SQL given: cannot check, so ask
+    ["SELECT full_name FROM customer WHERE status = 'paused'", "SELECT nope FROM customer"],  # unrunnable: ask
+])
+async def test_ask_gate_asks_when_readings_differ_or_cannot_be_checked(app, sqls):
+    _scripted(app, [_clarify(sqls)])
+    r = await app.ask(User("alice"), "customers on hold")
+    assert r["kind"] == "clarify" and _gate(app, r) == "asked"

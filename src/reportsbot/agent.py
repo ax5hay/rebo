@@ -57,6 +57,9 @@ class Report(BaseModel):
 class Question(BaseModel):
     question: str
     options: list[str] = Field(min_length=2, max_length=4, description="Concrete, mutually exclusive readings")
+    option_sql: list[str] = Field(default_factory=list, max_length=4, description=(
+        "The report SELECT for each option, same order (at least the first two). If they return the same "
+        "rows the bot answers instead of asking."))
 
 
 class Clarify(BaseModel):
@@ -109,6 +112,7 @@ How to work
      readings give materially different results. Put EVERY open question into this one clarify (at most 3),
      each with 2-4 concrete options taken from stored values where possible, so the user answers once.
      If one reading is clearly the most likely, do not ask: answer with it and state it as an assumption.
+     Give option_sql for each question: the report SQL for its first two options (or all of them).
      Never ask again about something the user already answered in this conversation.
    - Reply: when the message is not asking for data.
 7. assumptions: every interpretation you made, in plain business language. No table or column names.

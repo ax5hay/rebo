@@ -28,7 +28,7 @@ from .retrieval import Index, fts_query, get_embedder
 from .safety import canonical_hash, guard
 from .settings import Settings, get_settings, load_env_file
 from .store import Store, new_id, now
-from .target import TargetDB
+from .target import QueryResult, TargetDB
 
 log = logging.getLogger(__name__)
 _KEEP_RUNS = 4  # earlier user turns kept in the model's message history
@@ -250,24 +250,49 @@ class App:
                    "model": self.settings.escalate_model if escalated else first_name, "escalated": escalated,
                    "route": "reuse" if reuse and not escalated else "new"}
         if isinstance(out, Report) and deps.final is not None:
-            prov = self._provenance(user, out.sql, out.used_knowledge)
-            self.knowledge.mark_used(prov["item_ids"])
-            res = deps.final
-            payload = {"title": out.title, "sql": out.sql, "columns": res.columns, "rows": res.rows,
-                       "truncated": res.truncated, "elapsed_ms": res.elapsed_ms, "assumptions": out.assumptions,
-                       "provenance": prov, "follow_ups": out.follow_ups,
-                       "message": msg.say("report_ready", title=out.title,
-                                          row_phrase=msg.rows_phrase(len(res.rows), res.truncated)),
-                       "suggestions": self._suggestions(user, turn_id, out.learnable)}
-            return self._record(turn_id, conv_id, user, text, "report", payload, deps, sql=out.sql, prov=prov,
-                                usage=usage_d)
+            return self._report_turn(turn_id, conv_id, user, text, out, deps.final, deps, usage_d)
         if isinstance(out, Clarify):
+            gated = self._ask_gate(out, text)
+            usage_d["gate"] = "answered" if gated else "asked"
+            if gated:
+                return self._report_turn(turn_id, conv_id, user, text, *gated, deps, usage_d)
             payload = {"intro": msg.say("clarify_intro"), "why": out.why,
-                       "questions": [q.model_dump() for q in out.questions]}
+                       "questions": [q.model_dump(exclude={"option_sql"}) for q in out.questions]}
             return self._record(turn_id, conv_id, user, text, "clarify", payload, deps, usage=usage_d)
         reply = out if isinstance(out, Reply) else Reply(text=str(out))
         payload = {"text": reply.text, "suggestions": self._suggestions(user, turn_id, reply.learnable)}
         return self._record(turn_id, conv_id, user, text, "answer", payload, deps, usage=usage_d)
+
+    def _report_turn(self, turn_id, conv_id, user, text, out: Report, res: QueryResult, deps, usage_d):
+        prov = self._provenance(user, out.sql, out.used_knowledge)
+        self.knowledge.mark_used(prov["item_ids"])
+        payload = {"title": out.title, "sql": out.sql, "columns": res.columns, "rows": res.rows,
+                   "truncated": res.truncated, "elapsed_ms": res.elapsed_ms, "assumptions": out.assumptions,
+                   "provenance": prov, "follow_ups": out.follow_ups,
+                   "message": msg.say("report_ready", title=out.title,
+                                      row_phrase=msg.rows_phrase(len(res.rows), res.truncated)),
+                   "suggestions": self._suggestions(user, turn_id, out.learnable)}
+        return self._record(turn_id, conv_id, user, text, "report", payload, deps, sql=out.sql, prov=prov,
+                            usage=usage_d)
+
+    def _ask_gate(self, out: Clarify, text: str) -> tuple[Report, QueryResult] | None:
+        """Deterministic ask-gate: when every question's first two readings return the same rows,
+        asking is pointless; answer with question 1's first reading and say so (docs/04 §5)."""
+        for q in out.questions:
+            if len(q.option_sql) < 2:
+                return None
+            try:
+                if not self.same_result(q.option_sql[0], q.option_sql[1]):
+                    return None
+            except Exception:  # unrunnable or rejected SQL: cannot prove the readings agree
+                return None
+        sql = out.questions[0].option_sql[0]
+        g = guard(sql, dialect=self.target.dialect, schema=self.catalog.schema, sensitive=self.catalog.sensitive,
+                  allowed_tables=self.allowed_tables, row_cap=self.settings.row_limit + 1)
+        res = self.target.run(g.sql, max_rows=self.settings.row_limit)
+        notes = [msg.say("gate_same", q=q.question, options=" / ".join(f"“{o}”" for o in q.options[:2]))
+                 for q in out.questions]
+        return Report(title=text.strip()[:80], sql=sql, assumptions=notes), res
 
     def _record(self, turn_id, conv_id, user, question, kind, payload, deps, *, sql=None, prov=None, usage=None):
         with self.store.tx() as db:

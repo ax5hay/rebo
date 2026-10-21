@@ -106,6 +106,16 @@ the user's confirmed example arrived in this block (doc 17).
 There is deliberately no JMS (or any domain) wording in the instructions. The previous agent
 had JMS join rules hard-coded at `backend/app/services/reports_agent/loop.py:140-196`.
 
+**Deterministic ask-gate** (`App._ask_gate`, B-006). Prompting alone over- or under-asks
+(CIGAsk). So every `Question` also carries `option_sql`: the report SQL for its first two options.
+Before a `Clarify` is shown, the service runs both through the guard and `same_result`. If, for
+**every** question, the two readings return the same non-empty rows, the turn becomes a `Report`
+built from question 1's first reading, with one assumption per question ("the readings X / Y give
+the same result, so I did not ask"). Missing, unrunnable or rejected SQL, empty results or any
+difference → the question is shown as before. `turn.usage.gate` records `asked` or `answered`;
+`tools/eval_run.py` reports `clarify_rate` and `gate_answered`. Not yet measured on the eval sets
+(needs an LLM key): the effect on the 18 JMS prompts' 6 clarifications is unknown.
+
 **Clarification policy source.** AmbiSQL (SIGMOD'26 demo) and the expected-information-gain work
 (arXiv 2507.06467): ask only when the candidate interpretations really diverge, as a multiple
 choice. Otherwise answer and state the assumptions. BIRD-Interact shows interactive agents still

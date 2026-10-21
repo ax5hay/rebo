@@ -80,6 +80,7 @@ MESSAGES: dict[str, str] = {
     # --- clarifying -------------------------------------------------------------------
     "clarify_intro": "Quick check before I run this:",
     "clarify_other": "Something else (type it)",
+    "gate_same": "“{q}”: the readings {options} give the same result, so I did not ask.",
 
     # --- trust labels (knowledge page) -----------------------------------------------------
     "status_active": "Yours: used only for you",

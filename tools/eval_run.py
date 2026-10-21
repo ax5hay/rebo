@@ -53,6 +53,8 @@ async def main(cases: str, out: str, limit: int = 0) -> None:
     costs = [c["cost_usd"] for c in res["cases"] if c["cost_usd"] is not None]
     summary = {"reports": sum(c["kind"] == "report" for c in res["cases"]),
                "clarify": sum(c["kind"] == "clarify" for c in res["cases"]),
+               "clarify_rate": round(sum(c["kind"] == "clarify" for c in res["cases"]) / max(len(res["cases"]), 1), 3),
+               "gate_answered": sum(c["usage"].get("gate") == "answered" for c in res["cases"]),
                "errors": sum(c["kind"] == "error" for c in res["cases"]),
                "escalated": sum(bool(c["usage"].get("escalated")) for c in res["cases"]),
                "median_seconds": sorted(c["seconds"] for c in res["cases"])[len(res["cases"]) // 2],

@@ -95,6 +95,13 @@ When to ask is policy in the prompt (doc 04 §5): only when the evidence disagre
 questions bundled into one turn (max 3), never re-asking what was already answered, and
 answering with a stated assumption when one reading is clearly most likely.
 
+The card is skipped when the readings turn out to give identical rows (doc 04 §5, ask-gate): the
+report is shown instead, with this assumption per question (`gate_same`):
+
+```
+“Which customers?”: the readings “paused” / “on hold” give the same result, so I did not ask.
+```
+
 Under every report, up to 3 **follow-up chips** (e.g. "Break this down by sub-stage",
 "Only the last 30 days") let the user drill down without typing: one click is one turn.
 
