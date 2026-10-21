@@ -386,10 +386,11 @@ result: 2026-10-21, 82b8ea9. `agent.sql_trap`: = NULL, NOT IN (subquery), LEFT J
 ### [x] B-047 · Spelling fallback for stored values
 result: 2026-10-21, 61c2992. RapidFuzz fallback in `search_values`. Two misspelled gold cases added (gp-11, gp-12). A/B, Sonnet: 2/2 on vs 2/2 off, $0.0335 vs $0.0328: no gain on Sonnet (it reads values via describe_table); kept, free when FTS hits. docs/08.
 
-### [ ] B-048 · Low-confidence candidates with execution agreement
+### [x] B-048 · Low-confidence candidates with execution agreement
 needs: llm
 do: Behind a setting (default off), for turns that `_second_opinion` would review: 2 extra SQLs from the fast model, executed through `_run_report_sql`, compared with `same_result`. Agreement keeps the answer; disagreement goes to a judge given the retrieved knowledge (MaP-SQL style) or becomes a Clarify naming both readings ("Two Surfaces of Ambiguity", VLDB'26 AIDB).
 done when: gold with the flag on and off, 3 runs each; content match, clarifications and cost recorded in doc 16 §5.
+result: 2026-10-21, `checks.agreement` (default off). Demo gold, 2 runs on: content 10/12 and 10/12 (off: 10/12, 9/12), clarify 0 and 0 (off: 1, 0); agreed 7/10 and 5/9 checked turns; disagreement noted 3 of 4 wrong reports, 1 note on a correct report; extra cost $0.0067 per run, +2–4 s median. Kept off: no catch beyond the reviewer. 2 runs per arm, not 3 (not run). doc 04, doc 16 §5.
 
 ### [x] B-049 · Back-translation in the second opinion
 needs: llm

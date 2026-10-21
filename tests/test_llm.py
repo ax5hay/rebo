@@ -576,3 +576,79 @@ async def test_sql_trap_gets_one_retry_before_the_zero_row_retry(app):
     r = await app.ask(User("alice"), "paused customers with an email")
     # the trap is named first (it explains the 0 rows); the 0-row retry follows; the third attempt stands
     assert r["kind"] == "report" and len(seen) == 3 and "compares with NULL" in seen[1]
+
+
+PAUSED = "SELECT full_name FROM customer WHERE status = 'paused'"
+THREE = ["Paused is the stored status.", "All regions.", "Any signup date."]
+
+
+def _fast_by_tool(app, replies: dict[str, dict]):
+    """Fast model answering each structured call by its output tool name; returns the tool names called."""
+    called = []
+
+    def fast(req):
+        name = json.loads(req.content)["tools"][0]["function"]["name"]
+        called.append(name)
+        return httpx.Response(200, json=_completion(name, replies[name]))
+
+    app.__dict__["fast_agent_model"] = build_model(
+        "lmstudio:fast", app.settings, http_client=httpx.AsyncClient(transport=httpx.MockTransport(fast)))
+    return called
+
+
+async def test_agreement_check_keeps_the_answer_when_a_candidate_returns_the_same_rows(app):
+    app.settings.agreement_check = True
+    _scripted(app, [_completion("present_report", {"title": "Paused", "assumptions": list(THREE), "sql": PAUSED})])
+    called = _fast_by_tool(app, {"review": {"restated": "Paused customers.", "ok": True},
+                                 "write_queries": {"queries": [
+                                     {"reading": "Paused customers.",  # same rows, written differently
+                                      "sql": "SELECT c.full_name AS name, c.status FROM customer c "
+                                             "WHERE c.status IN ('paused')"},
+                                     {"reading": "Closed customers.",
+                                      "sql": "SELECT full_name FROM customer WHERE status = 'closed'"}]}})
+    r = await app.ask(User("alice"), "paused customers")
+    usage = json.loads(app.store.one("SELECT usage FROM turn WHERE id=?", (r["turn_id"],))["usage"])
+    assert usage["agreement"] == "agreed:1/2" and "judge" not in called
+    assert r["assumptions"] == THREE and len(r["rows"]) == 10
+    assert usage["agreement_tokens"]["input_tokens"] > 0
+
+
+@pytest.mark.parametrize("verdict, outcome, note", [
+    ({"ambiguous": False, "best": 1}, "candidate",
+     "Check: another reading gives a different result: Closed customers. If that is what you meant, say so."),
+    ({"ambiguous": True, "readings": ["paused customers", "closed customers"]}, "ambiguous",
+     "Check: this can be read two ways. 1) Paused customers. 2) Closed customers. This report uses the first."),
+    ({"ambiguous": False, "best": 0}, "report", None)])
+async def test_agreement_check_disagreement_goes_to_the_judge_and_never_swaps_the_answer(app, verdict, outcome, note):
+    app.settings.agreement_check = True
+    _scripted(app, [_completion("present_report", {"title": "Paused", "assumptions": list(THREE), "sql": PAUSED})])
+    called = _fast_by_tool(app, {"review": {"restated": "Paused customers.", "ok": True},
+                                 "write_queries": {"queries": [
+                                     {"reading": "Closed customers",
+                                      "sql": "SELECT full_name FROM customer WHERE status = 'closed'"},
+                                     {"reading": "Broken.", "sql": "SELECT nope FROM customer"},  # failure ignored
+                                     {"reading": "Never run.", "sql": "UPDATE customer SET status = 'x'"}]},
+                                 "judge": verdict})
+    r = await app.ask(User("alice"), "paused customers")
+    usage = json.loads(app.store.one("SELECT usage FROM turn WHERE id=?", (r["turn_id"],))["usage"])
+    assert usage["agreement"] == f"disagreed:{outcome}" and called.count("judge") == 1
+    assert r["sql"] == PAUSED and len(r["rows"]) == 10  # the report itself is kept
+    assert r["assumptions"] == THREE + ([note] if note else [])
+
+
+async def test_agreement_check_off_by_default_makes_no_extra_calls(app):
+    assert app.settings.agreement_check is False
+    _scripted(app, [_completion("present_report", {"title": "Paused", "assumptions": list(THREE), "sql": PAUSED})])
+    called = _fast_by_tool(app, {"review": {"restated": "Paused customers.", "ok": True}})
+    r = await app.ask(User("alice"), "paused customers")
+    usage = json.loads(app.store.one("SELECT usage FROM turn WHERE id=?", (r["turn_id"],))["usage"])
+    assert called == ["review"] and "agreement" not in usage
+
+
+async def test_agreement_check_errors_never_block_the_answer(app):
+    app.settings.agreement_check = True
+    _scripted(app, [_completion("present_report", {"title": "Paused", "assumptions": list(THREE), "sql": PAUSED})])
+    _fast_by_tool(app, {"review": {"restated": "Paused customers.", "ok": True}})  # no reply for write_queries
+    r = await app.ask(User("alice"), "paused customers")
+    usage = json.loads(app.store.one("SELECT usage FROM turn WHERE id=?", (r["turn_id"],))["usage"])
+    assert r["kind"] == "report" and usage["agreement"] == "error" and r["assumptions"] == THREE

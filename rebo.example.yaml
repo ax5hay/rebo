@@ -23,6 +23,8 @@ limits:
   tool_calls: 25                           # per user turn
   cost_per_turn_usd: 0                     # stop a turn that would cost more (list prices); 0 = no cap
   per_user_per_minute: 0                   # questions per person per minute; 0 = no limit
+# checks:
+#   agreement: false                       # true: 2 extra queries from the fast model check unsure new reports
 
 allowed_tables: []                         # empty = every table the database user can read
 protected_columns: ""                      # regex on table.column, added to auto-detected secrets

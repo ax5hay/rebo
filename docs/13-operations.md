@@ -22,6 +22,7 @@ The whole configuration is one small YAML file (template `rebo.example.yaml`; pa
 | `embeddings` | `REBO_EMBEDDINGS` | true | local vectors |
 | `auth.mode` / `auth.issuer` | `REBO_AUTH_MODE` / `REBO_JWT_ISSUER` | `headers` / `orchid` | identity source (doc 10) |
 | `adapters` | `REBO_ADAPTERS` (JSON list) | `[]` | host contracts, e.g. `[jms]` |
+| `checks.agreement` | `REBO_AGREEMENT_CHECK` | false | on reports the second opinion reviews, 2 extra queries from the fast model are run and compared; disagreement adds a "Check:" note (doc 04, B-048) |
 
 Secrets (environment or `.env` only): `OPENROUTER_API_KEY` (or `REBO_OPENROUTER_API_KEY`),
 `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`/`GOOGLE_API_KEY`, `OPENAI_API_KEY`, `REBO_JWT_SECRET`.

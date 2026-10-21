@@ -29,7 +29,7 @@ from .knowledge import Knowledge, User
 from .llm import build_model, cost, credentials_present, profile, turn_limits
 from .observability import annotate_trace, ask_span, phoenix_url, setup_tracing
 from .retrieval import Index, fts_query, get_embedder
-from .safety import canonical_hash, drill_sql, explain_sql, fill_params, guard
+from .safety import canonical_hash, drill_sql, explain_sql, fill_params, guard, tables_in
 from .settings import Settings, get_settings, load_env_file
 from .store import Store, new_id, now
 from .target import QueryResult, TargetDB
@@ -76,6 +76,32 @@ class Review(BaseModel):
                                           "itself and not from the assumptions")
     ok: bool = Field(description="true when the report answers the question as asked")
     concern: str = Field("", description="When not ok: the one thing a person should check, in plain words")
+
+
+class Candidate(BaseModel):
+    reading: str = Field(description="What this query returns, in one plain sentence without table or column names")
+    sql: str = Field(description="One read-only SELECT")
+
+
+class Candidates(BaseModel):
+    queries: list[Candidate] = Field(description="Up to 2 queries, each written independently")
+
+
+class Judgement(BaseModel):
+    ambiguous: bool = Field(description="true when the question itself can fairly be read in more than one way "
+                                        "and the results differ because of that")
+    best: int = Field(0, description="When not ambiguous: the query that best answers the question as asked, "
+                                     "0 for the report, 1, 2, ... for the alternatives")
+    readings: list[str] = Field(default_factory=list, description=(
+        "When ambiguous: two short plain readings, first the report's, then the other one"))
+
+
+def _sentence(text: str) -> str:
+    text = " ".join(str(text).split())
+    if not text:
+        return text
+    text = text[0].upper() + text[1:]
+    return text if text[-1] in ".?!" else text + "."
 
 
 class App:
@@ -148,6 +174,24 @@ class App:
             "concrete problem a person should check (wrong filter, wrong grain, missing condition, a reading "
             "that contradicts the question), in one plain sentence without table or column names. "
             "Otherwise ok."))
+
+    @cached_property
+    def candidate_agent(self) -> Agent:
+        return Agent(name="candidates", output_type=ToolOutput(Candidates, name="write_queries"), retries=1,
+                     instructions=(
+            "You answer a business question with SQL, independently of anyone else. Given the question, what is "
+            "known about the data and the tables with their columns, write 2 read-only SELECT queries that each "
+            "answer the question as you best understand it, written in different ways (other joins, subqueries "
+            "or filters where they are equivalent). Use only the tables and columns given. Say in one plain "
+            "sentence what each returns."))
+
+    @cached_property
+    def judge_agent(self) -> Agent:
+        return Agent(name="judge", output_type=ToolOutput(Judgement, name="judge"), retries=1, instructions=(
+            "Several queries were written for the same business question and returned different results. Given "
+            "the question, what is known about the data, each query and its first rows: decide which query "
+            "answers the question as asked, or whether the question itself can fairly be read in more than one "
+            "way. Readings are plain sentences without table or column names."))
 
     @cached_property
     def escalation_model(self):
@@ -366,7 +410,7 @@ class App:
                    "model": self.settings.escalate_model if escalated else first_name, "escalated": escalated,
                    "route": "reuse" if reuse and not escalated else "new"}
         if isinstance(out, Report) and deps.final is not None:
-            await self._second_opinion(user, text, out, deps.final, usage_d)
+            await self._second_opinion(user, text, out, deps.final, usage_d, context=prompt)
             if cache_key:
                 with self.store.tx() as db:
                     db.execute("INSERT INTO answer_cache(key, owner, sql, report, created_at) VALUES(?,?,?,?,?) "
@@ -421,11 +465,19 @@ class App:
         return self._record(turn_id, conv_id, user, text, "report", payload, deps, sql=out.sql, prov=prov,
                             usage=usage_d)
 
-    async def _second_opinion(self, user: User, text: str, out: Report, res: QueryResult, usage_d: dict) -> None:
+    async def _second_opinion(self, user: User, text: str, out: Report, res: QueryResult, usage_d: dict,
+                              context: str = "") -> None:
         """A new report resting on more than 2 assumptions gets one review by the fast model; a concern
-        is added as a "Check: ..." assumption. usage.review = ok | concern (absent when not reviewed)."""
+        is added as a "Check: ..." assumption. usage.review = ok | concern (absent when not reviewed).
+        With checks.agreement on, the same turns also get the execution-agreement check (`_agreement`)."""
         if len(out.assumptions) <= 2 or self._provenance(user, out.sql, out.used_knowledge)["label"] != "new":
             return
+        if self.settings.agreement_check:
+            await asyncio.gather(self._review(text, out, res, usage_d), self._agreement(text, out, res, usage_d, context))
+        else:
+            await self._review(text, out, res, usage_d)
+
+    async def _review(self, text: str, out: Report, res: QueryResult, usage_d: dict) -> None:
         prompt = json.dumps({"question": text, "sql": out.sql, "assumptions": out.assumptions,
                              "columns": res.columns, "first_rows": res.rows[:10], "row_count": len(res.rows)},
                             default=str)
@@ -438,6 +490,72 @@ class App:
         usage_d["review_restated"] = review.restated.strip()[:300]  # for evals and traces; not shown
         if usage_d["review"] == "concern":
             out.assumptions.append(msg.say("review_concern", concern=review.concern.strip()))
+
+    async def _agreement(self, text: str, out: Report, res: QueryResult, usage_d: dict, context: str) -> None:
+        """Execution agreement (B-048; CHASE-SQL / MaP-SQL, "Two Surfaces of Ambiguity", doc 16 §5): the fast
+        model writes 2 more queries for the question; each runs through the read-only guard and is compared
+        with the report by content (`evals.columns_match`, either way round). Any agreement keeps the answer.
+        If none agrees, a judge picks the best reading or calls the question ambiguous; the answer is never
+        swapped, the other reading becomes a "Check: ..." assumption. Failures are logged and ignored.
+        usage.agreement = agreed:n/m | disagreed:report|candidate|ambiguous | none (no candidate ran)."""
+        from .evals import columns_match  # evals imports this module
+        tokens = {"input_tokens": 0, "output_tokens": 0}
+
+        def add(run) -> None:
+            u = run.usage
+            tokens["input_tokens"] += u.input_tokens or 0
+            tokens["output_tokens"] += u.output_tokens or 0
+
+        def same(a: QueryResult, b: QueryResult) -> bool:
+            return columns_match(a.rows, b.rows, a.columns) or columns_match(b.rows, a.rows, b.columns)
+
+        try:
+            schema = self.catalog.schema
+            tables = {t: {c: ty for c, ty in schema.get(t, {}).items() if (t, c) not in self.catalog.sensitive}
+                      for t in tables_in(out.sql, self.target.dialect)}
+            run = await self.candidate_agent.run(json.dumps(
+                {"question": text, "sql_dialect": self.target.dialect, "tables": tables, "context": context},
+                default=str), model=self.fast_agent_model)
+            add(run)
+            ran: list[tuple[Candidate, QueryResult]] = []
+            for c in run.output.queries[:2]:
+                try:
+                    r = self._run_report_sql(c.sql)
+                except Exception as e:
+                    log.info("agreement candidate failed: %s", str(e)[:200])
+                    continue
+                if not r.truncated:
+                    ran.append((c, r))
+            if res.truncated or not ran:
+                usage_d["agreement"] = "none"
+                return
+            agree = sum(same(res, r) for _, r in ran)
+            if agree:
+                usage_d["agreement"] = f"agreed:{agree}/{len(ran)}"
+                return
+            shown = [{"query": 0, "sql": out.sql, "columns": res.columns, "first_rows": res.rows[:5],
+                      "row_count": len(res.rows)}]
+            shown += [{"query": i, "sql": c.sql, "reading": c.reading, "columns": r.columns,
+                       "first_rows": r.rows[:5], "row_count": len(r.rows)} for i, (c, r) in enumerate(ran, 1)]
+            jrun = await self.judge_agent.run(json.dumps({"question": text, "context": context, "queries": shown},
+                                                         default=str), model=self.fast_agent_model)
+            add(jrun)
+            j = jrun.output
+            if j.ambiguous and len(j.readings) >= 2:
+                usage_d["agreement"] = "disagreed:ambiguous"
+                out.assumptions.append(msg.say("agreement_two_ways", first=_sentence(j.readings[0]),
+                                               second=_sentence(j.readings[1])))
+            elif 1 <= j.best <= len(ran):
+                usage_d["agreement"] = "disagreed:candidate"
+                out.assumptions.append(msg.say("agreement_other", reading=_sentence(ran[j.best - 1][0].reading)))
+            else:
+                usage_d["agreement"] = "disagreed:report"
+        except Exception:
+            log.info("agreement check failed; report shown without it", exc_info=True)
+            usage_d.setdefault("agreement", "error")
+        finally:
+            usage_d["agreement_tokens"] = tokens
+            usage_d["agreement_cost_usd"] = cost({**tokens, "model": self.settings.fast_model})
 
     def _limits(self, model_spec: str) -> UsageLimits:
         tool_calls = round(self.settings.max_tool_calls * profile(model_spec).tool_call_factor)

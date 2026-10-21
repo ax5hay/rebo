@@ -39,6 +39,7 @@ _YAML_KEYS = {
     ("auth", "issuer"): "jwt_issuer",
     ("adapters",): "adapters",
     ("notify_url",): "notify_url",
+    ("checks", "agreement"): "agreement_check",
 }
 
 
@@ -135,6 +136,9 @@ class Settings(BaseSettings):
     adapters: list[str] | dict[str, dict[str, Any]] = Field(default_factory=list)  # [jms] or {jms: {option: …}}
     # 8. Optional webhook: POST {event, ...} on request created/resolved and item promoted/stale.
     notify_url: str = ""
+    # 9. Optional extra check on low-confidence new reports: 2 candidate queries from the fast model,
+    #    executed and compared with the report; disagreement goes to a judge (doc 04, B-048).
+    agreement_check: bool = False
 
     # Secrets: environment only, never in the YAML file.
     openrouter_api_key: str = ""

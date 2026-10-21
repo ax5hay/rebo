@@ -47,6 +47,10 @@ keys rather than writing their own text, so behaviour and wording change togethe
 
 A new report built on more than 2 assumptions may carry one extra, last assumption from the
 reviewer (`review_concern`, doc 04 §7): "Check: Closed customers may be wanted too."
+With `checks.agreement` on (off by default), the same reports may also carry one note from the
+execution-agreement check (doc 04, B-048): `agreement_other` ("Check: another reading gives a different
+result: Closed customers. If that is what you meant, say so.") or `agreement_two_ways` ("Check: this
+can be read two ways. 1) … 2) … This report uses the first.").
 
 While a turn runs, the Ask page shows a spinner with one line per tool step (`progress_*` in
 `messages.py`): "Looking for the right tables…", "Checking how values are stored…", "Trying a small
