@@ -131,7 +131,14 @@ For a `Report`:
    search_values and each join with a count. If 0 rows is genuinely right, present it again and
    say why in the assumptions.")`. This catches the most common silent failure (a literal spelled
    differently from the stored value) without blocking real empty results.
-4. Otherwise store the rows in `deps.final` and accept.
+4. Grain check (fan-out), once per turn: `entity_key` finds the first projected column that is the
+   single-column primary key of a FROM/JOIN table (top-level SELECT with joins, no GROUP BY, no `*`;
+   keys from `catalog.primary_keys`). If the fetched rows outnumber that column's distinct values →
+   `ModelRetry("The rows repeat per <table> … aggregate or pick one row. If one row per joined record
+   is intended, present it again and say so in the assumptions.")`. A second presentation is accepted.
+   Why: a Haiku run returned one row per sub-stage instead of one per case, and the SQL ran fine
+   (doc 20 §5). Not yet measured on the eval sets (needs an LLM key).
+5. Otherwise store the rows in `deps.final` and accept.
 
 So **a report is never shown without having run successfully**. The rows the user sees are the
 ones the validator fetched; no second execution happens.

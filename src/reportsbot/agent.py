@@ -15,9 +15,11 @@ import datetime as dt
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal
 
+import sqlglot
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, ModelRetry, RunContext, ToolOutput
 from pydantic_ai.models import Model
+from sqlglot import exp
 
 from .safety import GuardError, guard
 from .target import QueryResult
@@ -81,6 +83,7 @@ class Deps:
     final: QueryResult | None = None
     final_sql: str | None = None
     zero_row_retry: bool = False
+    grain_retry: bool = False
     probes: int = 0
 
 
@@ -117,6 +120,33 @@ How to work
 When the user corrects a previous report, their correction is the authority: revise the report, and put the
 general rule behind the correction in learnable.
 """
+
+
+def entity_key(sql: str, dialect: str, pks: dict[str, list[str]]) -> tuple[int, str] | None:
+    """(result column index, table) of the first projected column that is the single-column primary
+    key of a FROM/JOIN table, for a top-level SELECT with joins and no GROUP BY; otherwise None."""
+    try:
+        sel = sqlglot.parse_one(sql, read=dialect)
+    except sqlglot.errors.ParseError:
+        return None
+    if not isinstance(sel, exp.Select) or not sel.args.get("joins") or sel.args.get("group"):
+        return None
+    sources = [sel.args["from_"].this, *(j.this for j in sel.args["joins"])] if sel.args.get("from_") else []
+    tables = {(t.alias_or_name).lower(): t.name for t in sources if isinstance(t, exp.Table)}
+    pk = {t.lower(): cols[0] for t, cols in pks.items() if len(cols) == 1}
+    for i, p in enumerate(sel.expressions):
+        col = p.this if isinstance(p, exp.Alias) else p
+        if isinstance(col, exp.Star) or isinstance(col, exp.Column) and isinstance(col.this, exp.Star):
+            return None
+        if not isinstance(col, exp.Column):
+            continue
+        if col.table:
+            owners = [tables[col.table.lower()]] if col.table.lower() in tables else []
+        else:
+            owners = [t for t in tables.values() if pk.get(t.lower(), "").lower() == col.name.lower()]
+        if len(owners) == 1 and pk.get(owners[0].lower(), "").lower() == col.name.lower():
+            return i, owners[0]
+    return None
 
 
 def build_agent(model: Model) -> Agent[Deps, Outcome]:
@@ -238,6 +268,14 @@ def build_agent(model: Model) -> Agent[Deps, Outcome]:
             raise ModelRetry("The report returned 0 rows. Check each literal filter with search_values and each "
                              "join with a count. If 0 rows is genuinely right, present it again and say why in "
                              "the assumptions.")
+        key = None if deps.grain_retry else entity_key(g.sql, app.target.dialect, app.catalog.primary_keys)
+        if key and len(res.rows) > len({r[key[0]] for r in res.rows}):
+            deps.grain_retry = True
+            raise ModelRetry(f"The rows repeat per {key[1]}: {len(res.rows)} rows but only "
+                             f"{len({r[key[0]] for r in res.rows})} distinct {key[1]} values, because a joined table "
+                             f"has several rows for each. One row per {key[1]} was probably intended: aggregate or "
+                             f"pick one row. If one row per joined record is intended, present it again and say so "
+                             "in the assumptions.")
         deps.final, deps.final_sql = res, g.sql
         return output
 

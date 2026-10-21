@@ -111,3 +111,59 @@ async def test_lmstudio_wire_protocol_end_to_end(app):
     assert all(u.startswith(app.settings.lmstudio_url) and u.endswith("/chat/completions") for u in seen)
     assert r["kind"] == "report" and len(r["rows"]) == 10
     assert [t["tool"] for t in r["trace"]] == ["search_values"]
+
+
+FAN_OUT = ("SELECT c.customer_id, c.full_name AS customer, o.amount FROM customer c "
+           "JOIN orders o ON o.customer_id = c.customer_id")
+
+
+def _scripted(app, script):
+    """Agent whose model returns `script` in order (last one repeats); returns the request bodies."""
+    seen = []
+
+    def handler(request):
+        seen.append(request.content.decode())
+        return httpx.Response(200, json=script[min(len(seen) - 1, len(script) - 1)])
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    app.__dict__["agent"] = build_agent(build_model("lmstudio:m", app.settings, http_client=client))
+    return seen
+
+
+async def test_fan_out_report_gets_one_grain_retry_then_the_fix_is_accepted(app):
+    fixed = ("SELECT c.customer_id, c.full_name AS customer, SUM(o.amount) AS total FROM customer c "
+             "JOIN orders o ON o.customer_id = c.customer_id GROUP BY c.customer_id, c.full_name")
+    seen = _scripted(app, [_completion("present_report", {"title": "Spend", "sql": FAN_OUT, "assumptions": []}),
+                           _completion("present_report", {"title": "Spend", "sql": fixed, "assumptions": []})])
+    r = await app.ask(User("alice"), "customers and what they spent")
+    assert r["kind"] == "report" and len(r["rows"]) == 40
+    assert len(seen) == 2 and "rows repeat per customer" in seen[1]
+
+
+async def test_deliberate_one_row_per_child_passes_on_the_second_attempt(app):
+    again = {"title": "Orders by customer", "sql": FAN_OUT, "assumptions": ["One row per order is intended."]}
+    seen = _scripted(app, [_completion("present_report", {**again, "assumptions": []}),
+                           _completion("present_report", again)])
+    r = await app.ask(User("alice"), "every order with its customer")
+    assert r["kind"] == "report" and len(seen) == 2
+
+
+async def test_no_grain_retry_when_the_entity_key_is_unique(app):
+    sql = "SELECT o.order_id, c.full_name AS customer FROM orders o JOIN customer c ON c.customer_id = o.customer_id"
+    seen = _scripted(app, [_completion("present_report", {"title": "Orders", "sql": sql, "assumptions": []})])
+    r = await app.ask(User("alice"), "orders with customer names")
+    assert r["kind"] == "report" and len(seen) == 1
+
+
+@pytest.mark.parametrize("sql, expected", [
+    (FAN_OUT, (0, "customer")),
+    ("SELECT full_name, customer_id FROM customer JOIN orders USING (customer_id)", (1, "customer")),
+    ("SELECT o.amount, order_id FROM customer c JOIN orders o ON o.customer_id = c.customer_id", (1, "orders")),
+    ("SELECT customer_id FROM customer", None),                                             # no join
+    ("SELECT c.* FROM customer c JOIN orders o ON o.customer_id = c.customer_id", None),    # star
+    ("SELECT c.customer_id, COUNT(*) FROM customer c JOIN orders o ON o.customer_id = c.customer_id "
+     "GROUP BY c.customer_id", None),
+])
+def test_entity_key(app, sql, expected):
+    from reportsbot.agent import entity_key
+    assert entity_key(sql, "sqlite", app.catalog.primary_keys) == expected

@@ -228,9 +228,10 @@ class Catalog:
         self.store = store
         self._schema: dict[str, dict[str, str]] | None = None
         self._sensitive: set[tuple[str, str]] | None = None
+        self._pks: dict[str, list[str]] | None = None
 
     def refresh(self) -> None:
-        self._schema = self._sensitive = None
+        self._schema = self._sensitive = self._pks = None
 
     @property
     def schema(self) -> dict[str, dict[str, str]]:
@@ -247,6 +248,16 @@ class Catalog:
             self._sensitive = {(r["table_name"], r["name"]) for r in
                                self.store.all("SELECT table_name, name FROM cat_column WHERE sensitive=1")}
         return self._sensitive
+
+    @property
+    def primary_keys(self) -> dict[str, list[str]]:
+        """{table: [pk columns]}; tables without a declared primary key are absent."""
+        if self._pks is None:
+            pks: dict[str, list[str]] = {}
+            for r in self.store.all("SELECT table_name, name FROM cat_column WHERE is_pk=1 ORDER BY rowid"):
+                pks.setdefault(r["table_name"], []).append(r["name"])
+            self._pks = pks
+        return self._pks
 
     def fingerprints(self, tables: list[str]) -> dict[str, str]:
         if not tables:
