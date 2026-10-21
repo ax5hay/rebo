@@ -101,7 +101,7 @@ do: In `Knowledge.search`, also search `knowledge_fts` with a masked query: word
 done when: an offline test shows "paused customers" retrieves the example saved for "active customers". doc 08 §5 updated.
 result: 2026-10-21, `git log --grep B-009`; 108 passed. Values masked, schema words not (they match literally). eval pending: needs llm.
 
-### [ ] B-010 · Stable cacheable prefix
+### [x] B-010 · Stable cacheable prefix
 needs: offline
 do:
 - Order the instructions as static text, then the table list (byte-identical across turns; sorted).
@@ -111,6 +111,7 @@ do:
 done when:
 - Offline test: two turns produce identical instruction text.
 - With `llm`: a results file showing `cache_read_tokens > 0` on the second question.
+result: 2026-10-21, `git log --grep B-010`; 109 passed. eval pending: needs llm (cache_read_tokens > 0 on the 2nd question).
 
 ### [ ] B-011 · Multi-turn eval
 needs: offline
