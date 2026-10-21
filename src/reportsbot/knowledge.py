@@ -410,11 +410,11 @@ class Knowledge:
             elif e["action"] == "confirmed" and e["actor"] == user.id:
                 confirmers = [p for p in item["confirmers"] if p != user.id]
                 with self.store.tx() as db:
-                    db.execute("UPDATE knowledge SET confirmations=MAX(confirmations-1,0), confirmers=?, updated_at=? "
+                    db.execute("UPDATE knowledge SET confirmations=CASE WHEN confirmations > 0 THEN confirmations-1 ELSE 0 END, confirmers=?, updated_at=? "
                                "WHERE id=?", (json.dumps(confirmers), now(), item["id"]))
             elif e["action"] == "reported_wrong" and e["actor"] == user.id:
                 with self.store.tx() as db:
-                    db.execute("UPDATE knowledge SET rejections=MAX(rejections-1,0), updated_at=? WHERE id=?",
+                    db.execute("UPDATE knowledge SET rejections=CASE WHEN rejections > 0 THEN rejections-1 ELSE 0 END, updated_at=? WHERE id=?",
                                (now(), item["id"]))
             elif e["action"].startswith("status:") and item["status"] == e["to_status"]:
                 self._set_status(item["id"], e["from_status"] or "active", actor=user.id, note="feedback undone")

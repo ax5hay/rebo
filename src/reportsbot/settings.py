@@ -24,6 +24,7 @@ _YAML_KEYS = {
     ("models", "escalate"): "escalate_model",
     ("lmstudio_url",): "lmstudio_url",
     ("state_dir",): "state_dir",
+    ("state_url",): "state_url",
     ("limits", "rows"): "row_limit",
     ("limits", "probe_rows"): "probe_row_limit",
     ("limits", "query_timeout_s"): "query_timeout_s",
@@ -112,6 +113,7 @@ class Settings(BaseSettings):
     lmstudio_url: str = "http://127.0.0.1:1234/v1"
     # 3. Where the bot keeps what it learns.
     state_dir: Path = Path("data")
+    state_url: str = ""  # postgresql://... to keep the state in Postgres instead (needs the "postgres" extra)
     # 4. Safety limits (never learned).
     row_limit: int = 500
     probe_row_limit: int = 20

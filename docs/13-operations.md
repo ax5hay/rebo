@@ -66,8 +66,14 @@ needs AWS access and the VPN (doc 12 §1).
 - `state.db` is the bot's memory. Back it up with SQLite's online backup:
   `sqlite3 data/state.db ".backup data/state-$(date +%F).db"` (safe while running, WAL mode).
 - The catalog part can be rebuilt (`bootstrap`). Knowledge, events and suggestions cannot.
-- Moving to Postgres later: the schema in `store.SCHEMA` is plain SQL apart from FTS5. Replace
-  FTS5 with `tsvector` and the BLOB vectors with pgvector (doc 15).
+- **Postgres instead of the file** (B-026): `uv sync --extra postgres`, then set
+  `state_url: postgresql://user:pw@host:5432/db` (or `REPORTSBOT_STATE_URL`). The schema is created
+  at start-up; any Postgres 13+ works, no extensions. Locally: `docker compose up -d state-db`
+  (postgres:18.6 on port 5433, user/password/db `reportsbot`). Back it up with `pg_dump`. There is no
+  copy tool from an existing `state.db` yet: knowledge can move with `reportsbot knowledge export`
+  / `import` (admin), conversations do not.
+- Tests on both backends: `REPORTSBOT_TEST_STATE_URL=postgresql://reportsbot:reportsbot@127.0.0.1:5433/reportsbot uv run pytest`
+  runs every test that uses the `app` fixture a second time on Postgres, each in its own schema.
 
 ## 5. Deployment
 

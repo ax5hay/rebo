@@ -1,7 +1,12 @@
 # 09 · Data model (`state.db`)
 
-One SQLite file at `$REPORTSBOT_STATE_DIR/state.db`, WAL mode, foreign keys on. DDL: `store.SCHEMA`
-(created idempotently at start-up). Timestamps are Unix seconds (`REAL`). JSON columns are TEXT.
+One SQLite file at `$REPORTSBOT_STATE_DIR/state.db`, WAL mode, foreign keys on, or a Postgres database
+when `state_url` is set (B-026). DDL: `store.SCHEMA` (created idempotently at start-up; for Postgres
+`store._pg_schema()` derives it: `REAL` → `DOUBLE PRECISION`, `BLOB` → `BYTEA`, autoincrement →
+identity, and each FTS5 table becomes a plain table with the same columns plus a generated `tsv
+tsvector` and a GIN index). Code writes SQLite-style SQL with `?`; the Postgres connection translates
+it, and full-text search goes through `Store.match`. Timestamps are Unix seconds. JSON columns are
+TEXT. `cat_column.pos` keeps the column order (it was SQLite's `rowid`).
 
 ## Catalog (rebuilt by bootstrap)
 

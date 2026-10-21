@@ -1,13 +1,16 @@
 """Question masking for example retrieval (B-009): a stored value in the question stands for its column."""
+import json
+
 from reportsbot.knowledge import User
 from test_learning import fake_turn
 
 
 def _example(app, user, question, sql):
     t = fake_turn(app, user, sql)
-    app.store.db.execute("UPDATE turn SET question=?, payload=json_set(payload, '$.title', ?) WHERE id=?",
-                         (question, question, t))
-    app.store.db.commit()
+    payload = json.loads(app.store.one("SELECT payload FROM turn WHERE id=?", (t,))["payload"])
+    with app.store.tx() as db:
+        db.execute("UPDATE turn SET question=?, payload=? WHERE id=?", (question, json.dumps({**payload,
+                                                                                            "title": question}), t))
     app.feedback(user, t, "correct")
     return next(i["id"] for i in app.knowledge.visible(user, "example") if i["question"] == question)
 

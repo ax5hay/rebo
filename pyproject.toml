@@ -23,6 +23,7 @@ dependencies = [
 embed = ["fastembed>=0.9"]
 synth = ["faker>=40.0"]
 mcp = ["fastmcp>=4.1"]
+postgres = ["psycopg[binary]>=3.3"]
 otel = ["opentelemetry-sdk>=1.30", "opentelemetry-exporter-otlp-proto-http>=1.30"]
 
 [project.scripts]

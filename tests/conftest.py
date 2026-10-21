@@ -1,7 +1,10 @@
 """Offline fixtures: a tiny SQLite 'shop' database and an App on top of it (no LLM calls)."""
 from __future__ import annotations
 
+import os
 import sqlite3
+import uuid
+from typing import Iterator
 
 import pytest
 
@@ -17,8 +20,29 @@ CREATE TABLE note (note_id INTEGER PRIMARY KEY, author_id INTEGER, body TEXT);
 """
 
 
+# State backends to run the suite on. Postgres joins when REPORTSBOT_TEST_STATE_URL points at a server
+# (docker compose up -d state-db); each test then gets its own schema, dropped afterwards.
+PG_URL = os.environ.get("REPORTSBOT_TEST_STATE_URL", "")
+BACKENDS = ["sqlite", "postgres"] if PG_URL else ["sqlite"]
+
+
+@pytest.fixture(params=BACKENDS)
+def state_url(request) -> Iterator[str]:
+    if request.param == "sqlite":
+        yield ""
+        return
+    import psycopg
+    schema = f"t_{uuid.uuid4().hex[:12]}"
+    admin_url = PG_URL.replace("postgresql+psycopg://", "postgresql://")
+    with psycopg.connect(admin_url, autocommit=True) as c:
+        c.execute(f"CREATE SCHEMA {schema}")
+    yield f"{admin_url}{'&' if '?' in admin_url else '?'}options=-csearch_path%3D{schema}"
+    with psycopg.connect(admin_url, autocommit=True) as c:
+        c.execute(f"DROP SCHEMA {schema} CASCADE")
+
+
 @pytest.fixture()
-def app(tmp_path) -> App:
+def app(tmp_path, state_url) -> App:
     db = tmp_path / "shop.db"
     con = sqlite3.connect(db)
     con.executescript(SHOP)
@@ -34,7 +58,8 @@ def app(tmp_path) -> App:
         con.execute("INSERT INTO note VALUES (?,?,?)", (i, 1 + i % 40, "hello"))
     con.commit()
     con.close()
-    settings = Settings(database_url=f"sqlite:///{db}", state_dir=tmp_path / "state", embeddings=False)
+    settings = Settings(database_url=f"sqlite:///{db}", state_dir=tmp_path / "state", state_url=state_url,
+                        embeddings=False)
     a = App(settings)
     a.bootstrap(progress=lambda *_: None)
     return a

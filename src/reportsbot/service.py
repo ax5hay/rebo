@@ -72,7 +72,7 @@ class App:
     def __init__(self, settings: Settings | None = None):
         load_env_file()  # API keys from .env into the environment (explicit settings objects too)
         self.settings = s = settings or get_settings()
-        self.store = Store(s.state_db)
+        self.store = Store(s.state_url or s.state_db)
         self.target = TargetDB(s.database_url, timeout_s=s.query_timeout_s)
         self.index = Index(self.store, get_embedder(s.embeddings))
         self.catalog = Catalog(self.store)

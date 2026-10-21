@@ -14,6 +14,7 @@ models:                                    # "<provider>:<model>"
 lmstudio_url: http://127.0.0.1:1234/v1     # only used by "lmstudio:" models
 
 state_dir: data                            # the bot's memory (back this up)
+state_url: ""                              # or postgresql://user:pw@host/db for the memory (extra "postgres")
 
 limits:
   rows: 500                                # rows returned per report

@@ -57,6 +57,18 @@ commercially usable. Add a reranker only if evals show retrieval recall is the b
 | Weaviate / Milvus / OpenSearch / Meilisearch / Typesense | — | mixed (Typesense GPL-3.0; Meilisearch EE BUSL) | Not needed |
 | sqlite-vec | 0.1.9 (2026-03) | MIT/Apache | Pre-1.0, slow-moving; not needed at our size |
 
+**Decision 2026-10-21 (B-026), re-researched on PyPI / GitHub / Docker Hub that day:** the
+Postgres backend ships **without extensions**: stock `postgres:18.6`, built-in `tsvector` +
+`ts_rank` for the three search tables (english config where SQLite used porter, simple where it
+used unicode61), and vectors kept as `BYTEA` with the same in-process NumPy cosine as SQLite.
+Why: it runs on any managed Postgres with no custom image, the whole suite passes on both backends,
+and catalogue/knowledge sizes (hundreds to low thousands of rows) do not need HNSW or BM25 yet.
+pg_textsearch (PostgreSQL licence, last push 2026-10-20, active) and pgvector (Python package 0.5.1,
+MIT, 2026-10-09) stay the upgrade path when retrieval quality or size calls for it; measure first.
+Driver: psycopg 3.3.6 (2026-09-18, **LGPL-3.0**, used unmodified as a library; the `postgres`
+extra). pg8000 (BSD) was the alternative; its last release was 2025-09. Retrieval quality on
+Postgres vs SQLite not measured with an LLM (needs a key); ranking functions differ (ts_rank vs bm25).
+
 ## 4. LLM gateway
 
 | Option | Version | Licence | Verdict |
