@@ -397,6 +397,25 @@ class App:
                                    status=msg.status_label(o.item["status"], o.item["scope"]).lower()),
                 "item": o.item}
 
+    def starter_questions(self, user: User, top: int = 5) -> list[str]:
+        """Questions behind the most-used reports this user can trust: shown as one-click starters."""
+        rows = [i for i in self.knowledge.visible(user, "example") if i.get("question")]
+        rows.sort(key=lambda i: (i["status"] != "verified", -(i["uses"] or 0), -(i["confirmations"] or 0)))
+        return list(dict.fromkeys(i["question"] for i in rows))[:top]
+
+    def turn_csv(self, user: User, turn_id: str) -> str:
+        import csv
+        import io
+        t = self._turn(user, turn_id)
+        if t["kind"] != "report":
+            raise ValueError("Only reports can be downloaded.")
+        p = json.loads(t["payload"])
+        buf = io.StringIO()
+        w = csv.writer(buf)
+        w.writerow(p["columns"])
+        w.writerows(p["rows"])
+        return buf.getvalue()
+
     def _check_item_sql(self, kind: str, sql: str | None) -> None:
         """Hand-written SQL is held to the same rules as the bot's: examples must run; joins must
         name two real table.column pairs; term predicates must work inside a WHERE clause."""

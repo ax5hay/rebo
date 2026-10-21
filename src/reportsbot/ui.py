@@ -1,25 +1,37 @@
-"""Developer / pilot UI (NiceGUI). Three pages: chat, my knowledge, admin review.
+"""Local / pilot UI (NiceGUI). Pages by role (docs/22-roles-and-user-aids.md):
 
-Identity is taken from the URL (?user=alice&role=admin&team=ops; roles user|admin|owner) because this UI is for
-local testing; a host application uses the HTTP API with its own login instead.
-Layouts are described screen by screen in docs/09-api-and-ui.md.
+  /            Ask             everyone: chat, report cards, feedback (+ undo, + in words), fix requests, CSV
+  /knowledge   My knowledge    everyone: what I taught (edit, share, withdraw, undo, history), shared
+                               knowledge (request a fix), my requests; add personal knowledge
+  /admin       Admin           admins/owners: review queue, open requests, add shared knowledge, export/import
+  /config      Configuration   owners: edit reportsbot.yaml (validated), history, rollback
+
+Identity comes from the URL (?user=alice&role=admin&team=ops; roles user|admin|owner) because this UI
+is for local testing; a host application uses the HTTP API with its own login instead.
 """
 from __future__ import annotations
 
 import datetime as dt
+import json
 
 from fastapi import FastAPI
 from nicegui import ui
 
+from . import admin as admin_ops
 from . import messages as msg
 from .knowledge import User
 from .service import App
 
 _BADGE = {"verified": "positive", "yours": "primary", "adapted": "info", "new": "grey-7"}
+_KINDS = ["term", "note", "join", "example"]
 
 
 def _user(user: str, role: str, team: str | None) -> User:
     return User(id=user or "guest", role=role, team=team or None)  # role normalised by User
+
+
+def _when(ts: float) -> str:
+    return dt.datetime.fromtimestamp(ts).strftime("%Y-%m-%d %H:%M")
 
 
 def _nav(u: User) -> None:
@@ -29,12 +41,90 @@ def _nav(u: User) -> None:
         ui.link("Ask", f"/{q}").classes("text-white")
         ui.link("My knowledge", f"/knowledge{q}").classes("text-white")
         if u.is_admin:
-            ui.link("Review queue", f"/review{q}").classes("text-white")
+            ui.link("Admin", f"/admin{q}").classes("text-white")
+        if u.is_owner:
+            ui.link("Configuration", f"/config{q}").classes("text-white")
         ui.space()
         ui.label(f"{u.id} · {u.role}" + (f" · team {u.team}" if u.team else "")).classes("text-sm opacity-80")
 
 
+def _safe(fn, *args, **kw):
+    """Run an action and show its message; permission or validation problems become a red notice."""
+    try:
+        res = fn(*args, **kw)
+        if isinstance(res, dict) and res.get("message"):
+            ui.notify(res["message"])
+        return res
+    except (PermissionError, ValueError, KeyError) as e:
+        ui.notify(str(e).strip("'\""), type="negative", multi_line=True)
+        return None
+
+
+def _request_dialog(app: App, u: User, kind: str, *, item_id=None, turn_id=None, title="Request a fix") -> None:
+    with ui.dialog() as d, ui.card().classes("min-w-[32rem]"):
+        ui.label(title).classes("font-medium")
+        ui.label("Describe, in your own words, what should change. An "
+                 + ("owner" if kind in ("access", "config") else "admin") + " will see it.").classes("text-sm")
+        text = ui.textarea(placeholder="e.g. VIP should mean more than 500 spent, not 1000").classes("w-full")
+
+        def send():
+            if _safe(app.create_request, u, kind=kind, text=text.value or "", item_id=item_id, turn_id=turn_id):
+                d.close()
+
+        with ui.row():
+            ui.button("Send request", on_click=send).props("color=primary")
+            ui.button("Cancel", on_click=d.close).props("flat")
+    d.open()
+
+
+def _knowledge_dialog(app: App, u: User, on_done, item: dict | None = None) -> None:
+    """Add (item=None) or edit one piece of knowledge."""
+    with ui.dialog() as d, ui.card().classes("min-w-[40rem]"):
+        ui.label("Edit" if item else ("Add shared knowledge" if u.is_admin else "Add knowledge for me")).classes("font-medium")
+        kind = ui.select(_KINDS, value=(item or {}).get("kind", "term"), label="Kind").props("dense")
+        if item:
+            kind.disable()
+        title = ui.input("Title (the word or report name)", value=(item or {}).get("title", "")).classes("w-full")
+        question = ui.input("Question (examples)", value=(item or {}).get("question") or "").classes("w-full")
+        body = ui.textarea("Meaning / rule in plain words", value=(item or {}).get("body") or "").classes("w-full")
+        sql = ui.textarea("SQL (example: full query; term: condition; join: a.col = b.col)",
+                          value=(item or {}).get("sql") or "").classes("w-full font-mono")
+
+        def save():
+            fields = {"title": title.value, "question": question.value or None, "body": body.value or None,
+                      "sql": sql.value or None}
+            if item:
+                res = _safe(app.edit_knowledge, u, item["id"], fields)
+            else:
+                res = _safe(app.add_knowledge, u, kind=kind.value, **fields)
+            if res:
+                d.close()
+                on_done()
+
+        with ui.row():
+            ui.button("Save", on_click=save).props("color=primary")
+            ui.button("Cancel", on_click=d.close).props("flat")
+    d.open()
+
+
+def _history_dialog(app: App, item: dict) -> None:
+    with ui.dialog() as d, ui.card().classes("min-w-[36rem]"):
+        ui.label(f"History of “{item['title']}”").classes("font-medium")
+        for e in app.knowledge.history(item["id"]):
+            note = e["note"] or ""
+            if e["action"] == "edited":
+                try:
+                    n = json.loads(note)
+                    note = "; ".join(f"{k}: “{n['before'].get(k)}” → “{v}”" for k, v in n["after"].items())
+                except (ValueError, KeyError):
+                    pass
+            ui.label(f"{_when(e['at'])} · {e['actor']} · {e['action']} {note}").classes("text-sm")
+        ui.button("Close", on_click=d.close)
+    d.open()
+
+
 def mount_ui(api: FastAPI, app: App) -> None:
+    # ------------------------------------------------------------------ Ask
     @ui.page("/")
     def chat(user: str = "guest", role: str = "user", team: str | None = None):
         u = _user(user, role, team)
@@ -43,6 +133,12 @@ def mount_ui(api: FastAPI, app: App) -> None:
         feed = ui.column().classes("w-full max-w-5xl mx-auto gap-3 p-4")
         with feed:
             ui.chat_message(msg.say("welcome"), name="Reports", sent=False)
+            starters = app.starter_questions(u)
+            if starters:
+                with ui.row().classes("gap-2"):
+                    ui.label("Others often ask:").classes("text-sm opacity-70")
+                    for s in starters:
+                        ui.button(s, on_click=lambda s=s: send(s)).props("flat dense no-caps color=primary")
 
         async def send(text: str) -> None:
             text = (text or "").strip()
@@ -51,6 +147,7 @@ def mount_ui(api: FastAPI, app: App) -> None:
             if state["correcting"]:
                 text = f"Correction to the previous report: {text}"
                 state["correcting"] = None
+                box.props("placeholder=Ask for a report")
             with feed:
                 ui.chat_message(text, name=u.id, sent=True)
                 spinner = ui.spinner(size="lg")
@@ -77,10 +174,14 @@ def mount_ui(api: FastAPI, app: App) -> None:
                     with ui.expansion("Show SQL").classes("w-full"):
                         ui.code(r["sql"], language="sql").classes("w-full")
                     feedback_row(r)
-                    if r.get("follow_ups"):
-                        with ui.row().classes("gap-2"):
-                            for f in r["follow_ups"]:
-                                ui.button(f, on_click=lambda f=f: send(f)).props("flat dense no-caps color=primary")
+                    with ui.row().classes("gap-2"):
+                        for f in r.get("follow_ups") or []:
+                            ui.button(f, on_click=lambda f=f: send(f)).props("flat dense no-caps color=primary")
+                        ui.space()
+                        ui.button("Download CSV", on_click=lambda r=r: ui.download.content(
+                            app.turn_csv(u, r["turn_id"]), f"{r['title'][:60]}.csv")).props("flat dense")
+                        ui.button("Request a fix", on_click=lambda r=r: _request_dialog(
+                            app, u, "fix_report", turn_id=r["turn_id"])).props("flat dense")
                 for s in r.get("suggestions") or []:
                     suggestion_card(s)
             elif r["kind"] == "clarify":
@@ -108,27 +209,51 @@ def mount_ui(api: FastAPI, app: App) -> None:
                 ui.chat_message(r["message"], name="Reports", sent=False)
 
         def feedback_row(r: dict) -> None:
-            with ui.row().classes("items-center gap-2") as row:
-                ui.label(msg.say("ask_feedback")).classes("text-sm")
+            row = ui.row().classes("items-center gap-2 w-full")
 
-                def yes():
-                    res = app.feedback(u, r["turn_id"], "correct")
-                    row.clear()
-                    with row:
-                        ui.icon("check_circle", color="positive")
-                        ui.label(res["message"]).classes("text-sm")
+            def ask_state():
+                row.clear()
+                with row:
+                    ui.label(msg.say("ask_feedback")).classes("text-sm")
+                    ui.button("Yes, this is right", on_click=yes).props("color=positive outline")
+                    ui.button("No, fix it", on_click=no).props("color=warning outline")
 
-                def no():
-                    res = app.feedback(u, r["turn_id"], "wrong")
-                    state["correcting"] = r["turn_id"]
-                    row.clear()
-                    with row:
-                        ui.icon("edit", color="warning")
-                        ui.label(res["message"]).classes("text-sm")
-                    box.props("placeholder=Describe what should change")
+            def done_state(icon: str, color: str, text: str):
+                row.clear()
+                with row:
+                    ui.icon(icon, color=color)
+                    ui.label(text).classes("text-sm")
+                    ui.button("Undo my feedback", on_click=undo).props("flat dense")
 
-                ui.button("Yes, this is right", on_click=yes).props("color=positive outline")
-                ui.button("No, fix it", on_click=no).props("color=warning outline")
+            def yes():
+                res = _safe(app.feedback, u, r["turn_id"], "correct")
+                if res:
+                    done_state("check_circle", "positive", res["message"])
+
+            def no():
+                row.clear()
+                with row:
+                    words = ui.textarea(placeholder=msg.say("fix_prompt")).classes("flex-grow")
+
+                    async def submit():
+                        res = _safe(app.feedback, u, r["turn_id"], "wrong", words.value or "")
+                        if not res:
+                            return
+                        done_state("edit", "warning", res["message"])
+                        if res.get("correction"):
+                            await send(res["correction"].removeprefix("Correction to the previous report: "))
+                        else:
+                            state["correcting"] = r["turn_id"]
+                            box.props("placeholder=Describe what should change")
+
+                    ui.button("Send", on_click=submit).props("color=warning")
+                    ui.button("Cancel", on_click=ask_state).props("flat")
+
+            def undo():
+                if _safe(app.undo_feedback, u, r["turn_id"]):
+                    ask_state()
+
+            ask_state()
 
         def suggestion_card(s: dict) -> None:
             with ui.card().classes("w-full bg-amber-50") as card:
@@ -137,10 +262,11 @@ def mount_ui(api: FastAPI, app: App) -> None:
                 ui.label(msg.say("remember_scope_note")).classes("text-xs opacity-70")
 
                 def act(accept: bool):
-                    res = app.remember(u, s["id"], accept)
-                    card.clear()
-                    with card:
-                        ui.label(res["message"]).classes("text-sm")
+                    res = _safe(app.remember, u, s["id"], accept)
+                    if res:
+                        card.clear()
+                        with card:
+                            ui.label(res["message"]).classes("text-sm")
 
                 with ui.row():
                     ui.button("Remember", on_click=lambda: act(True)).props("color=primary")
@@ -152,6 +278,7 @@ def mount_ui(api: FastAPI, app: App) -> None:
                     "keydown.enter", lambda: send(box.value))
                 ui.button("Send", on_click=lambda: send(box.value))
 
+    # ------------------------------------------------------------------ My knowledge
     @ui.page("/knowledge")
     def knowledge(user: str = "guest", role: str = "user", team: str | None = None):
         u = _user(user, role, team)
@@ -164,14 +291,25 @@ def mount_ui(api: FastAPI, app: App) -> None:
             with body:
                 if data["notice"]:
                     ui.label(data["notice"]).classes("text-warning")
-                ui.label("What I've taught the bot").classes("text-lg font-semibold")
+                with ui.row().classes("items-center w-full"):
+                    ui.label("What I've taught the bot").classes("text-lg font-semibold")
+                    ui.space()
+                    ui.button("Add knowledge", on_click=lambda: _knowledge_dialog(app, u, draw)).props("outline")
                 if not data["mine"]:
-                    ui.label("Nothing yet. Confirm a report or accept a 'Remember this?' card to start.")
+                    ui.label("Nothing yet. Confirm a report, accept a 'Remember this?' card, or add knowledge.")
                 for item in data["mine"]:
                     item_card(item, own=True)
                 ui.label("Shared knowledge I benefit from").classes("text-lg font-semibold mt-4")
                 for item in data["shared"]:
                     item_card(item, own=False)
+                ui.label("My requests").classes("text-lg font-semibold mt-4")
+                mine = app.list_requests(u, status=None) if not u.is_admin else [
+                    r for r in app.list_requests(u, status=None) if r["requester"] == u.id]
+                if not mine:
+                    ui.label("No requests. Use 'Request a fix' on a report or a shared item.").classes("text-sm")
+                for r in mine:
+                    ui.label(f"{_when(r['created_at'])} · {r['kind']} · {r['status']}: {r['text']}"
+                             + (f" — {r['resolver']}: {r['resolution']}" if r["resolution"] else "")).classes("text-sm")
 
         def item_card(item: dict, own: bool):
             with ui.card().classes("w-full"):
@@ -190,34 +328,28 @@ def mount_ui(api: FastAPI, app: App) -> None:
                 ui.label(f"Confirmed {item['confirmations']}× · used {item['uses']}× · reported wrong "
                          f"{item['rejections']}×").classes("text-xs opacity-60")
                 with ui.row():
+                    if app.knowledge.can_edit(u, item):
+                        ui.button("Edit", on_click=lambda i=item: _knowledge_dialog(app, u, draw, i)).props("flat")
                     if own and item["status"] == "active":
                         ui.button("Share with everyone", on_click=lambda i=item: act(app.share, i)).props("flat")
                     if (own or u.is_admin) and item["status"] != "retired":
                         ui.button("Withdraw", on_click=lambda i=item: act(app.retire, i)).props("flat color=negative")
                     if own or u.is_admin:
                         ui.button("Undo last change", on_click=lambda i=item: act(app.restore, i)).props("flat")
-                    ui.button("History", on_click=lambda i=item: show_history(i)).props("flat")
+                    if not own and not u.is_admin:
+                        ui.button("Request a fix", on_click=lambda i=item: _request_dialog(
+                            app, u, "fix_knowledge", item_id=i["id"])).props("flat")
+                    ui.button("History", on_click=lambda i=item: _history_dialog(app, i)).props("flat")
 
         def act(fn, item):
-            try:
-                ui.notify(fn(u, item["id"])["message"])
-            except PermissionError as e:
-                ui.notify(str(e), type="negative")
+            _safe(fn, u, item["id"])
             draw()
-
-        def show_history(item):
-            with ui.dialog() as d, ui.card().classes("min-w-[32rem]"):
-                ui.label(f"History of “{item['title']}”").classes("font-medium")
-                for e in app.knowledge.history(item["id"]):
-                    when = dt.datetime.fromtimestamp(e["at"]).strftime("%Y-%m-%d %H:%M")
-                    ui.label(f"{when} · {e['actor']} · {e['action']} {e['note'] or ''}").classes("text-sm")
-                ui.button("Close", on_click=d.close)
-            d.open()
 
         draw()
 
-    @ui.page("/review")
-    def review(user: str = "guest", role: str = "user", team: str | None = None):
+    # ------------------------------------------------------------------ Admin
+    @ui.page("/admin")
+    def admin_page(user: str = "guest", role: str = "user", team: str | None = None):
         u = _user(user, role, team)
         _nav(u)
         body = ui.column().classes("w-full max-w-5xl mx-auto gap-3 p-4")
@@ -226,34 +358,117 @@ def mount_ui(api: FastAPI, app: App) -> None:
             body.clear()
             with body:
                 if not u.is_admin:
-                    ui.label("Only admins can review shared knowledge.")
+                    ui.label("Only admins can manage shared knowledge.")
                     return
-                queue = app.review_queue(u)
-                ui.label(f"Review queue ({len(queue)})").classes("text-lg font-semibold")
+                with ui.row().classes("w-full items-center"):
+                    queue = app.review_queue(u)
+                    ui.label(f"Review queue ({len(queue)})").classes("text-lg font-semibold")
+                    ui.space()
+                    ui.button("Add shared knowledge", on_click=lambda: _knowledge_dialog(app, u, draw)).props("outline")
+                    ui.button("Export / import", on_click=bulk_dialog).props("outline")
                 for item in queue:
-                    with ui.card().classes("w-full"):
-                        with ui.row().classes("items-center gap-2"):
-                            ui.badge(item["kind"]); ui.badge(item["status"], color="warning")
-                            ui.label(item["title"]).classes("font-medium")
-                        ui.label(f"Owner {item['owner']} · confirmed by {len(item['confirmers'])} people · "
-                                 f"reported wrong {item['rejections']}×").classes("text-xs opacity-70")
-                        for k in ("question", "body"):
-                            if item.get(k):
-                                ui.label(item[k]).classes("text-sm")
-                        if item.get("sql"):
-                            ui.code(item["sql"], language="sql").classes("w-full")
-                        last = app.knowledge.history(item["id"])[-1]
-                        ui.label(f"Why it is here: {last['note'] or last['action']}").classes("text-xs")
-                        with ui.row():
-                            ui.button("Share with everyone", on_click=lambda i=item: do(app.promote, i, "org"))
-                            if item.get("team"):
-                                ui.button(f"Share with team {item['team']}",
-                                          on_click=lambda i=item: do(app.promote, i, "team")).props("outline")
-                            ui.button("Reject", on_click=lambda i=item: do(app.retire, i)).props("flat color=negative")
+                    queue_card(item)
+                reqs = app.list_requests(u)
+                ui.label(f"Open requests ({len(reqs)})").classes("text-lg font-semibold mt-4")
+                for r in reqs:
+                    request_card(r)
 
-        def do(fn, item, *args):
-            ui.notify(fn(u, item["id"], *args)["message"])
+        def queue_card(item):
+            with ui.card().classes("w-full"):
+                with ui.row().classes("items-center gap-2"):
+                    ui.badge(item["kind"]); ui.badge(item["status"], color="warning")
+                    ui.label(item["title"]).classes("font-medium")
+                ui.label(f"Owner {item['owner']} · confirmed by {len(item['confirmers'])} people · "
+                         f"reported wrong {item['rejections']}×").classes("text-xs opacity-70")
+                for k in ("question", "body"):
+                    if item.get(k):
+                        ui.label(item[k]).classes("text-sm")
+                if item.get("sql"):
+                    ui.code(item["sql"], language="sql").classes("w-full")
+                last = app.knowledge.history(item["id"])[-1]
+                ui.label(f"Why it is here: {last['note'] or last['action']}").classes("text-xs")
+                with ui.row():
+                    ui.button("Share with everyone", on_click=lambda i=item: do(app.promote, i["id"], "org"))
+                    if item.get("team"):
+                        ui.button(f"Share with team {item['team']}",
+                                  on_click=lambda i=item: do(app.promote, i["id"], "team")).props("outline")
+                    ui.button("Edit first", on_click=lambda i=item: _knowledge_dialog(app, u, draw, i)).props("flat")
+                    ui.button("Reject", on_click=lambda i=item: do(app.retire, i["id"])).props("flat color=negative")
+
+        def request_card(r):
+            with ui.card().classes("w-full"):
+                ui.label(f"{r['requester']} · {r['kind']} · {_when(r['created_at'])}").classes("text-xs opacity-70")
+                ui.label(r["text"])
+                if r["item_id"]:
+                    item = app.knowledge.get(r["item_id"])
+                    if item:
+                        ui.label(f"About: {item['kind']} “{item['title']}”").classes("text-sm")
+                        ui.button("Edit that item", on_click=lambda i=item: _knowledge_dialog(app, u, draw, i)).props("flat dense")
+                note = ui.input("Note to the requester").classes("w-full")
+                with ui.row():
+                    ui.button("Done", on_click=lambda r=r, n=note: do(app.resolve_request, r["id"], "done", n.value or ""))
+                    ui.button("Decline", on_click=lambda r=r, n=note: do(app.resolve_request, r["id"], "declined",
+                                                                         n.value or "")).props("flat color=negative")
+
+        def bulk_dialog():
+            with ui.dialog() as d, ui.card().classes("min-w-[48rem]"):
+                ui.label("Everything the bot has learned (edit, then Import)").classes("font-medium")
+                text = ui.textarea(value=admin_ops.export_knowledge(app, u)).classes("w-full font-mono").props("rows=24")
+
+                def do_import():
+                    res = _safe(admin_ops.import_knowledge, app, u, text.value or "")
+                    if res:
+                        for err in res["errors"]:
+                            ui.notify(err, type="warning", multi_line=True)
+                        d.close()
+                        draw()
+
+                with ui.row():
+                    ui.button("Import", on_click=do_import).props("color=primary")
+                    ui.button("Download", on_click=lambda: ui.download.content(text.value, "knowledge.yaml")).props("flat")
+                    ui.button("Close", on_click=d.close).props("flat")
+            d.open()
+
+        def do(fn, *args):
+            _safe(fn, u, *args)
             draw()
+
+        draw()
+
+    @ui.page("/review")
+    def review_redirect(user: str = "guest", role: str = "user", team: str | None = None):
+        ui.navigate.to(f"/admin?user={user}&role={role}" + (f"&team={team}" if team else ""))
+
+    # ------------------------------------------------------------------ Configuration (owners)
+    @ui.page("/config")
+    def config_page(user: str = "guest", role: str = "user", team: str | None = None):
+        u = _user(user, role, team)
+        _nav(u)
+        body = ui.column().classes("w-full max-w-5xl mx-auto gap-3 p-4")
+
+        def draw():
+            body.clear()
+            with body:
+                if not u.is_owner:
+                    ui.label("Only owners can change the configuration. Admins and users can send a request "
+                             "from My knowledge.")
+                    ui.button("Request a configuration change",
+                              on_click=lambda: _request_dialog(app, u, "config", title="Request a configuration change"))
+                    return
+                cfg = admin_ops.get_config(app, u)
+                ui.label(f"Configuration · {cfg['path']}").classes("text-lg font-semibold")
+                ui.label("About 10 values. Meaning is never configured here; the bot learns it. API keys stay in "
+                         "environment variables. Changes are validated, kept in history, and apply after a restart.").classes("text-sm")
+                text = ui.textarea(value=cfg["yaml"]).classes("w-full font-mono").props("rows=22")
+                note = ui.input("Why are you changing it?").classes("w-full")
+                ui.button("Save", on_click=lambda: (_safe(admin_ops.save_config, app, u, text.value or "",
+                                                          note.value or ""), draw())).props("color=primary")
+                ui.label("History").classes("font-medium mt-4")
+                for e in cfg["history"]:
+                    with ui.row().classes("items-center"):
+                        ui.label(f"{_when(e['at'])} · {e['actor']} · {e['note'] or ''}").classes("text-sm")
+                        ui.button("Roll back this change", on_click=lambda e=e: (
+                            _safe(admin_ops.rollback_config, app, u, e["id"]), draw())).props("flat dense")
 
         draw()
 

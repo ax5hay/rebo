@@ -142,6 +142,14 @@ def router(app: App) -> APIRouter:
     def feedback(turn_id: str, body: FeedbackIn, user: User = Depends(current_user)):
         return guard_errors(lambda: app.feedback(user, turn_id, body.verdict, body.note))
 
+    @r.get("/turns/{turn_id}/csv", response_class=PlainTextResponse)
+    def turn_csv(turn_id: str, user: User = Depends(current_user)):
+        return guard_errors(lambda: app.turn_csv(user, turn_id))
+
+    @r.get("/starter")
+    def starter(user: User = Depends(current_user)):
+        return app.starter_questions(user)
+
     @r.delete("/turns/{turn_id}/feedback")
     def undo_feedback(turn_id: str, user: User = Depends(current_user)):
         return guard_errors(lambda: app.undo_feedback(user, turn_id))

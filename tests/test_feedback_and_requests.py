@@ -73,3 +73,13 @@ def test_requests_route_to_the_right_people(app):
     assert {r["status"] for r in mine} == {"open", "done"}
     with pytest.raises(ValueError):
         app.create_request(ALICE, kind="other", text="   ")
+
+
+def test_csv_and_starter_questions(app):
+    tid = fake_turn(app, ALICE)
+    assert app.turn_csv(ALICE, tid).splitlines()[0] == "customer,status"
+    with pytest.raises(PermissionError):
+        app.turn_csv(BOB, tid)
+    app.feedback(ALICE, tid, "correct")
+    assert app.starter_questions(ALICE) == ["active customers"]
+    assert app.starter_questions(BOB) == []  # alice's personal report is not offered to bob
