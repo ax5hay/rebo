@@ -9,9 +9,9 @@ from __future__ import annotations
 import logging
 import os
 import re
-from pathlib import Path
 from functools import lru_cache
-from typing import Iterable
+from pathlib import Path
+from typing import Any, Iterable
 
 import numpy as np
 
@@ -50,9 +50,12 @@ def rrf(*ranked: Iterable[str], k: int = RRF_K) -> dict[str, float]:
 class Embedder:
     """Lazy fastembed wrapper; `available` is False when the extra is not installed."""
 
-    def __init__(self, enabled: bool = True):
+    def __init__(self, enabled: bool = True, model: str = EMBED_MODEL, asymmetric: bool = False):
+        """asymmetric: embed questions with the model's query prefix and documents with its passage
+        prefix (fastembed query_embed / passage_embed) instead of the same plain embedding for both."""
         self.available = False
         self._model = None
+        self.model_name, self.asymmetric = model, asymmetric
         if not enabled:
             return
         try:
@@ -67,17 +70,48 @@ class Embedder:
             # An offline bundle ships the model in models/fastembed (tools/export_bundle.py --with-models).
             bundled = Path(__file__).resolve().parents[2] / "models" / "fastembed"
             cache = os.environ.get("FASTEMBED_CACHE_PATH") or (str(bundled) if bundled.is_dir() else None)
-            self._model = TextEmbedding(EMBED_MODEL, cache_dir=cache)
+            self._model = TextEmbedding(self.model_name, cache_dir=cache)
         return self._model
 
-    def embed(self, texts: list[str]) -> np.ndarray:
-        vecs = np.array(list(self._get().embed(texts, batch_size=64)), dtype=np.float32)
+    def embed(self, texts: list[str], kind: str = "passage") -> np.ndarray:
+        m = self._get()
+        if not self.asymmetric:
+            out = m.embed(texts, batch_size=64)
+        else:
+            out = m.query_embed(texts) if kind == "query" else m.passage_embed(texts, batch_size=64)
+        vecs = np.array(list(out), dtype=np.float32)
+        return vecs / np.maximum(np.linalg.norm(vecs, axis=1, keepdims=True), 1e-9)
+
+
+class TEIEmbedder(Embedder):
+    """Embeddings from a Text Embeddings Inference server (`embeddings: http://tei:80`): POST /embed."""
+
+    def __init__(self, url: str, client: Any = None):
+        self.available, self._model, self.asymmetric = True, None, False
+        self.model_name, self.url = url, url.rstrip("/")
+        self._client = client
+
+    def embed(self, texts: list[str], kind: str = "passage") -> np.ndarray:
+        import httpx2
+        client = self._client or httpx2.Client(timeout=60)
+        out: list[list[float]] = []
+        for i in range(0, len(texts), 32):
+            r = client.post(f"{self.url}/embed", json={"inputs": texts[i:i + 32], "truncate": True})
+            r.raise_for_status()
+            out += r.json()
+        vecs = np.array(out, dtype=np.float32)
         return vecs / np.maximum(np.linalg.norm(vecs, axis=1, keepdims=True), 1e-9)
 
 
 @lru_cache(maxsize=4)
-def get_embedder(enabled: bool) -> Embedder:
-    return Embedder(enabled)
+def get_embedder(setting: bool | str) -> Embedder:
+    """`embeddings` setting: true = the default local model, false = keyword search only, a fastembed
+    model name, or an http(s):// URL of a TEI server."""
+    if isinstance(setting, str) and setting.startswith(("http://", "https://")):
+        return TEIEmbedder(setting)
+    if isinstance(setting, str) and setting.strip().lower() not in ("true", "false", ""):
+        return Embedder(True, setting.strip())
+    return Embedder(setting is True or str(setting).lower() == "true")
 
 
 class Index:
@@ -113,7 +147,7 @@ class Index:
             self._matrix[prefix] = ([r["ref"] for r in rows],
                                     np.vstack([np.frombuffer(r["vector"], dtype=np.float32) for r in rows]))
         refs, mat = self._matrix[prefix]
-        q = self.embedder.embed([query])[0]
+        q = self.embedder.embed([query], kind="query")[0]
         sims = mat @ q
         order = np.argsort(-sims)[:top]
         return [refs[i] for i in order if sims[i] > 0.2]

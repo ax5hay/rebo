@@ -123,7 +123,7 @@ class Settings(BaseSettings):
     deny_columns: str = ""  # regex on table.column, on top of auto-detected secrets
     # 5. Learning.
     share_threshold: int = 3  # distinct people agreeing before an item is proposed for everyone
-    embeddings: bool = True   # local vectors when fastembed is installed; keyword search always works
+    embeddings: bool | str = True  # true: local default model; false: keyword only; a fastembed model; or a TEI URL
     # 6. Identity: "headers" (X-User-* from a trusted gateway) or "jwt" (HS256 bearer, e.g. JMS).
     auth_mode: str = "headers"
     jwt_issuer: str = "orchid"

@@ -28,7 +28,7 @@ protected_columns: ""                      # regex on table.column, added to aut
 sharing:
   threshold: 3                             # people agreeing before something is proposed for everyone
 
-embeddings: true                           # local vectors (needs the "embed" extra)
+embeddings: true                           # local vectors ("embed" extra); false; a model name; or a TEI URL
 
 auth:
   mode: headers                            # headers (X-User-* from a trusted gateway) | jwt

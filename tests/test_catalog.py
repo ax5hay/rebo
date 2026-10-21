@@ -43,3 +43,24 @@ def test_describe_hides_protected_values(app):
 def test_target_session_is_read_only(app):
     with pytest.raises(sqlite3.OperationalError, match="readonly"):
         app.target.run("DELETE FROM customer", max_rows=1)
+
+
+def test_embeddings_setting_selects_the_embedder(app):
+    import httpx2
+    import numpy as np
+
+    from reportsbot.retrieval import Embedder, TEIEmbedder, get_embedder
+    assert type(get_embedder(True)) is Embedder and get_embedder(True).model_name.startswith("snowflake/")
+    assert get_embedder(False).available is False
+    assert get_embedder("google/embeddinggemma-300m").model_name == "google/embeddinggemma-300m"
+    assert isinstance(get_embedder("http://tei:80"), TEIEmbedder)
+    calls = []
+
+    def tei(request):
+        texts = json.loads(request.content)["inputs"]
+        calls.append(len(texts))
+        return httpx2.Response(200, json=[[float(len(t)), 1.0] for t in texts])
+
+    emb = TEIEmbedder("http://tei:80/", client=httpx2.Client(transport=httpx2.MockTransport(tei)))
+    vecs = emb.embed([f"text {i}" for i in range(40)])
+    assert calls == [32, 8] and vecs.shape == (40, 2) and np.allclose(np.linalg.norm(vecs, axis=1), 1.0)
