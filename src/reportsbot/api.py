@@ -34,6 +34,22 @@ class ReasonIn(BaseModel):
     reason: str = ""
 
 
+class KnowledgeIn(BaseModel):
+    kind: Literal["example", "term", "note", "join"]
+    title: str
+    body: str | None = None
+    sql: str | None = None
+    question: str | None = None
+    scope: Literal["org", "team"] = "org"
+
+
+class KnowledgeEdit(BaseModel):
+    title: str | None = None
+    question: str | None = None
+    body: str | None = None
+    sql: str | None = None
+
+
 def user_from_headers(x_user_id: str = Header(...), x_user_role: str = Header("user"),
                       x_user_team: str | None = Header(None)) -> User:
     """auth.mode=headers: identity comes from the host app's gateway. Never expose without one."""
@@ -110,6 +126,14 @@ def router(app: App) -> APIRouter:
     @r.get("/knowledge")
     def knowledge(user: User = Depends(current_user)):
         return app.my_knowledge(user)
+
+    @r.post("/knowledge")
+    def add_knowledge(body: KnowledgeIn, user: User = Depends(current_user)):
+        return guard_errors(lambda: app.add_knowledge(user, **body.model_dump()))
+
+    @r.patch("/knowledge/{item_id}")
+    def edit_knowledge(item_id: str, body: KnowledgeEdit, user: User = Depends(current_user)):
+        return guard_errors(lambda: app.edit_knowledge(user, item_id, body.model_dump(exclude_none=True)))
 
     @r.get("/knowledge/{item_id}/history")
     def history(item_id: str, user: User = Depends(current_user)):

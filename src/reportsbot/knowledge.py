@@ -132,9 +132,56 @@ class Knowledge:
         return out
 
     # ---- writes ------------------------------------------------------------------------
-    def _event(self, db, item_id: str, actor: str, action: str, frm: str | None, to: str | None, note: str = ""):
-        db.execute("INSERT INTO knowledge_event(item_id, at, actor, action, from_status, to_status, note) "
-                   "VALUES(?,?,?,?,?,?,?)", (item_id, now(), actor, action, frm, to, note))
+    def _event(self, db, item_id: str, actor: str, action: str, frm: str | None, to: str | None, note: str = "",
+               turn_id: str | None = None):
+        db.execute("INSERT INTO knowledge_event(item_id, at, actor, action, from_status, to_status, note, turn_id) "
+                   "VALUES(?,?,?,?,?,?,?,?)", (item_id, now(), actor, action, frm, to, note, turn_id))
+
+    # ---- direct editing (admins: anything; users: their own unshared items) --------------
+    EDITABLE = ("title", "question", "body", "sql")
+
+    def can_edit(self, user: User, item: dict[str, Any]) -> bool:
+        return user.is_admin or (item["owner"] == user.id and item["status"] in ("active", "proposed", "stale"))
+
+    def edit(self, user: User, item_id: str, changes: dict[str, Any], note: str = "") -> Outcome:
+        item = self.get(item_id)
+        if not item:
+            raise KeyError(item_id)
+        if not self.can_edit(user, item):
+            raise PermissionError("Only an admin can change shared knowledge. Send a fix request instead.")
+        changes = {k: v for k, v in changes.items() if k in self.EDITABLE and v != item.get(k)}
+        if not changes:
+            return Outcome("edit_nothing", item)
+        before = {k: item.get(k) for k in changes}
+        sets, args = [f"{k}=?" for k in changes], list(changes.values())
+        if "sql" in changes and item["kind"] in ("example", "join"):
+            sql = changes["sql"] or ""
+            tables = (tables_in(sql, self.dialect) if item["kind"] == "example"
+                      else sorted({s.strip().split(".")[0] for s in sql.split("=") if "." in s}))
+            sets += ["tables=?", "fingerprints=?"]
+            args += [json.dumps(tables), json.dumps(self.catalog.fingerprints(tables))]
+            if item["kind"] == "example":
+                sets.append("sql_canonical=?")
+                args.append(canonical_hash(sql, self.dialect))
+        with self.store.tx() as db:
+            db.execute(f"UPDATE knowledge SET {', '.join(sets)}, updated_at=? WHERE id=?", (*args, now(), item_id))
+            self._event(db, item_id, user.id, "edited", item["status"], item["status"],
+                        json.dumps({"before": before, "after": changes, "note": note}, default=str))
+        updated = self.get(item_id)
+        self._index_item(updated)
+        return Outcome("edited", updated)
+
+    def add(self, user: User, *, kind: str, title: str, body: str | None = None, sql: str | None = None,
+            question: str | None = None, scope: str = "org") -> Outcome:
+        """Write knowledge directly. Admins: shared immediately (verified). Users: personal."""
+        if kind not in ("example", "term", "note", "join"):
+            raise ValueError("kind must be example, term, note or join")
+        item = self._create(user=user, kind=kind, title=title, body=body, sql=sql, question=question,
+                            note="added directly")
+        if user.is_admin:
+            item = self._promote(user, item, scope if scope in ("org", "team") else "org")
+            return Outcome("added_shared", item)
+        return Outcome("teach_saved_personal", item)
 
     def _index_item(self, item: dict[str, Any]) -> None:
         with self.store.tx() as db:
@@ -303,10 +350,25 @@ class Knowledge:
         return Outcome("retired", self._set_status(item_id, "retired", actor=user.id, note=reason))
 
     def restore(self, user: User, item_id: str) -> Outcome:
-        """Undo the last status change (owner for personal items, admin for anything)."""
+        """Undo the last change: an edit (puts the previous text back) or a status change
+        (owner of a personal item, or an admin for anything)."""
         item = self.get(item_id)
         if not item or (item["owner"] != user.id and not user.is_admin):
             raise PermissionError("Only the owner or an admin can undo this.")
+        last_any = self.store.one("SELECT * FROM knowledge_event WHERE item_id=? AND (action='edited' OR action "
+                                  "LIKE 'status:%') AND COALESCE(note,'') NOT LIKE '%\"undo\":true%' "
+                                  "ORDER BY id DESC LIMIT 1", (item_id,))
+        if last_any and last_any["action"] == "edited":
+            before = json.loads(last_any["note"])["before"]
+            if not self.can_edit(user, item):
+                raise PermissionError("Only an admin can change shared knowledge.")
+            out = self.edit(user, item_id, before, note="undo")
+            with self.store.tx() as db:  # mark the undo so a second undo goes one step further back
+                db.execute("UPDATE knowledge_event SET note=json_set(note, '$.undo', json('true')) WHERE id="
+                           "(SELECT MAX(id) FROM knowledge_event WHERE item_id=?)", (item_id,))
+                db.execute("UPDATE knowledge_event SET note=json_set(note, '$.undo', json('true')) WHERE id=?",
+                           (last_any["id"],))
+            return Outcome("edit_undone", out.item)
         last = self.store.one("SELECT from_status FROM knowledge_event WHERE item_id=? AND action LIKE 'status:%' "
                               "ORDER BY id DESC LIMIT 1", (item_id,))
         back = (last or {}).get("from_status") or "active"

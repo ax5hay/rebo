@@ -133,7 +133,38 @@ CREATE TABLE IF NOT EXISTS turn (
     created_at REAL NOT NULL
 );
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+
+-- Requests from people who cannot make a change themselves (fix shared knowledge, access, config).
+CREATE TABLE IF NOT EXISTS request (
+    id TEXT PRIMARY KEY,
+    kind TEXT NOT NULL,          -- fix_knowledge | fix_report | access | config | other
+    target TEXT NOT NULL,        -- admin | owner (who can resolve it)
+    requester TEXT NOT NULL,
+    item_id TEXT,
+    turn_id TEXT,
+    text TEXT NOT NULL,          -- the request in the requester's own words
+    status TEXT NOT NULL DEFAULT 'open',  -- open | done | declined
+    resolver TEXT,
+    resolution TEXT,
+    created_at REAL NOT NULL,
+    updated_at REAL NOT NULL
+);
+-- Every configuration change (owners only), with the full previous file for rollback.
+CREATE TABLE IF NOT EXISTS config_event (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    at REAL NOT NULL,
+    actor TEXT NOT NULL,
+    previous TEXT,
+    current TEXT NOT NULL,
+    note TEXT
+);
 """
+
+# Columns added after the first release: (table, column, DDL). Applied once, idempotently.
+MIGRATIONS = [
+    ("knowledge_event", "turn_id", "ALTER TABLE knowledge_event ADD COLUMN turn_id TEXT"),
+    ("turn", "feedback_note", "ALTER TABLE turn ADD COLUMN feedback_note TEXT"),
+]
 
 
 def new_id(prefix: str) -> str:
@@ -149,6 +180,9 @@ class Store:
         self._local = threading.local()
         with self.tx() as db:
             db.executescript(SCHEMA)
+            for table, column, ddl in MIGRATIONS:
+                if column not in {r[1] for r in db.execute(f"PRAGMA table_info({table})")}:
+                    db.execute(ddl)
 
     @property
     def db(self) -> sqlite3.Connection:

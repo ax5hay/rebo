@@ -335,9 +335,57 @@ class App:
 
     def restore(self, user: User, item_id: str) -> dict[str, Any]:
         o = self.knowledge.restore(user, item_id)
+        if o.message == "edit_undone":
+            return {"message": msg.say("edit_undone", title=o.item["title"]), "item": o.item}
         return {"message": msg.say("restored", title=o.item["title"],
                                    status=msg.status_label(o.item["status"], o.item["scope"]).lower()),
                 "item": o.item}
+
+    def _check_item_sql(self, kind: str, sql: str | None) -> None:
+        """Hand-written SQL is held to the same rules as the bot's: examples must run; joins must
+        name two real table.column pairs; term predicates must work inside a WHERE clause."""
+        if not sql:
+            return
+        if kind == "example":
+            self.revalidate_check(sql)
+        elif kind == "join":
+            sides = [s.strip() for s in sql.split("=")]
+            if len(sides) != 2 or not all("." in s for s in sides):
+                raise ValueError("A join must look like table_a.column = table_b.column")
+            for s in sides:
+                t, c = s.split(".", 1)
+                if c not in self.catalog.schema.get(t, {}):
+                    raise ValueError(f"{s} is not a known column")
+        elif kind == "term":
+            tables = sorted({m.split(".")[0] for m in sql.replace("(", " ").split() if "." in m and m[0].isalpha()})
+            if tables:
+                self.revalidate_check(f"SELECT 1 FROM {', '.join(tables)} WHERE {sql}")
+
+    def revalidate_check(self, sql: str) -> None:
+        g = guard(sql, dialect=self.target.dialect, schema=self.catalog.schema, sensitive=self.catalog.sensitive,
+                  allowed_tables=self.allowed_tables, row_cap=1)
+        self.target.run(g.sql, max_rows=1)
+
+    def edit_knowledge(self, user: User, item_id: str, changes: dict[str, Any]) -> dict[str, Any]:
+        item = self.knowledge.get(item_id)
+        if not item:
+            raise KeyError(item_id)
+        if "sql" in changes:
+            try:
+                self._check_item_sql(item["kind"], changes["sql"])
+            except Exception as e:
+                raise ValueError(msg.say("edit_bad_sql", error=str(getattr(e, "orig", e))[:300])) from e
+        o = self.knowledge.edit(user, item_id, changes)
+        return {"message": msg.say(o.message, title=o.item["title"]), "item": o.item}
+
+    def add_knowledge(self, user: User, *, kind: str, title: str, body: str | None = None, sql: str | None = None,
+                      question: str | None = None, scope: str = "org") -> dict[str, Any]:
+        try:
+            self._check_item_sql(kind, sql)
+        except Exception as e:
+            raise ValueError(msg.say("edit_bad_sql", error=str(getattr(e, "orig", e))[:300])) from e
+        o = self.knowledge.add(user, kind=kind, title=title, body=body, sql=sql, question=question, scope=scope)
+        return {"message": msg.say(o.message, title=title), "item": o.item}
 
     def my_knowledge(self, user: User) -> dict[str, Any]:
         items = self.knowledge.mine(user)

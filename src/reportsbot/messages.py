@@ -59,6 +59,13 @@ MESSAGES: dict[str, str] = {
     "retired": "Withdrawn. It's no longer used. You can undo this from its history.",
     "restored": "Restored. \"{title}\" is back to {status}.",
 
+    # --- direct editing ------------------------------------------------------------------
+    "edited": "Saved. \"{title}\" now reads as you wrote it. The previous version is kept; use Undo to go back.",
+    "edit_nothing": "Nothing changed.",
+    "edit_undone": "Undone. \"{title}\" is back to its previous wording.",
+    "added_shared": "Added for everyone: \"{title}\". It applies to the next question anyone asks.",
+    "edit_bad_sql": "That SQL can't be saved: {error}",
+
     # --- clarifying -------------------------------------------------------------------
     "clarify_intro": "Quick check before I run this:",
     "clarify_other": "Something else (type it)",
