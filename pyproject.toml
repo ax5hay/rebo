@@ -45,3 +45,10 @@ packages = ["src/rebo"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+
+[tool.uv]
+# fastembed 0.9.0 caps pillow < 13, but every Pillow < 13 has the advisories fixed in 13.0.0 (heap
+# overflow in JPEG decoding and others). ReBo embeds text only; checked that fastembed text embeddings
+# work with Pillow 13. Remove when fastembed allows 13.
+override-dependencies = ["pillow>=13.0.0"]
+
