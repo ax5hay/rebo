@@ -31,12 +31,14 @@ def test_secrets_block_and_example_values_pass(tmp_path, monkeypatch):
 def test_local_state_and_secrets_are_never_included(tmp_path, monkeypatch):
     monkeypatch.setattr(bundle, "ROOT", tmp_path)
     for rel in (".env", "reportsbot.yaml", "data/state.db", ".venv/x.py", "fixtures/demo/greenleaf.db", "src/a.py",
-                ".env.example", "reportsbot.example.yaml"):
+                ".env.example", "reportsbot.example.yaml", "fixtures/demo/reportsbot.yaml", "BUNDLE_MANIFEST.json",
+                "reportsbot.git.bundle"):
         p = tmp_path / rel
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text("x", encoding="utf-8")
     kept = sorted(str(p.relative_to(tmp_path)).replace("\\", "/") for p in tmp_path.rglob("*") if p.is_file() and bundle.included(p))
-    assert kept == [".env.example", "reportsbot.example.yaml", "src/a.py"]
+    # a fixture's own reportsbot.yaml ships; the machine-local one at the top does not
+    assert kept == [".env.example", "fixtures/demo/reportsbot.yaml", "reportsbot.example.yaml", "src/a.py"]
 
 
 def test_the_real_folder_passes_the_scan():

@@ -1,9 +1,11 @@
 .venv/
 data/
-.env
+/.env
 __pycache__/
 *.pyc
 .pytest_cache/
-reportsbot.yaml
+/reportsbot.yaml
 fixtures/demo_property/greenleaf.db
 models/
+/BUNDLE_MANIFEST.json
+/reportsbot.git.bundle

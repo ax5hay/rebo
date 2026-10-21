@@ -41,8 +41,10 @@ EMAIL_OK = re.compile(r"(example\.(com|org|net)|anthropic\.com)$")
 
 def included(path: Path) -> bool:
     rel = path.relative_to(ROOT)
+    root_level = len(rel.parts) == 1  # .env / reportsbot.yaml are local only at the top; fixtures may have their own
     return not (set(rel.parts[:-1]) & EXCLUDE_DIRS or rel.parts[0] in EXCLUDE_DIRS
-                or path.name in EXCLUDE_FILES or path.suffix in EXCLUDE_SUFFIXES)
+                or (root_level and path.name in EXCLUDE_FILES) or path.suffix in EXCLUDE_SUFFIXES
+                or (root_level and path.name in ("BUNDLE_MANIFEST.json", "reportsbot.git.bundle")))
 
 
 def scan(files: list[Path]) -> tuple[list[str], list[str]]:
