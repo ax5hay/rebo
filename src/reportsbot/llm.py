@@ -68,6 +68,9 @@ PRICES = {
     "anthropic/claude-sonnet-5.5": (2.00, 0.10, 10.00),
     "google/gemini-3.8-flash": (0.825, 0.0825, 4.125),
     "google/gemini-3.5-flash-lite": (0.30, 0.03, 2.50),
+    # Google direct (google: models), ai.google.dev/gemini-api/docs/pricing checked 2026-10-21: these prices hold
+    # through 2026-12-31 and double on 2027-01-01.
+    "gemini-3.8-flash": (0.75, 0.075, 3.75),
 }
 
 
