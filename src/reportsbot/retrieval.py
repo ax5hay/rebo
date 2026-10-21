@@ -134,13 +134,35 @@ class Index:
             "SELECT value, table_name AS \"table\", column_name AS \"column\", freq, bm25(value_fts) AS s "
             "FROM value_fts WHERE value_fts MATCH ? ORDER BY s LIMIT ?", (fts_query(text), top))
 
+    def masked_query(self, text: str, siblings: int = 30) -> str | None:
+        """Question masking (DAIL-SQL): a word that is a stored value stands for its column, so it is
+        replaced by that column's common values. "paused customers" then also matches an example saved
+        for "active customers". None when no word is a stored value."""
+        words = [w.strip('"*') for w in fts_query(text).split(" OR ")]
+        out, masked = [], False
+        for w in words:
+            cols = {(r["table_name"], r["column_name"]) for r in self.store.all(
+                "SELECT value, table_name, column_name FROM value_fts WHERE value_fts MATCH ? LIMIT 50",
+                (f'"{w}"',)) if r["value"].strip().lower() == w}
+            if not cols:
+                out.append(w)
+                continue
+            masked = True
+            for t, c in sorted(cols):
+                out += [v for r in self.store.all(
+                    "SELECT value FROM value_fts WHERE table_name=? AND column_name=? ORDER BY freq DESC LIMIT ?",
+                    (t, c, siblings)) for v in _WORD.findall(r["value"].lower())]
+        return " OR ".join(f'"{w}"' for w in dict.fromkeys(out)) if masked else None
+
     def search_knowledge(self, query: str, visible_ids: set[str], top: int = 8) -> list[str]:
         if not visible_ids:
             return []
-        rows = self.store.all(
-            "SELECT id, bm25(knowledge_fts) AS s FROM knowledge_fts WHERE knowledge_fts MATCH ? "
-            "ORDER BY s LIMIT 50", (fts_query(query),))
-        kw = [f"knowledge:{r['id']}" for r in rows if r["id"] in visible_ids]
+        def keyword(fts: str) -> list[str]:
+            rows = self.store.all("SELECT id, bm25(knowledge_fts) AS s FROM knowledge_fts WHERE knowledge_fts MATCH ? "
+                                  "ORDER BY s LIMIT 50", (fts,))
+            return [f"knowledge:{r['id']}" for r in rows if r["id"] in visible_ids]
+        kw = keyword(fts_query(query))
+        masked = keyword(m) if (m := self.masked_query(query)) else []
         dense = [r for r in self._dense("knowledge:", query, 50) if r.removeprefix("knowledge:") in visible_ids]
-        fused = rrf(kw, dense)
+        fused = rrf(masked, kw, dense)  # masked first: on a tie it wins (it matched the value's role too)
         return [ref.removeprefix("knowledge:") for ref, _ in sorted(fused.items(), key=lambda x: -x[1])[:top]]

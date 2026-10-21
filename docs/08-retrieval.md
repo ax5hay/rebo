@@ -52,10 +52,16 @@ four retrieval lanes).
 
 ## 5. What is deliberately not here (yet)
 
+*Question masking moved out of this list: it is built (B-009, 2026-10-21).* `Index.masked_query`:
+a question word that is exactly a stored value (`value_fts`) stands for its column, so it is
+replaced by that column's 30 most frequent values; other words stay. `search_knowledge` fuses three
+rankings with RRF: masked keyword, plain keyword, dense (masked first, so it wins ties). "paused
+customers" now ranks the example saved for "active customers" first, and "paused" alone finds it.
+Schema words are not masked: they already match literally. Source: DAIL-SQL masks domain words
+before matching examples (82.0 vs 79.9 execution accuracy on Spider-dev). Not measured on our eval
+sets (needs an LLM key and saved examples).
+
 - **A cross-encoder reranker.** fastembed has `ms-marco-MiniLM-L-6-v2` (0.08 GB). Add it if
   retrieval misses show up in the eval traces (doc 15).
-- **Question masking for example retrieval** (DAIL-SQL masks schema words in questions before
-  matching; 82.0 vs 79.9 execution accuracy on Spider-dev). Easy follow-up: mask the words that hit
-  `schema_fts` before searching `knowledge_fts`.
 - **MinHash/LSH over values.** FTS5 prefix search covers the categorical values profiled here.
   LSH matters for high-cardinality free text, which is intentionally not indexed.
