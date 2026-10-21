@@ -39,7 +39,11 @@ Gateway WebSocket connection keyed by `(db_schema, admin_id)`:
 ```
 
 The frontend accepts only messages with `type == "reports.ready"` (`frontend/src/utils/reportsReady.ts`).
-Not mocked yet (doc 18 P2.5): the standalone bot answers synchronously over HTTP.
+Mocked since B-030: with `reports.async: true` the adapter answers at once with
+`reports_phase: "working"` and a `job_id`, runs the turn as a durable job, and sends the ChatResponse
+as `report_ready` to `notify_url`; `mocks/jms/server.py` stands in for SQS (`POST /mock/sqs`) and for
+the WebSocket push (`/mock/ws/{user_id}` delivers `{"type": "reports.ready", "payload": …}`). The real
+SQS/API Gateway path is not exercised (JMS is unreachable).
 
 ## 4. Saving a report into JMS (Report Builder)
 

@@ -94,3 +94,19 @@ def test_core_api_uses_jwt_identity_when_configured(client):
 def test_mock_builder_grammar(sql, problem):
     got = mock_jms.builder_grammar_problem(sql)
     assert (got is None) if problem is None else (got and re.search(problem, got))
+
+
+async def test_async_answer_reaches_the_browser_as_reports_ready(client, app):
+    first = client.post("/api/v1/chat/5", headers=token(),
+                        json={"message": "paused customers", "reports": {"action": "query", "async": True}})
+    body = first.json()
+    assert body["reports_phase"] == "working" and body["job_id"] and body["reports_session_id"]
+    jms = TestClient(mock_jms.app)                                   # notify_url -> the mock's SQS stand-in
+    app.settings.notify_url = "http://mock-jms/mock/sqs"
+    app.__dict__["notify_client"] = httpx2.Client(transport=httpx2.MockTransport(
+        lambda r: httpx2.Response(jms.post("/mock/sqs", json=json.loads(r.content)).status_code)))
+    assert await app.jobs.run_once() == body["job_id"]
+    with jms.websocket_connect("/mock/ws/7") as ws:
+        pushed = ws.receive_json()
+    assert pushed["type"] == "reports.ready" and pushed["payload"]["contact_id"] == 5
+    assert pushed["payload"]["row_count"] == 10 and pushed["payload"]["reports_session_id"] == body["reports_session_id"]

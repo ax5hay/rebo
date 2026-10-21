@@ -79,7 +79,14 @@ class App:
         self.knowledge = Knowledge(self.store, self.index, self.catalog, self.target.dialect, s.share_threshold)
         self.allowed_tables = {t.strip() for t in s.allow_tables.split(",") if t.strip()} or None
         self.knowledge.on_status = self._status_changed
+        # Adapters add formatters for where background results go, e.g. {"jms": fn(deliver, result)}.
+        self.deliver_formatters: dict[str, Callable[[dict, dict], Any]] = {}
         setup_tracing()
+
+    @cached_property
+    def jobs(self):
+        from .jobs import Jobs
+        return Jobs(self)
 
     # ---- notifications (optional webhook, notify_url) ------------------------------------------
     @cached_property

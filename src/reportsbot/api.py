@@ -36,6 +36,16 @@ class DefaultIn(BaseModel):
     value: str
 
 
+class JobIn(BaseModel):
+    text: str
+    conversation_id: str | None = None
+
+
+class ScheduleIn(BaseModel):
+    turn_id: str
+    every: str
+
+
 class DrillIn(BaseModel):
     row: int
     column: str | None = None
@@ -158,6 +168,27 @@ def router(app: App) -> APIRouter:
             return await app.ask(user, body.text, body.conversation_id)
         except PermissionError as e:
             raise HTTPException(403, str(e)) from e
+
+    @r.post("/jobs")
+    def ask_later(body: JobIn, user: User = Depends(current_user)):
+        """Answer in the background (durable job); poll GET /api/jobs/{id} or receive report_ready."""
+        return {"job_id": app.jobs.enqueue("ask", user, {"text": body.text, "conversation_id": body.conversation_id})}
+
+    @r.get("/jobs/{job_id}")
+    def job(job_id: str, user: User = Depends(current_user)):
+        return guard_errors(lambda: app.jobs.get(user, job_id))
+
+    @r.post("/schedules")
+    def schedule(body: ScheduleIn, user: User = Depends(current_user)):
+        return guard_errors(lambda: app.jobs.schedule(user, body.turn_id, body.every))
+
+    @r.get("/schedules")
+    def schedules(user: User = Depends(current_user)):
+        return app.store.all("SELECT * FROM schedule WHERE owner=? AND active=1 ORDER BY next_at", (user.id,))
+
+    @r.delete("/schedules/{schedule_id}")
+    def unschedule(schedule_id: str, user: User = Depends(current_user)):
+        return guard_errors(lambda: app.jobs.unschedule(user, schedule_id) or {"ok": True})
 
     @r.post("/agui")
     async def agui(request: Request, user: User = Depends(current_user)):
@@ -351,8 +382,18 @@ def router(app: App) -> APIRouter:
     return r
 
 
-def create_app(app: App, *, with_ui: bool = True) -> FastAPI:
-    api = FastAPI(title="reportsbot")
+def create_app(app: App, *, with_ui: bool = True, with_worker: bool = False) -> FastAPI:
+    """with_worker: run the background job worker (scheduled reports, async answers) with the server."""
+    from contextlib import asynccontextmanager
+
+    @asynccontextmanager
+    async def lifespan(_):
+        task = asyncio.create_task(app.jobs.worker()) if with_worker else None
+        yield
+        if task:
+            task.cancel()
+
+    api = FastAPI(title="reportsbot", lifespan=lifespan)
     api.include_router(router(app))
     for name in app.settings.adapters:  # optional host contracts (src/reportsbot/adapters/<name>.py)
         import importlib

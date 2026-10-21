@@ -59,7 +59,7 @@ def main(argv: list[str] | None = None) -> int:
     elif args.cmd == "serve":
         import uvicorn
         from .api import create_app
-        uvicorn.run(create_app(app, with_ui=not args.no_ui), host=args.host, port=args.port)
+        uvicorn.run(create_app(app, with_ui=not args.no_ui, with_worker=True), host=args.host, port=args.port)
     elif args.cmd == "ask":
         from .knowledge import User
         r = asyncio.run(app.ask(User(args.user, args.role), args.text))

@@ -1,6 +1,7 @@
 """The state store itself: upgrades of existing state files."""
 import sqlite3
 
+from reportsbot import store as store_module
 from reportsbot.store import Store
 
 
@@ -43,6 +44,8 @@ def test_a_state_file_from_before_migrations_upgrades_in_place(tmp_path):
     assert {"turn_id"} <= cols["knowledge_event"] and {"feedback_note"} <= cols["turn"]
     assert {"sql_template", "params", "pinned"} <= cols["knowledge"] and "pos" in cols["cat_column"]
     with create_engine(f"sqlite:///{path}").connect() as c:
-        assert c.execute(text("SELECT version_num FROM alembic_version")).scalar() == "0002"
+        from alembic.script import ScriptDirectory
+        head = ScriptDirectory(str(Path(store_module.__file__).parent / "migrations")).get_current_head()
+        assert c.execute(text("SELECT version_num FROM alembic_version")).scalar() == head
     Store(path)                                                   # second start: nothing to do, no error
     assert store.one("SELECT COUNT(*) AS n FROM knowledge_event")["n"] == 1

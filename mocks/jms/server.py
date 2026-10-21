@@ -21,7 +21,7 @@ import time
 
 import jwt
 import sqlglot
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, WebSocket
 from pydantic import BaseModel
 from sqlalchemy import create_engine, text
 from sqlglot import exp
@@ -128,6 +128,27 @@ def run_report(rid: int):
         res = c.execute(text(rep["report_query"].replace(":", r"\:")))
         rows = [list(map(str, r)) for r in res.fetchmany(500)]
         return {"columns": list(res.keys()), "rows": rows, "row_count": len(rows)}
+
+
+# Asynchronous answers. In JMS the bot's message goes through SQS to the WebSocket service, which
+# sends {"type": "reports.ready", "payload": <ChatResponse>} to the user's browser (README §3).
+# Point the bot's notify_url at /mock/sqs; a client reads its pushes from /mock/ws/{user_id}.
+_pushed: dict[str, list[dict]] = {}
+
+
+@app.post("/mock/sqs")
+def sqs(event: dict):
+    if event.get("event") == "report_ready" and (event.get("deliver") or {}).get("kind") == "jms":
+        _pushed.setdefault(str(event["user"]), []).append({"type": "reports.ready", "payload": event["response"]})
+    return {"ok": True}
+
+
+@app.websocket("/mock/ws/{user_id}")
+async def push(websocket: WebSocket, user_id: str):
+    await websocket.accept()
+    for message in _pushed.pop(user_id, []):
+        await websocket.send_json(message)
+    await websocket.close()
 
 
 @app.get("/mock/health")

@@ -11,7 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src" / "reportsbot"
 # Table names that are ordinary words in this code base's own vocabulary.
-PLAIN_WORDS = {"admin", "building", "contact", "contract", "err", "event", "family", "form", "maintenance", "provider",
+PLAIN_WORDS = {"admin", "building", "contact", "contract", "err", "event", "family", "form", "lease", "maintenance", "provider",
                "retrieval", "status", "template", "unit", "user"}
 
 
@@ -30,7 +30,7 @@ def hits(text: str, names: set[str]) -> list[str]:
 
 def test_fixture_tables_are_found():
     names = domain_table_names()
-    assert "gc_case" in names and "lease" in names
+    assert "gc_case" in names and "tenant" in names
 
 
 def test_no_domain_table_names_in_src():

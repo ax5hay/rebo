@@ -79,6 +79,8 @@ prefixed `"Correction to the previous report: "`.
 | `GET /api/admin/stats?days=90` | admin, owner | usage dashboard: confirmation per week, provenance mix, top questions, most reported wrong, open requests by age, cost per day |
 | `GET /api/admin/preview?user=X&q=…&team=` | admin | the context block user X would get for that question, plus the knowledge items with owners |
 | `POST /api/agui` (AG-UI `RunAgentInput`; `threadId` = conversation id) | the asker | one turn as an AG-UI event stream: `RUN_STARTED`, `STEP_STARTED`/`STEP_FINISHED` + `CUSTOM reportsbot.progress` per tool step as it happens, the answer as a text message, `CUSTOM reportsbot.result` (the `/api/ask` payload), `RUN_FINISHED` or `RUN_ERROR` (B-029) |
+| `POST /api/jobs {text, conversation_id?}` / `GET /api/jobs/{id}` | the asker (admins may read any) | answer in the background as a durable job; poll it, or receive `report_ready` on `notify_url` |
+| `POST /api/schedules {turn_id, every}` / `GET /api/schedules` / `DELETE /api/schedules/{id}` | the report's asker | re-run a report on a schedule (no model) |
 | `GET /api/knowledge/about?q=` | anyone | what the bot knows about a word: visible learned items by trust, tables/columns with descriptions, stored values |
 | `GET /api/starter` | anyone | starter questions: the user's pinned reports first, then the most-used trusted reports |
 | `POST /api/turns/{id}/pin` / `DELETE /api/knowledge/{id}/pin` | the asker / the owner | pin a report (flags your own example with the same SQL, or creates one) / unpin; both logged in the item's history |

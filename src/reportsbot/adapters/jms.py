@@ -20,17 +20,21 @@ import json
 from typing import Any
 
 from fastapi import APIRouter, Header, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 
 from ..api import decode_jwt, user_from_claims
 from ..knowledge import User
 from ..service import App
+from ..store import new_id
 
 
 class ReportsInteraction(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
     action: str = "query"
     option_id: str | None = None
     reports_session_id: str | None = None
+    # Answer in the background and push the ChatResponse as {"type": "reports.ready"} (README §3).
+    run_async: bool = Field(False, alias="async")
 
 
 class ChatIn(BaseModel):
@@ -74,6 +78,8 @@ def to_jms(contact_id: int, r: dict[str, Any]) -> dict[str, Any]:
 
 def router(app: App) -> APIRouter:
     r = APIRouter()
+    # Background answers (jobs.py) reach JMS through notify_url as report_ready with this ChatResponse.
+    app.deliver_formatters["jms"] = lambda deliver, result: to_jms(deliver["contact_id"], result)
 
     def last_turn(user: User, conversation_id: str | None, kind: str | None = None) -> dict[str, Any]:
         sql = "SELECT * FROM turn WHERE conversation_id=? AND owner=?" + (" AND kind=?" if kind else "")
@@ -121,6 +127,16 @@ def router(app: App) -> APIRouter:
                 text = f"Correction to the previous report: {text}"
         if not text.strip():
             raise HTTPException(400, "Empty message")
+        if it.run_async:
+            conv = conv or new_id("conv")
+            if (c := app.store.one("SELECT owner FROM conversation WHERE id=?", (conv,))) and c["owner"] != user.id:
+                raise HTTPException(403, "That conversation belongs to someone else.")
+            job = app.jobs.enqueue("ask", user, {"text": text, "conversation_id": conv,
+                                                 "deliver": {"kind": "jms", "contact_id": contact_id}})
+            return {"contact_id": contact_id, "message": "Working on it; the report will appear here.",
+                    "reports_session_id": conv, "reports_phase": "working", "reports_awaiting": "none",
+                    "reports_options": [], "reports_allow_freetext": False, "columns": [], "rows": [],
+                    "job_id": job}
         try:
             return to_jms(contact_id, await app.ask(user, text, conv))
         except PermissionError as e:

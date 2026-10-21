@@ -95,3 +95,19 @@ needs AWS access and the VPN (doc 12 §1).
 - [ ] The OpenRouter key is in a secret store, not in `.env` in production.
 - [ ] Turn retention is configured (doc 09).
 - [ ] Tracing content is off (`REPORTSBOT_TRACE_CONTENT` unset) unless the trace store is approved for business data.
+
+## 7. Background jobs and schedules (`jobs.py`, B-030)
+
+`reportsbot serve` runs a worker next to the server (`create_app(with_worker=True)`). It queues due
+schedules and runs jobs from the `job` table, one at a time:
+
+- `ask`: a question answered in the background (`POST /api/jobs`, or the JMS adapter with
+  `reports.async: true`).
+- `scheduled`: a saved report re-run with today's data, no model call.
+
+A worker takes a job with a 5-minute lease. If the process stops, the lease runs out and the next
+worker (after a restart) runs the job again from the start; failures retry 3 times with back-off,
+then the job is `failed` with its error. Results go to `notify_url` as `report_ready` (with a
+host-formatted `response` when an adapter registered one, e.g. the JMS ChatResponse). Run one
+server per state store: the lease prevents double runs, but a second worker is not tested.
+DBOS (3.3.0, MIT) was considered and not adopted; the reasons are in the `jobs.py` docstring.
