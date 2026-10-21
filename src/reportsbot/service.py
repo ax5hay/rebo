@@ -14,6 +14,7 @@ from collections import Counter
 from functools import cached_property
 from typing import Any
 
+import httpx2 as httpx
 from pydantic import BaseModel, Field
 from pydantic_ai import (Agent, ModelMessage, ModelMessagesTypeAdapter, ModelRetry, ToolOutput, UsageLimitExceeded,
                          UsageLimits)
@@ -77,7 +78,27 @@ class App:
         self.catalog = Catalog(self.store)
         self.knowledge = Knowledge(self.store, self.index, self.catalog, self.target.dialect, s.share_threshold)
         self.allowed_tables = {t.strip() for t in s.allow_tables.split(",") if t.strip()} or None
+        self.knowledge.on_status = self._status_changed
         setup_tracing()
+
+    # ---- notifications (optional webhook, notify_url) ------------------------------------------
+    @cached_property
+    def notify_client(self) -> httpx.Client:
+        return httpx.Client(timeout=5)
+
+    def notify(self, event: str, **data: Any) -> None:
+        """POST {event, at, ...} to notify_url. Best effort: a failure is logged and never blocks the action."""
+        if not self.settings.notify_url:
+            return
+        try:
+            self.notify_client.post(self.settings.notify_url, json={"event": event, "at": now(), **data}).raise_for_status()
+        except Exception as e:
+            log.warning("notify %s failed: %s", event, e)
+
+    def _status_changed(self, item: dict[str, Any], previous: str, actor: str) -> None:
+        if item["status"] in ("verified", "stale"):
+            self.notify("item_promoted" if item["status"] == "verified" else "item_stale", item_id=item["id"],
+                        kind=item["kind"], title=item["title"], scope=item["scope"], previous=previous, actor=actor)
 
     @cached_property
     def agent(self) -> Agent:
@@ -508,8 +529,10 @@ class App:
         with self.store.tx() as db:
             db.execute("INSERT INTO request(id, kind, target, requester, item_id, turn_id, text, created_at, updated_at) "
                        "VALUES(?,?,?,?,?,?,?,?,?)", (rid, kind, target, user.id, item_id, turn_id, text.strip(), now(), now()))
+        request = self.store.one("SELECT * FROM request WHERE id=?", (rid,))
+        self.notify("request_created", request=request)
         return {"message": msg.say("request_sent", who="an owner" if target == "owner" else "an admin"),
-                "request": self.store.one("SELECT * FROM request WHERE id=?", (rid,))}
+                "request": request}
 
     def list_requests(self, user: User, status: str | None = "open") -> list[dict[str, Any]]:
         if user.is_owner:
@@ -534,8 +557,9 @@ class App:
         with self.store.tx() as db:
             db.execute("UPDATE request SET status=?, resolver=?, resolution=?, updated_at=? WHERE id=?",
                        (status, user.id, resolution, now(), request_id))
-        return {"message": msg.say(f"request_{status}"), "request": self.store.one("SELECT * FROM request WHERE id=?",
-                                                                                  (request_id,))}
+        request = self.store.one("SELECT * FROM request WHERE id=?", (request_id,))
+        self.notify("request_resolved", request=request)
+        return {"message": msg.say(f"request_{status}"), "request": request}
 
     def remember(self, user: User, suggestion_id: str, accept: bool) -> dict[str, Any]:
         s = self.store.one("SELECT * FROM suggestion WHERE id=? AND owner=?", (suggestion_id, user.id))

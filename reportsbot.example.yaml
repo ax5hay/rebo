@@ -34,6 +34,7 @@ auth:
   issuer: orchid                           # expected "iss" claim when mode is jwt
 
 adapters: []                               # host contracts to expose, e.g. [jms] (needs auth.mode jwt)
+notify_url: ""                             # optional webhook for requests and shared/stale items
 
 # Secrets (environment variables only):
 #   OPENROUTER_API_KEY   for openrouter:   (REPORTSBOT_OPENROUTER_API_KEY also accepted)

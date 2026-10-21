@@ -61,6 +61,7 @@ The folder needs nothing from the parent repo. JMS appears only as:
 | 8 | `sharing.threshold` | `3` | people agreeing before something is proposed to everyone |
 | 9 | `embeddings` | `true` | local vectors on/off |
 | 10 | `auth` (mode, issuer) + `adapters` | `jwt`, `orchid`, `[jms]` | identity source and host contracts |
+| 11 | `notify_url` | `https://hooks.example.com/reportsbot` | optional webhook: request created/resolved, item shared/stale (B-025; empty = off) |
 
 Secrets: `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`/`GOOGLE_API_KEY`, `REPORTSBOT_JWT_SECRET`.
 **Nothing about the meaning of the data is configured.** Adding a semantic YAML is out of scope by
@@ -68,7 +69,10 @@ design: meaning is learned (doc 05).
 
 Production commits may add at most these keys (each in its own commit, with a default that keeps
 behaviour unchanged): `state_url` (Postgres instead of SQLite, P2.1), `embeddings_url` (TEI, P2.3),
-`tracing_url` (P3.2). The total stays ≤ 13.
+`tracing_url` (P3.2). `notify_url` (B-025) was added on 2026-10-21 as the backlog item specified,
+so with all three the groups total 14; the binding limit is **≤ 20 settings** in
+`reportsbot.example.yaml`, enforced by `tests/test_settings.py::test_example_config_stays_small`
+(19 today).
 
 ## 3. Where the build stands (done, on branch `feat/reports-bot-standalone`)
 

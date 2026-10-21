@@ -83,3 +83,39 @@ def test_csv_and_starter_questions(app):
     app.feedback(ALICE, tid, "correct")
     assert app.starter_questions(ALICE) == ["active customers"]
     assert app.starter_questions(BOB) == []  # alice's personal report is not offered to bob
+
+
+def test_webhook_on_requests_and_shared_or_stale_items(app):
+    import json
+
+    import httpx2
+
+    sent = []
+
+    def receiver(request):
+        sent.append(json.loads(request.content))
+        return httpx2.Response(204)
+
+    app.settings.notify_url = "http://hooks.example.com/reportsbot"
+    app.__dict__["notify_client"] = httpx2.Client(transport=httpx2.MockTransport(receiver))
+    admin = User("ada", role="admin")
+    r = app.create_request(ALICE, kind="other", text="please add a report on refunds")["request"]
+    app.resolve_request(admin, r["id"], "done", "added")
+    item = app.add_knowledge(ALICE, kind="note", title="fiscal year", body="starts in April")["item"]
+    app.promote(admin, item["id"])
+    app.knowledge._set_status(item["id"], "stale", actor="bot", note="schema changed")
+    assert [e["event"] for e in sent] == ["request_created", "request_resolved", "item_promoted", "item_stale"]
+    assert sent[1]["request"]["resolution"] == "added" and sent[2]["title"] == "fiscal year"
+
+    def down(request):
+        raise httpx2.ConnectError("receiver down")
+
+    app.__dict__["notify_client"] = httpx2.Client(transport=httpx2.MockTransport(down))
+    assert app.create_request(ALICE, kind="other", text="still works")["request"]["status"] == "open"
+
+
+def test_no_webhook_without_notify_url(app):
+    import httpx2
+    app.__dict__["notify_client"] = httpx2.Client(transport=httpx2.MockTransport(
+        lambda request: pytest.fail("nothing may be sent without notify_url")))
+    app.create_request(ALICE, kind="other", text="hello")

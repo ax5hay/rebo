@@ -16,6 +16,7 @@ dependencies = [
     "pydantic-settings>=2.10",
     "pyyaml>=6.0",
     "pyjwt>=2.10",
+    "httpx2>=2.15",
 ]
 
 [project.optional-dependencies]

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import time
 
 from fastapi import FastAPI
 from nicegui import ui
@@ -504,7 +505,10 @@ def mount_ui(api: FastAPI, app: App) -> None:
 
         def request_card(r):
             with ui.card().classes("w-full"):
-                ui.label(f"{r['requester']} · {r['kind']} · {_when(r['created_at'])}").classes("text-xs opacity-70")
+                age = (time.time() - r["created_at"]) / 86400
+                ui.label(f"{r['requester']} · {r['kind']} · {_when(r['created_at'])} · open "
+                         f"{'less than a day' if age < 1 else f'{age:.0f} days'}").classes(
+                    "text-xs " + ("text-warning" if age >= 7 else "opacity-70"))
                 ui.label(r["text"])
                 if r["item_id"]:
                     item = app.knowledge.get(r["item_id"])

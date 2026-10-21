@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = "==3.13.*"
 
 [[package]]
@@ -1915,6 +1915,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
+    { name = "httpx2" },
     { name = "nicegui" },
     { name = "numpy" },
     { name = "pydantic-ai-slim", extra = ["anthropic", "google", "openai", "openrouter"] },
@@ -1955,6 +1956,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.138" },
     { name = "fastembed", marker = "extra == 'embed'", specifier = ">=0.9" },
     { name = "fastmcp", marker = "extra == 'mcp'", specifier = ">=4.1" },
+    { name = "httpx2", specifier = ">=2.15" },
     { name = "nicegui", specifier = ">=3.18" },
     { name = "numpy", specifier = ">=2.0" },
     { name = "opentelemetry-exporter-otlp-proto-http", marker = "extra == 'otel'", specifier = ">=1.30" },

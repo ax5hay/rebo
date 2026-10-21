@@ -35,6 +35,7 @@ _YAML_KEYS = {
     ("auth", "mode"): "auth_mode",
     ("auth", "issuer"): "jwt_issuer",
     ("adapters",): "adapters",
+    ("notify_url",): "notify_url",
 }
 
 
@@ -126,6 +127,8 @@ class Settings(BaseSettings):
     jwt_issuer: str = "orchid"
     # 7. Optional host adapters, e.g. ["jms"] for the JMS chat contract (src/reportsbot/adapters/).
     adapters: list[str] = Field(default_factory=list)
+    # 8. Optional webhook: POST {event, ...} on request created/resolved and item promoted/stale.
+    notify_url: str = ""
 
     # Secrets: environment only, never in the YAML file.
     openrouter_api_key: str = ""

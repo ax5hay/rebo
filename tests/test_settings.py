@@ -54,3 +54,12 @@ def test_api_keys_in_dotenv_reach_the_model_registry(tmp_path, monkeypatch):
     load_env_file(tmp_path / ".env")
     assert credentials_present("openrouter:anthropic/claude-sonnet-5.5", s)
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)  # do not leak into other tests
+
+
+def test_example_config_stays_small():
+    """AGENTS.md §3.3: the example configuration holds at most 20 settings."""
+    from pathlib import Path
+
+    from reportsbot.settings import flatten_yaml
+    text = (Path(__file__).resolve().parents[1] / "reportsbot.example.yaml").read_text(encoding="utf-8")
+    assert len(flatten_yaml(text)) <= 20

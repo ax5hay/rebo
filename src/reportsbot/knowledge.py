@@ -75,6 +75,8 @@ def _row(item: dict[str, Any] | None) -> dict[str, Any] | None:
 
 
 class Knowledge:
+    on_status: Callable[[dict[str, Any], str, str], None] | None = None  # (item, previous status, actor)
+
     def __init__(self, store: Store, index: Index, catalog: Catalog, dialect: str, share_threshold: int = 3):
         self.store, self.index, self.catalog = store, index, catalog
         self.dialect, self.share_threshold = dialect, share_threshold
@@ -321,7 +323,10 @@ class Knowledge:
                        "valid_to=CASE WHEN ?='retired' THEN ? ELSE NULL END WHERE id=?",
                        (status, scope, ts, status, ts, item_id))
             self._event(db, item_id, actor, f"status:{status}", item["status"], status, note, turn_id=turn_id)
-        return self.get(item_id)
+        updated = self.get(item_id)
+        if self.on_status and status != item["status"]:
+            self.on_status(updated, item["status"], actor)
+        return updated
 
     def share(self, user: User, item_id: str) -> Outcome:
         item = self.get(item_id)
