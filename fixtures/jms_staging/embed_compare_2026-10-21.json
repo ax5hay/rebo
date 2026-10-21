@@ -1,0 +1,96 @@
+{
+ "run": "2026-10-21",
+ "state": "data/state.db",
+ "results": [
+  {
+   "model": "snowflake/snowflake-arctic-embed-s",
+   "docs": 2976,
+   "embed_seconds": 37.1,
+   "fixtures/jms_staging/gold_custom_reports.jsonl:validated": {
+    "cases": 12,
+    "dense_recall@5": 0.448,
+    "hybrid_recall@5": 0.621
+   },
+   "fixtures/jms_staging/gold_custom_reports.jsonl:drafts": {
+    "cases": 67,
+    "dense_recall@5": 0.382,
+    "hybrid_recall@5": 0.471
+   }
+  },
+  {
+   "model": "snowflake/snowflake-arctic-embed-s+qp",
+   "docs": 2976,
+   "embed_seconds": 17.2,
+   "fixtures/jms_staging/gold_custom_reports.jsonl:validated": {
+    "cases": 12,
+    "dense_recall@5": 0.448,
+    "hybrid_recall@5": 0.621
+   },
+   "fixtures/jms_staging/gold_custom_reports.jsonl:drafts": {
+    "cases": 67,
+    "dense_recall@5": 0.382,
+    "hybrid_recall@5": 0.471
+   }
+  },
+  {
+   "model": "google/embeddinggemma-300m",
+   "docs": 2976,
+   "embed_seconds": 134.3,
+   "fixtures/jms_staging/gold_custom_reports.jsonl:validated": {
+    "cases": 12,
+    "dense_recall@5": 0.552,
+    "hybrid_recall@5": 0.552
+   },
+   "fixtures/jms_staging/gold_custom_reports.jsonl:drafts": {
+    "cases": 67,
+    "dense_recall@5": 0.534,
+    "hybrid_recall@5": 0.534
+   }
+  },
+  {
+   "model": "google/embeddinggemma-300m+qp",
+   "docs": 2976,
+   "embed_seconds": 51.9,
+   "fixtures/jms_staging/gold_custom_reports.jsonl:validated": {
+    "cases": 12,
+    "dense_recall@5": 0.552,
+    "hybrid_recall@5": 0.552
+   },
+   "fixtures/jms_staging/gold_custom_reports.jsonl:drafts": {
+    "cases": 67,
+    "dense_recall@5": 0.534,
+    "hybrid_recall@5": 0.534
+   }
+  },
+  {
+   "model": "Qwen/Qwen3-Embedding-0.6B",
+   "docs": 2976,
+   "embed_seconds": 350.1,
+   "fixtures/jms_staging/gold_custom_reports.jsonl:validated": {
+    "cases": 12,
+    "dense_recall@5": 0.414,
+    "hybrid_recall@5": 0.517
+   },
+   "fixtures/jms_staging/gold_custom_reports.jsonl:drafts": {
+    "cases": 67,
+    "dense_recall@5": 0.445,
+    "hybrid_recall@5": 0.534
+   }
+  },
+  {
+   "model": "Qwen/Qwen3-Embedding-0.6B+qp",
+   "docs": 2976,
+   "embed_seconds": 193.0,
+   "fixtures/jms_staging/gold_custom_reports.jsonl:validated": {
+    "cases": 12,
+    "dense_recall@5": 0.414,
+    "hybrid_recall@5": 0.517
+   },
+   "fixtures/jms_staging/gold_custom_reports.jsonl:drafts": {
+    "cases": 67,
+    "dense_recall@5": 0.445,
+    "hybrid_recall@5": 0.534
+   }
+  }
+ ]
+}
