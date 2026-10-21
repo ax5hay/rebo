@@ -18,6 +18,7 @@ from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, Settings
 # YAML path -> flat setting name. These are the only keys the file accepts.
 _YAML_KEYS = {
     ("database",): "database_url",
+    ("database_role",): "database_role",
     ("models", "agent"): "model",
     ("models", "fast"): "fast_model",
     ("models", "fallback"): "fallback_models",
@@ -143,6 +144,7 @@ class Settings(BaseSettings):
     # 10. Optional: after a new report, offer the agent the saved reports whose query has nearly the same
     #     shape (SQL skeleton) but were not in its context, once (doc 04, B-050).
     shape_check: bool = False
+    database_role: str = ""  # e.g. "{user}": PostgreSQL role each person's queries run as (row-level security)
 
     # Secrets: environment only, never in the YAML file.
     openrouter_api_key: str = ""

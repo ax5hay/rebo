@@ -3,6 +3,7 @@
 # Secrets never go here: set them as environment variables (see the bottom of this file).
 
 database: mysql+pymysql://reports_ro:reports_ro@127.0.0.1:3307/jms   # read-only user
+# database_role: "{user}"                  # PostgreSQL: run each person's queries as their own role (RLS)
 
 models:                                    # "<provider>:<model>"
   agent: openrouter:anthropic/claude-sonnet-5.5

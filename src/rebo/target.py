@@ -9,6 +9,8 @@ import datetime as dt
 import decimal
 import time
 import uuid
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
 from typing import Any
 
@@ -20,6 +22,9 @@ from .safety import sqlglot_dialect
 _TEXTUAL = ("char", "text", "enum", "set", "string", "clob")
 _COMPARABLE = ("int", "dec", "num", "float", "double", "real", "date", "time", "year", "money")
 _BINARY = ("blob", "binary", "bytea", "geometry", "point", "polygon", "linestring")
+# The database role the current person's queries run as (row-level security, docs/06 §RLS). Set per
+# request with TargetDB.acting_as; None runs as the configured read-only login.
+_ROLE: ContextVar[str | None] = ContextVar("rebo_db_role", default=None)
 
 
 @dataclass
@@ -60,6 +65,18 @@ class TargetDB:
         return self._q(name)
 
     # ---- execution -------------------------------------------------------------------
+    @contextmanager
+    def acting_as(self, role: str | None):
+        """Run the queries inside as `role` (PostgreSQL SET LOCAL ROLE), so the database's own
+        row-level security policies decide which rows this person sees."""
+        if role and self.kind != "postgresql":
+            raise RuntimeError("database_role (row-level security) needs PostgreSQL.")
+        token = _ROLE.set(role or None)
+        try:
+            yield
+        finally:
+            _ROLE.reset(token)
+
     def _read_only_session(self, cur) -> None:
         ms = self.timeout_s * 1000
         if self.kind in ("mysql", "mariadb"):
@@ -68,7 +85,10 @@ class TargetDB:
                         f"={ms if self.kind == 'mysql' else self.timeout_s}")
         elif self.kind == "postgresql":
             cur.execute("SET SESSION CHARACTERISTICS AS TRANSACTION READ ONLY")
+            cur.execute("SET TRANSACTION READ ONLY")  # the session default starts with the next transaction
             cur.execute(f"SET statement_timeout = {ms}")
+            if role := _ROLE.get():  # LOCAL: undone by the rollback, so a pooled connection never keeps it
+                cur.execute(f"SET LOCAL ROLE {self.quote(role)}")
         elif self.kind == "sqlite":
             cur.execute("PRAGMA query_only = ON")
 

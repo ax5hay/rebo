@@ -334,7 +334,7 @@ class App:
                   progress: Callable[[dict[str, Any]], None] | None = None) -> dict[str, Any]:
         """Answer one message. `progress` (optional) is called with each tool step as it happens.
         Traced as one `rebo.ask` span; its trace id is kept on the turn (usage.trace_id)."""
-        with ask_span(user=user.id, model=self.settings.model) as sp:
+        with ask_span(user=user.id, model=self.settings.model) as sp, self.as_user(user):
             r = await self._ask(user, text, conversation_id, progress)
             if span := sp.get("span"):
                 span.set_attribute("rebo.kind", r.get("kind", ""))
@@ -1115,6 +1115,11 @@ class App:
     def unpin(self, user: User, item_id: str) -> dict[str, Any]:
         return self.knowledge.set_pinned(user, item_id, False)
 
+    def as_user(self, user: User):
+        """Queries inside run as this person's database role when `database_role` is set (RLS)."""
+        role = self.settings.database_role.replace("{user}", user.id) if self.settings.database_role else None
+        return self.target.acting_as(role)
+
     def rerun(self, user: User, turn_id: str) -> dict[str, Any]:
         """"Re-run with today's data": an earlier report of yours, same SQL, fresh rows, no model call.
         Recorded as a new turn in the same conversation with usage.route = "rerun"."""
@@ -1122,7 +1127,8 @@ class App:
         if t["kind"] != "report":
             raise ValueError("Only reports can be re-run.")
         p = json.loads(t["payload"])
-        res = self._run_report_sql(t["sql"])
+        with self.as_user(user):
+            res = self._run_report_sql(t["sql"])
         out = Report(title=p["title"], sql=t["sql"], assumptions=p.get("assumptions") or [],
                      follow_ups=p.get("follow_ups") or [])
         usage_d = {"requests": 0, "input_tokens": 0, "output_tokens": 0, "cache_read_tokens": 0, "tool_calls": 0,
@@ -1141,7 +1147,8 @@ class App:
             raise ValueError("No such cell in this report.")
         sql, labels = drill_sql(t["sql"], self.target.dialect, p["columns"], p["rows"][row], self.catalog.schema,
                                 self.catalog.sensitive)
-        res = self._run_report_sql(sql)
+        with self.as_user(user):
+            res = self._run_report_sql(sql)
         where = ", ".join(f"{k} = {v}" for k, v in labels)
         out = Report(title=f"{p['title']}: rows for {where}"[:120], sql=sql,
                      assumptions=[msg.say("drill_rows", title=p["title"], where=where)])

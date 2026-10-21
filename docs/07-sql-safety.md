@@ -71,6 +71,26 @@ it. A deployment that must hide it lists it in `REBO_DENY_COLUMNS`.
   when very large), bytes → `<n bytes>`.
 - `finally: rollback(); close()`. Read-only or not, nothing stays open.
 
+## 3b. Row-level security: each person's own database role (B-058, 2026-10-21)
+
+Optional, PostgreSQL only. With `database_role: "{user}"` (or a pattern such as `"rebo_{user}"`) every
+query asked for a person runs inside `SET LOCAL ROLE <their role>`, so the database's own policies
+(`CREATE POLICY ... USING (owner = current_user)`) decide which rows they see. Off by default.
+
+- Covers every path that runs a query for a person: the agent's probes, the validator and its checks,
+  saved-report reuse, re-run, drill-down and schedules (`App.ask`, `App.rerun`, `App.drill`).
+- `LOCAL` means the role ends with the transaction, which is always rolled back, so a pooled
+  connection never carries one person's role to the next. A person without a role gets an error,
+  never the login's rows (`tests/test_rls.py`, run against PostgreSQL).
+- Setup: create a role per person (`CREATE ROLE ada NOLOGIN`), grant it SELECT and the policies,
+  and let the bot's login switch to it (`GRANT ada TO reports_ro`).
+- Not covered: bootstrap profiling and the value index run as the login, so **common values the
+  login can see appear as hints to everyone**. On tables with row-level policies, give the login
+  only what everyone may see, or list those tables' sensitive columns in `protected_columns`. The MCP
+  server's `run_sql` is refused while this is on (an MCP client is not a person).
+- Also fixed on the way: PostgreSQL sessions now `SET TRANSACTION READ ONLY` for the current
+  transaction too (the session default only applies from the next one).
+
 ## 4. Probes vs the final report
 
 | | `run_sql` tool (probe) | Output validator (final report) |

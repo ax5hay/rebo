@@ -435,10 +435,10 @@ do: mutate gold SQL into known-wrong variants; measure detection and false-alarm
 result: 2026-10-21. Fan-out probe (join vs EXISTS) in the validator. Mutation test: demo 2/10 → 7/10 caught, 0/12 false alarms on gold; JMS 50 % → 58 % of 3,191, 1/77. Demo answers 9/12 (variance and an older grain-check false alarm, not the probe). doc 04.
 follow-up done: the grain check skips ids of parent tables joined through their own primary key (gp-01's building id per unit). Mutation detection unchanged (demo 7/10, JMS 1,836/3,191); answers not re-run (budget).
 
-### [!] B-058 · EXPLAIN gate and row-level security passthrough
+### [x] B-058 · EXPLAIN gate and row-level security passthrough
 do: dialect-aware EXPLAIN (never ANALYZE) rejects cartesian or huge plans with a hint to the agent; optional run-as-user database role. Offline tests on known bad plans.
 result: 2026-10-21. Cartesian joins (no join condition; bare JOIN or comma join without WHERE) are now a SQL trap with one retry, portable across dialects, no EXPLAIN needed; timeouts already bound runaway queries. EXPLAIN row-estimate gate not built (dialect-specific, estimates unreliable; timeouts cover it).
-question for a human: row-level security passthrough needs a deployment decision: how people map to database roles or session variables in your database (e.g. Postgres SET ROLE per user, or a session variable your RLS policies read). Tell me which, and I will add it as one setting.
+result (RLS): 2026-10-21, decided by the user: PostgreSQL SET ROLE per user. `database_role: "{user}"` runs each person's queries inside SET LOCAL ROLE; tested against PostgreSQL with a real policy (alice 15, bob 7, login 22, unknown role refused). Value hints from bootstrap still come from the login (docs/07 §3b).
 
 ### [x] B-059 · Nightly regression from confirmed reports
 needs: llm

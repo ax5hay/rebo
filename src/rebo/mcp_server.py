@@ -33,6 +33,8 @@ def serve_mcp(app: App) -> None:
     @mcp.tool
     def run_sql(sql: str) -> dict[str, Any]:
         """Run one read-only SELECT (guarded, row-capped, timed out)."""
+        if app.settings.database_role:  # row-level security needs a person; MCP clients are not one
+            raise PermissionError("run_sql is off: this ReBo runs each person's queries under their own database role.")
         g = guard(sql, dialect=app.target.dialect, schema=app.catalog.schema, sensitive=app.catalog.sensitive,
                   allowed_tables=app.allowed_tables, row_cap=app.settings.row_limit + 1)
         r = app.target.run(g.sql, max_rows=app.settings.row_limit)
