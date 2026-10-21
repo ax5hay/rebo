@@ -24,6 +24,12 @@ also in git history; this file is the short version a new session reads first.
   in progress), B-045 (needs a Gemini key), B-015 and B-041 (need a person), and every
   `eval pending: needs llm` measurement (B-005, 006, 008–013, 019, 042; each names its results file).
   `tools/doctor.py` prints the next doable item.
+- **2026-10-21c (third pass):** README/OPERATIONS/SECURITY in the maintainer's house style (banner,
+  screenshots, mermaid diagrams), repo description and topics set; Markdown rendered on every text
+  surface (`web/src/md.tsx`); palette v3 "ledger" (ink rail); CodeMirror editors for YAML/SQL and
+  highlighted queries; Table/Chart toggle; Docker image now ships the web app; research pass recorded
+  in doc 16 §5 with B-046…B-051 (046 SQL traps and 047 spelling fallback done; 048–051 open).
+  Evals now ask as a new person per run (the answer cache had been replaying repeat runs).
 - **Direction and rules:** `AGENTS.md`. Plan and gates: `docs/18-production-build.md`.
 
 ## 2. Measured facts (do not re-derive; re-measure only when a change could affect them)
@@ -37,6 +43,7 @@ also in git history; this file is the short version a new session reads first.
 | JMS gold (79 human reports) | **not usable yet**: 67 prompts are "Show me <title>"; drafts are B-014, PO validation B-015 | `fixtures/jms_staging/eval_results_gold25_sonnet.json` |
 | Learning loop | confirm → repeat question answered in 5 s with 0 tool calls; correction → remembered term reused in a new conversation | doc 17 §3 |
 | Schema drift | renamed column → item stale → restored automatically after the fix | doc 17 §4 |
+| SQL-trap checks (B-046), demo gold, Sonnet | 8/10 → 8/10, $0.236 → $0.242, no trap fired | `fixtures/demo_property/eval_results_sonnet_traps.json` |
 | Embedding models on the JMS catalogue (12 validated questions, recall@5 of gold tables, hybrid) | arctic-embed-s 0.621 (kept), embeddinggemma-300m 0.552, Qwen3-Embedding-0.6B 0.517 | `fixtures/jms_staging/embed_compare_2026-10-21.json`, doc 08 §4b |
 | Synthetic data date order | 9,809 violations → 0 with the derived spec | doc 12 §3 |
 | genai-prices vs OpenRouter list prices (2026-10-21) | Sonnet 5.5 equal; Haiku 5.5 5× high; Gemini 3.8 Flash 9% low (cost cap scaled) | doc 20 §2.2 |
@@ -69,6 +76,8 @@ on gold answers, not on row counts of unconfirmed answers.
 - In Chrome 156 `scrollIntoView` returns a Promise: never return it from a React effect.
 - The domain-word guard (`tests/test_no_domain_words.py`) flags plain words that are also JMS table
   names (template, family, ...). Add genuine English words to `PLAIN_WORDS`; never JMS identifiers.
+- The exact answer cache is per asker and model: any A/B or repeat run must ask as a fresh person
+  (`evals.fresh_eval_user`, the default since 2026-10-21c), or the second run is replayed at $0.
 - When killing a process by command-line match, the pattern can match your own shell. Kill by port
   or PID instead.
 - The host stopped long background jobs under memory pressure. Run heavy jobs (bootstrap with
