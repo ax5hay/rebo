@@ -142,6 +142,14 @@ def router(app: App) -> APIRouter:
     def feedback(turn_id: str, body: FeedbackIn, user: User = Depends(current_user)):
         return guard_errors(lambda: app.feedback(user, turn_id, body.verdict, body.note))
 
+    @r.post("/turns/{turn_id}/pin")
+    def pin(turn_id: str, user: User = Depends(current_user)):
+        return guard_errors(lambda: app.pin(user, turn_id))
+
+    @r.delete("/knowledge/{item_id}/pin")
+    def unpin(item_id: str, user: User = Depends(current_user)):
+        return guard_errors(lambda: app.unpin(user, item_id))
+
     @r.post("/turns/{turn_id}/rerun")
     def rerun(turn_id: str, user: User = Depends(current_user)):
         return guard_errors(lambda: app.rerun(user, turn_id))

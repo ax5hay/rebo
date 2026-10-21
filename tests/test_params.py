@@ -52,3 +52,24 @@ def test_rerun_returns_fresh_rows_without_a_model(app):
     assert r["kind"] == "report" and len(r["rows"]) == 11 and ["New Person"] in r["rows"]
     assert json.loads(app.store.one("SELECT usage FROM turn WHERE id=?", (r["turn_id"],))["usage"])["route"] == "rerun"
     assert client.post(f"/api/turns/{t}/rerun", headers={"X-User-Id": "bob"}).status_code == 403
+
+
+def test_pin_puts_a_report_first_among_starters_and_unpin_removes_it(app):
+    from fastapi.testclient import TestClient
+
+    from reportsbot.api import create_app
+    from test_learning import fake_turn
+    alice = User("alice")
+    t = fake_turn(app, alice, "SELECT full_name FROM customer WHERE status = 'paused'")
+    other = fake_turn(app, alice, "SELECT full_name FROM customer")
+    app.store.db.execute("UPDATE turn SET question='everyone' WHERE id=?", (other,))
+    app.store.db.commit()
+    app.feedback(alice, other, "correct")
+    client = TestClient(create_app(app, with_ui=False))
+    item = client.post(f"/api/turns/{t}/pin", headers={"X-User-Id": "alice"}).json()
+    assert item["pinned"] == 1 and app.starter_questions(alice)[0] == "active customers"
+    assert client.post(f"/api/turns/{t}/pin", headers={"X-User-Id": "alice"}).json()["id"] == item["id"]  # no duplicate
+    assert client.delete(f"/api/knowledge/{item['id']}/pin", headers={"X-User-Id": "bob"}).status_code == 403
+    client.delete(f"/api/knowledge/{item['id']}/pin", headers={"X-User-Id": "alice"})
+    assert app.pinned(alice) == [] and [e["action"] for e in app.store.all(
+        "SELECT action FROM knowledge_event WHERE item_id=? ORDER BY id", (item["id"],))][-2:] == ["pinned", "unpinned"]

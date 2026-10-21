@@ -566,10 +566,32 @@ class App:
                 "item": o.item}
 
     def starter_questions(self, user: User, top: int = 5) -> list[str]:
-        """Questions behind the most-used reports this user can trust: shown as one-click starters."""
+        """Questions behind the user's pinned reports, then the most-used reports this user can trust:
+        shown as one-click starters (a pinned one re-runs with no model call, route "direct")."""
         rows = [i for i in self.knowledge.visible(user, "example") if i.get("question")]
-        rows.sort(key=lambda i: (i["status"] != "verified", -(i["uses"] or 0), -(i["confirmations"] or 0)))
+        rows.sort(key=lambda i: (not (i["pinned"] and i["owner"] == user.id), i["status"] != "verified",
+                                 -(i["uses"] or 0), -(i["confirmations"] or 0)))
         return list(dict.fromkeys(i["question"] for i in rows))[:top]
+
+    def pinned(self, user: User) -> list[dict[str, Any]]:
+        return [i for i in self.knowledge.visible(user, "example") if i["pinned"] and i["owner"] == user.id]
+
+    def pin(self, user: User, turn_id: str) -> dict[str, Any]:
+        """Pin one of your reports: your own example with the same SQL is flagged, or one is created
+        (pinning your own report counts as confirming it for you)."""
+        t = self._turn(user, turn_id)
+        if t["kind"] != "report":
+            raise ValueError("Only reports can be pinned.")
+        canon = canonical_hash(t["sql"], self.target.dialect)
+        item = next((i for i in self.knowledge.visible(user, "example")
+                     if i["owner"] == user.id and i["sql_canonical"] == canon), None)
+        if not item:
+            item = self.knowledge._create(user=user, kind="example", title=json.loads(t["payload"])["title"],
+                                          question=t["question"], sql=t["sql"], source_turn=turn_id, note="pinned")
+        return self.knowledge.set_pinned(user, item["id"], True)
+
+    def unpin(self, user: User, item_id: str) -> dict[str, Any]:
+        return self.knowledge.set_pinned(user, item_id, False)
 
     def rerun(self, user: User, turn_id: str) -> dict[str, Any]:
         """"Re-run with today's data": an earlier report of yours, same SQL, fresh rows, no model call.

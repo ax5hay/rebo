@@ -133,7 +133,17 @@ def mount_ui(api: FastAPI, app: App) -> None:
         feed = ui.column().classes("w-full max-w-5xl mx-auto gap-3 p-4")
         with feed:
             ui.chat_message(msg.say("welcome"), name="Reports", sent=False)
-            starters = app.starter_questions(u)
+            pins = app.pinned(u)
+            if pins:
+                with ui.row().classes("gap-2 items-center"):
+                    ui.label("Your pinned reports:").classes("text-sm opacity-70")
+                    for p in pins:
+                        ui.button(f"★ {p['title']}", on_click=lambda p=p: send(p["question"])).props(
+                            "flat dense no-caps color=primary")
+                        ui.button(icon="close", on_click=lambda p=p: (app.unpin(u, p["id"]), ui.notify(
+                            "Unpinned."))).props("flat dense round size=xs").tooltip("Unpin")
+            pinned_q = {p["question"] for p in pins}
+            starters = [s for s in app.starter_questions(u) if s not in pinned_q]
             if starters:
                 with ui.row().classes("gap-2"):
                     ui.label("Others often ask:").classes("text-sm opacity-70")
@@ -183,6 +193,8 @@ def mount_ui(api: FastAPI, app: App) -> None:
                             ui.button(f, on_click=lambda f=f: send(f)).props("flat dense no-caps color=primary")
                         ui.space()
                         ui.button("Re-run with today's data", on_click=lambda r=r: rerun(r)).props("flat dense")
+                        ui.button("Pin", icon="star", on_click=lambda r=r: (app.pin(u, r["turn_id"]), ui.notify(
+                            "Pinned: it now heads your starter row."))).props("flat dense")
                         ui.button("Download CSV", on_click=lambda r=r: ui.download.content(
                             app.turn_csv(u, r["turn_id"]), f"{r['title'][:60]}.csv")).props("flat dense")
                         ui.button("Request a fix", on_click=lambda r=r: _request_dialog(

@@ -47,6 +47,8 @@ Rules behind the table:
 | Assumptions in plain words | "How I read your question" list | Wrong readings are spotted before anyone uses the numbers |
 | One-turn clarification | Up to 3 questions with option chips and one **Run** | One clarifying turn instead of several |
 | Remembered clarification answers | Picking an option stores a personal note (title = the question, body = the answer) shown in My knowledge, withdrawable there; free text that is not an option is not stored | The same question is not asked twice (B-007) |
+| Favourites (pin a report) | **Pin** on a report; "Your pinned reports" heads the Ask page, each with an unpin ×; pinned questions also lead `GET /api/starter` | One click re-runs a favourite with no model call (route `direct`) (B-016) |
+| Re-run with today's data | Button on every report | Same SQL, fresh rows, no model call (B-008) |
 | Follow-up chips | Up to 3 drill-downs under each report | Drill down with one click |
 | Starter questions | "Others often ask: …" from the most-used trusted reports | First question lands on a known-good report |
 | Feedback in full words | **No, fix it** opens a text box; the words become the correction and run immediately | One step instead of two; the reason is kept with the feedback |
@@ -63,7 +65,6 @@ Rules behind the table:
 |---|---|---|
 | **"What do you know about X?"** | everyone | A chat intent answered from `search_knowledge` + the catalog: the learned definitions and saved reports about X, with their status and owners |
 | **"Why did you ask me that?"** | everyone | Show the evidence behind a clarification: the competing readings and their row counts (needs the deterministic ask-gate, doc 18 P1.2) |
-| **Favourites / pin a report** | everyone | Pin a confirmed report to the starter row; one-click re-run with fresh data |
 | **Re-run with today's data** | everyone | Button on any past report; reuses the SQL, no model call |
 | **Explain this number** | everyone | Click a cell to see the rows behind it (drill-through: same SQL with a filter on that group) |
 | **Personal defaults** | everyone | "Always last 30 days unless I say otherwise", "only my region": saved as personal notes, shown as assumptions |

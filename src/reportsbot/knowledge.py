@@ -346,6 +346,16 @@ class Knowledge:
             scope = "org"
         return Outcome("promoted", self._promote(admin, item, scope))
 
+    def set_pinned(self, user: User, item_id: str, pinned: bool) -> dict[str, Any]:
+        """Favourites: only the owner pins or unpins their own example; it heads their starter row."""
+        item = self.get(item_id)
+        if not item or item["owner"] != user.id or item["kind"] != "example":
+            raise PermissionError("You can only pin or unpin your own reports.")
+        with self.store.tx() as db:
+            db.execute("UPDATE knowledge SET pinned=?, updated_at=? WHERE id=?", (int(pinned), now(), item_id))
+            self._event(db, item_id, user.id, "pinned" if pinned else "unpinned", item["status"], item["status"])
+        return self.get(item_id)
+
     def retire(self, user: User, item_id: str, reason: str = "") -> Outcome:
         item = self.get(item_id)
         if not item or (item["owner"] != user.id and not user.is_admin):

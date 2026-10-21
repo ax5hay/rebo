@@ -166,6 +166,7 @@ MIGRATIONS = [
     ("turn", "feedback_note", "ALTER TABLE turn ADD COLUMN feedback_note TEXT"),
     ("knowledge", "sql_template", "ALTER TABLE knowledge ADD COLUMN sql_template TEXT"),  # example: literals -> :pN
     ("knowledge", "params", "ALTER TABLE knowledge ADD COLUMN params TEXT"),               # JSON list of the literals
+    ("knowledge", "pinned", "ALTER TABLE knowledge ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0"),  # owner's favourite
 ]
 
 
