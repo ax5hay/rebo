@@ -83,7 +83,7 @@ done when:
 - doc 22 §2 moves this from §3.
 result: 2026-10-21, `git log --grep B-007`; 100 passed. Only answers matching an offered option are stored.
 
-### [ ] B-008 · Parameterised examples and no-LLM reuse; "Re-run with today's data" (aid)
+### [x] B-008 · Parameterised examples and no-LLM reuse; "Re-run with today's data" (aid)
 needs: offline
 do:
 1. On confirm, extract the literals of the example's SQL with sqlglot into `params` (new JSON column, added via `store.MIGRATIONS`); keep `sql_template` with `:p1`… placeholders.
@@ -93,6 +93,7 @@ done when:
 - Offline tests: an exact repeat makes 0 model requests; re-run returns fresh rows.
 - docs 05 and 20 updated.
 - `route: "direct"` appears in usage.
+result: 2026-10-21, 4 commits (`git log --grep B-008`); 106 passed. Exact repeat of own question: 0 requests (route direct); value-only change: 1 fast request, 0 agent (route params); rerun: 0 requests. eval pending: needs llm (cost per repeat question). UI button not browser-tested.
 
 ### [ ] B-009 · Question masking for example retrieval
 needs: offline
