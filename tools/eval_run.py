@@ -52,6 +52,11 @@ async def main(cases: str, out: str, limit: int = 0, use_drafts: bool = False) -
                "escalated": sum(bool(c["usage"].get("escalated")) for c in res["cases"]),
                "median_seconds": sorted(c["seconds"] for c in res["cases"])[len(res["cases"]) // 2],
                "total_cost_usd": round(sum(costs), 4) if costs else None}
+    agreement = [c["usage"]["agreement"].split(":")[0] if c["usage"]["agreement"].startswith("agreed") else
+                 c["usage"]["agreement"] for c in res["cases"] if c["usage"].get("agreement")]
+    if agreement:  # checks.agreement (B-048): outcomes and the extra fast-model cost, not in total_cost_usd
+        summary["agreement"] = {k: agreement.count(k) for k in sorted(set(agreement))}
+        summary["agreement_cost_usd"] = round(sum(c["usage"].get("agreement_cost_usd") or 0 for c in res["cases"]), 4)
     scored = [c["scores"]["ExecutionMatch"] for c in res["cases"] if "ExecutionMatch" in c["scores"]]
     if scored:
         summary["execution_match"] = f"{sum(bool(x) for x in scored)}/{len(scored)}"
