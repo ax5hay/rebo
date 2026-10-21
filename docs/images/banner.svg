@@ -3,11 +3,14 @@
   <desc id="d">ReBo, a reports bot that learns from the people who use it. A small result table with one row marked as how the question was read.</desc>
   <rect width="840" height="220" rx="18" fill="#142029"/>
   <!-- wordmark -->
-  <g font-family="'Instrument Sans', 'Inter', 'Helvetica Neue', Arial, sans-serif">
-    <rect x="56" y="62" width="44" height="44" rx="12" ry="12" fill="#5fd0ad"/>
-    <path d="M100 94 v12 h-12 z" fill="#142029"/>
-    <text x="64" y="93" font-size="20" font-weight="700" fill="#142029" letter-spacing="-0.5">Rb</text>
-    <text x="116" y="100" font-size="44" font-weight="650" fill="#e6ebee" letter-spacing="-1.4">ReBo</text>
+  <g font-family="-apple-system, 'SF Pro Display', 'Inter', 'Helvetica Neue', Arial, sans-serif">
+    <g transform="translate(56 58) scale(0.75)">
+      <rect width="64" height="64" rx="16" fill="#0d1b24" stroke="#2c3e4a" stroke-width="1.2"/>
+      <circle cx="30" cy="24" r="10" fill="none" stroke="#3fd0a6" stroke-width="6.5"/>
+      <rect x="14" y="11" width="9" height="40" rx="4.5" fill="#f4f7f8"/>
+      <rect x="33" y="35" width="9.5" height="16" rx="4.75" fill="#e6a93c"/>
+    </g>
+    <text x="114" y="98" font-size="44" font-weight="650" fill="#e6ebee" letter-spacing="-1.4">ReBo</text>
     <text x="58" y="146" font-size="17" fill="#9fadb7">Reports in plain words, from any SQL database.</text>
     <text x="58" y="172" font-size="17" fill="#9fadb7">It learns from the people who ask, never from config.</text>
   </g>

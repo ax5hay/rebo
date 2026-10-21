@@ -31,3 +31,4 @@ server, [OPERATIONS.md](../OPERATIONS.md); for changing the code, [CONTRIBUTING.
 | 22 | [Roles and user aids](22-roles-and-user-aids.md) | user / admin / owner permissions, every aid that exists, aids to add next |
 | 23 | [Offline bundle](23-offline-bundle.md) | What leaves this machine, what was captured from JMS, setup with no JMS, made-up demo domain, checklist |
 | 24 | [Runbook](24-runbook.md) | Backup/restore, upgrade, after target-DB migrations, rotating keys, moving to Postgres, knowledge export/import |
+| 25 | [Brand and design](25-brand-and-design.md) | The mark, colours, voice, Liquid Glass and how it goes beyond Apple's, structure, readability rules |
