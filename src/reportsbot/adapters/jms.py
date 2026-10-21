@@ -175,6 +175,10 @@ def router(app: App) -> APIRouter:
             return {"contact_id": contact_id, "message": res["message"], "reports_session_id": conv,
                     "reports_phase": "feedback", "reports_awaiting": awaiting, "reports_options": [],
                     "reports_allow_freetext": True, "columns": [], "rows": []}
+        if action == "resume":  # e.g. after a reconnect: the session's latest answer again, no new turn
+            t = last_turn(user, conv)
+            return with_save(to_jms(contact_id, {"turn_id": t["id"], "conversation_id": t["conversation_id"],
+                                                 "kind": t["kind"], **json.loads(t["payload"])}))
         if opt == "save":
             return {"contact_id": contact_id, "message": save_to_builder(user, last_turn(user, conv, "report")),
                     "reports_session_id": conv, "reports_phase": "feedback", "reports_awaiting": "freetext",

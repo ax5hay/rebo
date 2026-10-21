@@ -64,3 +64,12 @@ opens view-only. Mocked by `mocks/jms/server.py::builder_grammar_problem` (8 tes
 | `../jms_staging/eval.jsonl` | 18 PO-validated prompts (JMS-6723) | no |
 | `../jms_staging/gold_custom_reports.jsonl` | 79 human-built staging reports: prompt + gold SQL; `prompt_quality` (`question` for 12, `title_only` for 67) and `scorable` (6) | SQL only (screened for personal literals) |
 | `../jms_staging/eval_results_*.json` | measured bot runs | synthetic rows only |
+
+## 6. Contract replay (B-040)
+
+`tests/test_jms_contract.py` drives every `ReportsUserAction` (`query`, `select_option`,
+`manual_select`, `confirm`, `reject`, `freetext`, `new_report`, `resume`) through the adapter with a
+scripted model. Each request is validated against `ChatMessageRequest` (with `session` and `context`
+as the frontend sends them) and each response against `ChatResponse`, using `jsonschema`. `resume`
+returns the session's latest answer again without a new turn; `manual_select` is handled like typed
+text (the bot has no pickers).
