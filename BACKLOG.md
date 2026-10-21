@@ -178,10 +178,11 @@ do: For an aggregated report, clicking a cell (UI) or calling `POST /api/turns/{
 done when: offline test on the demo DB (open maintenance per building → the rows for one building).
 result: 2026-10-21, `git log --grep B-018`; 120 passed. UI row click not browser-tested.
 
-### [ ] B-019 · Personal defaults
+### [x] B-019 · Personal defaults
 needs: offline
 do: Add a My knowledge section "My defaults" (date range, region, …) stored as personal notes titled `default: <name>`. The context block lists them first, and the prompt says to apply them unless the question says otherwise and to state them as assumptions.
 done when: offline test with a FunctionModel checking the default reaches the prompt.
+result: 2026-10-21, `git log --grep B-019`; 121 passed. eval pending: needs llm (prompt gained one instruction line).
 
 ### [ ] B-020 · See as user X (admin)
 needs: offline
