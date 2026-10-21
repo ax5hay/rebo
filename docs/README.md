@@ -29,3 +29,4 @@ Start with **[AGENTS.md](../AGENTS.md)**: the direction and the rules that do no
 | 21 | [Direction audit](21-direction-audit.md) | Every requirement vs what is built, with evidence and gaps |
 | 22 | [Roles and user aids](22-roles-and-user-aids.md) | user / admin / owner permissions, every aid that exists, aids to add next |
 | 23 | [Offline bundle](23-offline-bundle.md) | What leaves this machine, what was captured from JMS, setup with no JMS, made-up demo domain, checklist |
+| 24 | [Runbook](24-runbook.md) | Backup/restore, upgrade, after target-DB migrations, rotating keys, moving to Postgres, knowledge export/import |
