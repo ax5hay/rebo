@@ -101,9 +101,14 @@ class KnowledgeEdit(BaseModel):
     sql: str | None = None
 
 
-def user_from_headers(x_user_id: str = Header(...), x_user_role: str = Header("user"),
-                      x_user_team: str | None = Header(None)) -> User:
-    """auth.mode=headers: identity comes from the host app's gateway. Never expose without one."""
+def user_from_headers(x_user_id: str | None = Header(None), x_user_role: str = Header("user"),
+                      x_user_team: str | None = Header(None), x_forwarded_user: str | None = Header(None),
+                      x_forwarded_email: str | None = Header(None)) -> User:
+    """auth.mode=headers: identity comes from the host app's gateway. Never expose without one.
+    X-User-Id wins; behind oauth2-proxy (compose.prod.yml) X-Forwarded-Email / -User are used."""
+    x_user_id = x_user_id or x_forwarded_email or x_forwarded_user
+    if not x_user_id:
+        raise HTTPException(401, "No user identity: send X-User-Id (or run behind the login proxy)")
     if x_user_role.strip().lower() not in {"user", "admin", "owner", *ROLE_ALIASES}:
         raise HTTPException(400, "X-User-Role must be user, admin or owner")
     return User(id=x_user_id, role=x_user_role, team=x_user_team)  # type: ignore[arg-type]
