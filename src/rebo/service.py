@@ -20,7 +20,7 @@ import httpx2 as httpx
 from pydantic import BaseModel, Field
 from pydantic_ai import (Agent, ModelMessage, ModelMessagesTypeAdapter, ModelRetry, ToolOutput, UsageLimitExceeded,
                          UsageLimits)
-from pydantic_ai.messages import ModelRequest, ModelResponse, TextPart, UserPromptPart
+from pydantic_ai.messages import ModelRequest, ModelResponse, TextPart, ToolCallPart, ToolReturnPart, UserPromptPart
 
 from . import messages as msg
 from .agent import Clarify, Deps, Report, Reply, Trace, build_agent
@@ -29,7 +29,8 @@ from .knowledge import Knowledge, User
 from .llm import build_model, cost, credentials_present, profile, turn_limits
 from .observability import annotate_trace, ask_span, phoenix_url, setup_tracing
 from .retrieval import Index, fts_query, get_embedder
-from .safety import canonical_hash, drill_sql, explain_sql, fill_params, guard, skeleton, skeleton_similarity, tables_in
+from .safety import (canonical_hash, drill_sql, explain_sql, fill_params, guard, refine_sql, skeleton, skeleton_similarity,
+                     tables_in, value_filters)
 from .settings import Settings, get_settings, load_env_file
 from .store import Store, new_id, now
 from .target import QueryResult, TargetDB
@@ -192,6 +193,11 @@ class App:
             "the question, what is known about the data, each query and its first rows: decide which query "
             "answers the question as asked, or whether the question itself can fairly be read in more than one "
             "way. Readings are plain sentences without table or column names."))
+
+    @cached_property
+    def decide_model(self):
+        s = self.settings
+        return build_model(s.decide_model, s) if s.decide_model else None
 
     @cached_property
     def escalation_model(self):
@@ -405,12 +411,30 @@ class App:
                               "reuse" if reuse and not escalated else "new")
         if isinstance(out, Report) and deps.final is not None:
             await self._second_opinion(user, text, out, deps.final, usage_d, context=prompt)
-        # Verifier-gated cascade (B-053): when the cheaper model needed a check to step in (a SQL trap or a
-        # grain problem caught by the validator, or a concern from the second opinion), the turn is done
-        # again, once, on the escalation model. The discarded run's tokens stay in usage.before.
+        # Doubt: the cheaper model wants to ask, or a check had to step in (a SQL trap or a grain problem
+        # caught by the validator, or a concern from the second opinion).
         doubt = "trap" if deps.trap_retry else "grain" if deps.grain_retry else \
-            "review" if usage_d.get("review") == "concern" else None
-        if doubt and not escalated and self.escalation_model and first_name != self.settings.escalate_model:
+            "review" if usage_d.get("review") == "concern" else "clarify" if isinstance(out, Clarify) else None
+        if doubt and not escalated and self.decide_model and first_name != self.settings.decide_model:
+            # Doubt-gated decide (docs/20 §5b): the stronger model settles the turn from the cheaper model's
+            # lookups and draft, in one or two requests instead of exploring again.
+            before, first_deps = usage_d, deps
+            deps = Deps(app=self, user=user, trace=Trace(deps.trace, on_append=progress), shown=deps.shown)
+            deps.trace.append({"tool": "decide", "after": doubt})
+            try:
+                result = await self.agent.run(self._decide_prompt(prompt, result, first_deps), deps=deps,
+                                              message_history=history, model=self.decide_model,
+                                              usage_limits=self._limits(self.settings.decide_model))
+                out = result.output
+                usage_d = self._usage(result.usage, self.settings.decide_model, False, before["route"])
+                usage_d.update(decided_for=doubt, explored_by=first_name, before=before)
+            except Exception:
+                log.info("decide after %s failed; keeping the first answer", doubt, exc_info=True)
+                deps, usage_d = first_deps, before
+        # Verifier-gated cascade (B-053): without a decide model, the same doubts (not a clarification)
+        # redo the turn once on the escalation model. The discarded run's tokens stay in usage.before.
+        elif doubt and doubt != "clarify" and not escalated and self.escalation_model \
+                and first_name != self.settings.escalate_model:
             before, first_deps = usage_d, deps
             deps = Deps(app=self, user=user, trace=Trace(deps.trace, on_append=progress), shown=deps.shown)
             deps.trace.append({"tool": "escalate", "after": doubt})
@@ -455,6 +479,33 @@ class App:
         return self._record(turn_id, conv_id, user, text, "answer", payload, deps, usage=usage_d)
 
     @staticmethod
+    def _decide_prompt(prompt: str, result: Any, deps: Deps, per_result: int = 1500) -> str:
+        """The request plus what the exploring model looked up (each tool call and a cut of its result)
+        and its draft, for the deciding model. Findings are facts; the draft is only a draft."""
+        calls, lines = {}, []
+        for m in result.new_messages():
+            for p in m.parts:
+                if isinstance(p, ToolCallPart):
+                    calls[p.tool_call_id] = f"{p.tool_name}({json.dumps(p.args_as_dict(), default=str)[:300]})"
+                elif isinstance(p, ToolReturnPart) and p.tool_call_id in calls and p.tool_name not in ("present_report",):
+                    body = p.content if isinstance(p.content, str) else json.dumps(p.content, default=str)
+                    lines.append(f"{calls[p.tool_call_id]} -> {body[:per_result]}{' ...' if len(body) > per_result else ''}")
+        out = result.output
+        if isinstance(out, Report):
+            draft = {"kind": "report", "title": out.title, "sql": out.sql, "assumptions": out.assumptions}
+            if deps.final is not None:
+                draft["first_rows"] = {"columns": deps.final.columns, "rows": deps.final.rows[:5],
+                                       "row_count": len(deps.final.rows)}
+        else:
+            draft = {"kind": "clarify", **out.model_dump(include={"questions", "why"})}
+        return (f"{prompt}\n<exploration>A faster assistant already explored the database for this request. "
+                "Its lookups below are facts you can rely on; its draft is only a draft and may be wrong. Decide "
+                "the answer yourself: present the report (fix the draft's SQL if needed), or ask the user only if "
+                "readings that fit the request would give materially different answers. Call tools only for "
+                "what the lookups do not cover.\n" + "\n".join(lines) +
+                f"\n<draft>{json.dumps(draft, default=str)}</draft></exploration>")
+
+    @staticmethod
     def _usage(u: Any, model: str, escalated: bool, route: str) -> dict[str, Any]:
         return {"requests": u.requests, "input_tokens": u.input_tokens, "output_tokens": u.output_tokens,
                 "cache_read_tokens": getattr(u, "cache_read_tokens", None), "tool_calls": u.tool_calls,
@@ -483,7 +534,7 @@ class App:
         self.knowledge.mark_used(prov["item_ids"])
         payload = {"title": out.title, "sql": out.sql, "columns": res.columns, "rows": res.rows,
                    "truncated": res.truncated, "elapsed_ms": res.elapsed_ms, "assumptions": out.assumptions,
-                   "steps": explain_sql(out.sql, self.target.dialect),
+                   "steps": explain_sql(out.sql, self.target.dialect), "filters": self.filter_choices(out.sql),
                    "provenance": prov, "follow_ups": out.follow_ups,
                    "message": msg.say("report_ready", title=out.title,
                                       row_phrase=msg.rows_phrase(len(res.rows), res.truncated)),
@@ -727,7 +778,8 @@ class App:
                        " created_at) VALUES(?,?,?,?,?,?,?,?,?,?)",
                        (turn_id, conv_id, user.id, question, kind, json.dumps(payload, default=str), sql,
                         json.dumps(prov) if prov else None, json.dumps(usage) if usage else None, now()))
-        return {"turn_id": turn_id, "conversation_id": conv_id, "kind": kind, **payload, "trace": deps.trace}
+        return {"turn_id": turn_id, "conversation_id": conv_id, "kind": kind, "route": (usage or {}).get("route"),
+                **payload, "trace": deps.trace}
 
     # ---- feedback & teaching ------------------------------------------------------------------
     def _turn(self, user: User, turn_id: str) -> dict[str, Any]:
@@ -1000,6 +1052,8 @@ class App:
             payload = json.loads(t["payload"])
             if t["kind"] == "report" and "steps" not in payload and t["sql"]:  # turns from before the steps
                 payload["steps"] = explain_sql(t["sql"], self.target.dialect)
+            if t["kind"] == "report" and "filters" not in payload and t["sql"]:
+                payload["filters"] = self.filter_choices(t["sql"])
             out.append({"turn_id": t["id"], "conversation_id": conversation_id, "kind": t["kind"],
                         "question": t["question"], "feedback": t["feedback"], "trace_id": usage.get("trace_id"),
                         "route": usage.get("route"), "created_at": t["created_at"], **payload})
@@ -1155,6 +1209,45 @@ class App:
         usage_d = {"requests": 0, "input_tokens": 0, "output_tokens": 0, "cache_read_tokens": 0, "tool_calls": 0,
                    "model": None, "escalated": False, "route": "drill"}
         deps = Deps(app=self, user=user, trace=[{"tool": "drill", "turn": turn_id, "row": row}])
+        return self._report_turn(new_id("turn"), t["conversation_id"], user, t["question"], out, res, deps, usage_d)
+
+    def filter_choices(self, sql: str) -> list[dict[str, Any]]:
+        """The report's filters on stored values, each with the values the column holds (B-060), so a
+        person can switch "open" to "everything but closed" without asking again."""
+        out = []
+        for f in value_filters(sql, self.target.dialect, self.catalog.schema):
+            if (f["table"], f["column"]) in self.catalog.sensitive:
+                continue
+            c = self.store.one("SELECT top_values, stats FROM cat_column WHERE table_name=? AND name=?",
+                               (f["table"], f["column"]))
+            options = json.loads(c["top_values"] or "[]") if c else []
+            distinct = (json.loads(c["stats"] or "{}") if c else {}).get("distinct")
+            if not options or (distinct or 0) > 40 or len(options) < 2:
+                continue
+            out.append({**f, "options": [{"value": o["value"], "count": o["count"]} for o in options[:40]]})
+        return out
+
+    def refine(self, user: User, turn_id: str, index: int, values: list[str], negated: bool) -> dict[str, Any]:
+        """Switch one value filter of an earlier report of yours (see filter_choices) and run it again.
+        No model call; recorded as a new turn with usage.route = "refine"."""
+        t = self._turn(user, turn_id)
+        if t["kind"] != "report":
+            raise ValueError("Only reports can be changed this way.")
+        choice = next((f for f in self.filter_choices(t["sql"]) if f["index"] == index), None)
+        if choice is None or not set(values) <= {o["value"] for o in choice["options"]}:
+            raise ValueError("Pick values the column holds.")
+        p = json.loads(t["payload"])
+        sql = refine_sql(t["sql"], self.target.dialect, index, values, negated)
+        with self.as_user(user):
+            res = self._run_report_sql(sql)
+        said = ("everything except " if negated else "") + " or ".join(f"“{v}”" for v in values)
+        note = msg.say("refined", column=choice["column"].replace("_", " "), choice=said)
+        out = Report(title=p["title"], sql=sql, assumptions=[*[a for a in p.get("assumptions") or []
+                                                               if not a.startswith("You switched")], note],
+                     follow_ups=p.get("follow_ups") or [])
+        usage_d = {"requests": 0, "input_tokens": 0, "output_tokens": 0, "cache_read_tokens": 0, "tool_calls": 0,
+                   "model": None, "escalated": False, "route": "refine"}
+        deps = Deps(app=self, user=user, trace=[{"tool": "refine", "turn": turn_id, "index": index}])
         return self._report_turn(new_id("turn"), t["conversation_id"], user, t["question"], out, res, deps, usage_d)
 
     def turn_csv(self, user: User, turn_id: str) -> str:

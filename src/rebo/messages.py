@@ -27,6 +27,7 @@ MESSAGES: dict[str, str] = {
     "progress_escalate": "Asking a stronger model…",
     "progress_other": "Working…",
     "drill_rows": "The rows behind “{title}” where {where}, from the main table of that report.",
+    "refined": "You switched {column} to {choice}; the rest of the report is unchanged.",
     "ask_feedback": "Is this right?",
 
     # --- provenance badges (shown above the table) --------------------------------------

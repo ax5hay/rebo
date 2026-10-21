@@ -55,6 +55,12 @@ class DrillIn(BaseModel):
     column: str | None = None
 
 
+class RefineIn(BaseModel):
+    index: int
+    values: list[str]
+    negated: bool = False
+
+
 class RememberIn(BaseModel):
     accept: bool
 
@@ -301,6 +307,10 @@ def router(app: App) -> APIRouter:
     @r.post("/turns/{turn_id}/feedback")
     def feedback(turn_id: str, body: FeedbackIn, user: User = Depends(current_user)):
         return guard_errors(lambda: app.feedback(user, turn_id, body.verdict, body.note))
+
+    @r.post("/turns/{turn_id}/refine")
+    def refine(turn_id: str, body: RefineIn, user: User = Depends(current_user)):
+        return guard_errors(lambda: app.refine(user, turn_id, body.index, body.values, body.negated))
 
     @r.post("/turns/{turn_id}/drill")
     def drill(turn_id: str, body: DrillIn, user: User = Depends(current_user)):

@@ -250,6 +250,79 @@ def drill_sql(sql: str, dialect: str, columns: list[str], row: list, schema: dic
     return detail.sql(dialect=dialect), labels
 
 
+# ---- value filters people can switch without a model (B-060) -----------------------------------------
+# "Still open" may mean state = 'open' or everything but 'closed'. Rather than block on a question,
+# every filter of a report on stored values is offered as a switch over the column's stored values;
+# switching rewrites the literal(s) in the syntax tree and re-runs the query. No model call.
+
+def _filter_nodes(tree: exp.Expression) -> list[exp.Expression]:
+    sel = tree if isinstance(tree, exp.Select) else None
+    if sel is None:
+        return []
+    scopes = [sel.args.get("where"), *(j.args.get("on") for j in sel.args.get("joins") or [])]
+    out = []
+    for scope in filter(None, scopes):
+        for node in scope.find_all(exp.EQ, exp.NEQ, exp.In):
+            col, lits = (node.this, node.expressions) if isinstance(node, exp.In) else (node.this, [node.expression])
+            if isinstance(node, exp.In) and node.args.get("query"):
+                continue
+            if not isinstance(col, exp.Column) and isinstance(getattr(node, "expression", None), exp.Column):
+                col, lits = node.expression, [node.this]
+            if isinstance(col, exp.Column) and lits and all(isinstance(l, exp.Literal) and l.is_string for l in lits):
+                out.append(node)
+    return out
+
+
+def value_filters(sql: str, dialect: str, schema: dict[str, dict[str, str]]) -> list[dict]:
+    """[{index, table, column, negated, values}] for each filter comparing a column with text values."""
+    try:
+        tree = sqlglot.parse_one(sql, read=dialect)
+    except sqlglot.errors.ParseError:
+        return []
+    sel = tree if isinstance(tree, exp.Select) else None
+    if sel is None or not sel.args.get("from_"):
+        return []
+    sources = [sel.args["from_"].this, *(j.this for j in sel.args.get("joins") or [])]
+    aliases = {t.alias_or_name.lower(): t.name for t in sources if isinstance(t, exp.Table)}
+    lower = {t.lower(): t for t in schema}
+    out = []
+    for i, node in enumerate(_filter_nodes(tree)):
+        col = node.this if isinstance(node.this, exp.Column) else node.expression
+        lits = node.expressions if isinstance(node, exp.In) else [node.expression if col is node.this else node.this]
+        if col.table:
+            table = aliases.get(col.table.lower())
+        else:
+            owners = [t for t in aliases.values() if col.name in schema.get(lower.get(t.lower(), t), {})]
+            table = owners[0] if len(owners) == 1 else None
+        table = lower.get((table or "").lower())
+        if not table or col.name not in schema[table]:
+            continue
+        negated = isinstance(node, exp.NEQ) or isinstance(node.parent, exp.Not)
+        out.append({"index": i, "table": table, "column": col.name, "negated": negated,
+                    "values": [l.this for l in lits]})
+    return out
+
+
+def refine_sql(sql: str, dialect: str, index: int, values: list[str], negated: bool) -> str:
+    """The same query with value filter `index` (from value_filters) set to `values` (or all but them)."""
+    if not values:
+        raise ValueError("Choose at least one value.")
+    tree = sqlglot.parse_one(sql, read=dialect)
+    nodes = _filter_nodes(tree)
+    if not 0 <= index < len(nodes):
+        raise ValueError("No such filter in this report.")
+    node = nodes[index]
+    col = (node.this if isinstance(node.this, exp.Column) else node.expression).copy()
+    lits = [exp.Literal.string(str(v)) for v in values]
+    new = (exp.NEQ(this=col, expression=lits[0]) if negated else exp.EQ(this=col, expression=lits[0])) \
+        if len(lits) == 1 else exp.In(this=col, expressions=lits)
+    if len(lits) > 1 and negated:
+        new = exp.Not(this=new)
+    target = node.parent if isinstance(node.parent, exp.Not) else node
+    target.replace(new)
+    return tree.sql(dialect=dialect)
+
+
 # ---- the query in plain steps (shown under every report) ------------------------------------------
 # Research on people checking text-to-SQL answers (Berant et al. 2018; DIY, IUI 2021; SQLucid) found
 # that non-experts judge correctness far better from a step-by-step, plain-language reading of the

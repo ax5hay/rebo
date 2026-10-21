@@ -73,3 +73,39 @@ def test_drill_through_from_a_summary_cell_to_its_rows(tmp_path):
     ok = client.post(f"/api/turns/{tid}/drill", json={"row": 1}, headers={"X-User-Id": "alice"})
     assert ok.status_code == 200 and len(ok.json()["rows"]) == res.rows[1][1]
     assert client.post(f"/api/turns/{tid}/drill", json={"row": 1}, headers={"X-User-Id": "bob"}).status_code == 403
+
+
+def test_a_value_filter_can_be_switched_without_a_model(tmp_path):
+    """B-060: 'still open' read as state = 'open' is one click away from 'everything but closed'."""
+    import json
+
+    import pytest
+
+    from rebo.knowledge import User
+    from rebo.store import new_id, now
+    db = _build(tmp_path)
+    app = App(Settings(database_url=f"sqlite:///{db}", state_dir=tmp_path / "state", embeddings=False))
+    app.bootstrap(progress=lambda *_: None)
+    sql = ("SELECT b.name AS building, COUNT(m.request_id) AS open_requests FROM building b "
+           "LEFT JOIN unit u ON u.building_id = b.building_id "
+           "LEFT JOIN maintenance m ON m.unit_id = u.unit_id AND m.state = 'open' GROUP BY b.name")
+    choices = app.filter_choices(sql)
+    assert [(c["column"], c["values"], c["negated"]) for c in choices] == [("state", ["open"], False)]
+    assert {"closed", "in_progress", "waiting_parts"} <= {o["value"] for o in choices[0]["options"]}
+    res = app._run_report_sql(sql)
+    alice, tid = User("alice"), new_id("turn")
+    with app.store.tx() as s:
+        s.execute("INSERT INTO conversation(id, owner, created_at, updated_at) VALUES(?,?,?,?)", ("c1", "alice", now(), now()))
+        s.execute("INSERT INTO turn(id, conversation_id, owner, question, kind, payload, sql, created_at) "
+                  "VALUES(?,?,?,?,?,?,?,?)", (tid, "c1", "alice", "open requests per building", "report",
+                                              json.dumps({"title": "Open requests", "columns": res.columns,
+                                                          "rows": res.rows, "assumptions": ["Open means state open."]}), sql, now()))
+    r = app.refine(alice, tid, 0, ["closed"], negated=True)
+    gold = app._run_report_sql("SELECT b.name, COUNT(*) FROM maintenance m JOIN unit u ON u.unit_id=m.unit_id "
+                               "JOIN building b ON b.building_id=u.building_id WHERE m.state <> 'closed' GROUP BY b.name")
+    assert sorted(map(tuple, r["rows"])) == sorted(map(tuple, gold.rows))
+    assert r["filters"][0]["negated"] and r["assumptions"][-1].startswith("You switched state")
+    with pytest.raises(ValueError):
+        app.refine(alice, tid, 0, ["'; DROP TABLE x; --"], negated=False)
+    with pytest.raises(PermissionError):
+        app.refine(User("bob"), tid, 0, ["closed"], negated=True)
