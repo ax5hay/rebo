@@ -68,7 +68,7 @@ function Report({ r, ask, onTurn, onFix }: { r: any; ask: (q: string) => void; o
   const [feedback, setFeedback] = useState<string | null>(r.feedback ?? null);
   const [dialog, setDialog] = useState<null | "fix" | "schedule">(null);
   const grouped = /\bgroup\s+by\b/i.test(r.sql);
-  const chartable = useMemo(() => chartShape(r.columns, r.rows) !== null, [r.columns, r.rows]);
+  const chartable = useMemo(() => chartShape(r.columns, r.rows, r.sql) !== null, [r.columns, r.rows, r.sql]);
   const [view, setView] = useState<"table" | "chart">(chartable && prefs.chartFirst ? "chart" : "table");
   const [filter, setFilter] = useState("");
   const label = r.provenance?.label ?? "new";
@@ -151,7 +151,7 @@ function Report({ r, ask, onTurn, onFix }: { r: any; ask: (q: string) => void; o
         <button className="btn ghost small" onClick={copy}><Copy />Copy</button>
         <a className="btn ghost small" href={csvUrl(r.turn_id)}><Download />CSV</a>
       </div>
-      {view === "chart" && chartable ? <Suspense fallback={<div className="empty">Drawing…</div>}><ResultChart columns={r.columns} rows={r.rows} /></Suspense> :
+      {view === "chart" && chartable ? <Suspense fallback={<div className="empty">Drawing…</div>}><ResultChart columns={r.columns} rows={r.rows} sql={r.sql} /></Suspense> :
       <DataSheet columns={r.columns} rows={r.rows} label={r.title} filter={filter}
                  onRowAction={grouped ? async (i) => {
                    const res = await act(() => call("POST", `/turns/${r.turn_id}/drill`, { row: i }));
