@@ -156,10 +156,11 @@ done when: 30 or more validated questions exist; run the full gold eval with `ll
 
 ## Phase P1b: user aids (doc 22 §3), one commit each
 
-### [ ] B-016 · Favourites (pin a report)
+### [x] B-016 · Favourites (pin a report)
 needs: offline
 do: `POST /api/turns/{id}/pin` stores a pinned report per user, as a personal example flagged `pinned` (new column via MIGRATIONS). Pinned reports appear first among the starters. Unpin is available.
 done when: offline test; Ask page shows pinned reports; doc 22 updated.
+result: 2026-10-21, `git log --grep B-016`; 117 passed. Ask page change not browser-tested.
 
 ### [ ] B-017 · "What do you know about X?"
 needs: offline
