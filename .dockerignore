@@ -1,0 +1,22 @@
+# Keep the build context small and free of secrets: everything below is rebuilt in the image,
+# local state, or irrelevant to it.
+.git
+.github
+.env
+.env.*
+!.env.example
+rebo.yaml
+rebo.git.bundle
+data
+fixtures
+mocks
+tools
+tests
+docs
+**/node_modules
+web/dist
+web/test-results
+web/playwright-report
+**/__pycache__
+**/.venv
+**/*.log

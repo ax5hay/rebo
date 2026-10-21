@@ -76,7 +76,11 @@ needs AWS access and the VPN (doc 12 §1).
 
 ## 5. Deployment
 
-- `Dockerfile` (python:3.13-slim + uv 0.13, `--extra embed --extra postgres`). Local trial:
+- `Dockerfile`, two stages: node:24-slim builds `web/dist`, then python:3.13-slim + uv 0.13
+  (`--extra embed --extra postgres --extra otel`) with the built web app copied in, so the image
+  serves the UI at `/` (before 2026-10-21 it did not). `.dockerignore` keeps `.env`, `rebo.yaml`,
+  `data/` and fixtures out of the build context. Verified: `docker build` passes, `web_built()` is
+  true in the image. Local trial:
   `docker compose --profile bot up` (state in the `botstate` volume).
 - **Production stack: `compose.prod.yml`** (B-033). Services: `bot` (not published), `state-db`
   (postgres:18.6, the bot's memory via `state_url`), `auth` (oauth2-proxy v7.15.5, the only
