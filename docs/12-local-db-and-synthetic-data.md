@@ -142,11 +142,31 @@ Deterministic: Faker and `random` are both seeded with `--seed`.
 
 ### Result on this machine (2026-10-21)
 
-`{"database": "jms", "tables": 207, "rows": 87941, "seed": 7, "cap": 3000}` in about 5 minutes.
+`{"database": "jms", "tables": 207, "rows": 87941, "seed": 7, "cap": 3000}` in about 5 minutes
+(about 10 s on the second machine).
 Spot checks:
 - `gc_case` breakdown: donor/intake/active 175, surrogate/intake/active 118, sperm_donor/intake/active 48, …
 - 411 of 413 `gc_case` rows join to both `contact` (via `gc_id`) and `status`.
 - Contact names and emails are Faker values.
+
+### Date order within a row (B-042)
+
+Independent columns produced impossible rows (a task completed before it was created): 9,809 such
+pairs on the default run. `tools/synth/correlations/derive.py` derives a spec from the profile,
+`tools/synth/correlations/jms_staging.json`, ranking each table's date columns by name: born
+(`date_of_birth`) < created < started (`start_date`, `referral_date`, …) < ended (`completed`,
+`closed`, `resolved_at`, `deleted_at`, `*_disabled_at`, …) < touched (`updated`, `last_updated`,
+`last_login`, `synced_at`, …). Deadlines (`*_due_date`, `must_be_*_by`) and bare `date` stay
+independent. After drawing a row, the generator moves any later-tier date that fell before an
+earlier one to between one hour and 60 days after it (a DATE column moves to a later day). The spec
+can be edited by hand; `synth.py --correlations <file>` uses another one.
+
+Measured 2026-10-21 (second machine), seed 7, cap 3000, 87,941 rows in about 10 s: 68 tables with
+112 ordered pairs; 9,809 violations without the spec, **0 with it** (SQL check over every pair).
+Not done: correlations between categories (e.g. stage given case type): the profile holds only
+per-column statistics and JMS cannot be read again. NeMo Data Designer (0.9.6, Apache-2.0) was
+considered and not used (reasons in `derive.py`). The 18-prompt eval has not been re-run on the new
+data (needs an LLM key).
 
 ### Known limits (by design)
 
