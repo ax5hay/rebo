@@ -259,6 +259,10 @@ def router(app: App) -> APIRouter:
     def save_config(body: ConfigIn, user: User = Depends(current_user)):
         return guard_errors(lambda: admin.save_config(app, user, body.yaml, body.note))
 
+    @r.post("/admin/config/preview")
+    def preview_config(body: ConfigIn, user: User = Depends(current_user)):
+        return guard_errors(lambda: admin.save_config(app, user, body.yaml, preview=True))
+
     @r.post("/admin/config/rollback/{event_id}")
     def rollback_config(event_id: int, user: User = Depends(current_user)):
         return guard_errors(lambda: admin.rollback_config(app, user, event_id))

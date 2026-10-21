@@ -18,7 +18,7 @@ import yaml
 
 from . import messages as msg
 from .knowledge import User
-from .settings import config_path, validate_yaml
+from .settings import Settings, config_path, flatten_yaml, validate_yaml
 from .store import now
 
 if TYPE_CHECKING:
@@ -46,7 +46,57 @@ def get_config(app: "App", user: User) -> dict[str, Any]:
             "history": app.store.all("SELECT id, at, actor, note FROM config_event ORDER BY id DESC LIMIT 20")}
 
 
-def save_config(app: "App", user: User, text: str, note: str = "") -> dict[str, Any]:
+def preview_config(app: "App", user: User, text: str) -> dict[str, Any]:
+    """What saving `text` would do, without saving: validate it, parse every model string, build an App
+    on it with a throw-away state dir, check the database answers `SELECT 1`, and list the settings
+    that change (secrets masked). No model calls. Returns {ok, errors, changes, message}."""
+    _owner_only(user)
+    from .llm import parse
+    from .service import App
+    errors: list[str] = []
+    try:
+        validate_yaml(text)
+    except ValueError as e:
+        return {"ok": False, "errors": [f"configuration: {e}"], "changes": [],
+                "message": msg.say("config_preview_bad", n=1)}
+    flat = flatten_yaml(text)
+    flat.setdefault("database_url", os.environ.get("REPORTSBOT_DATABASE_URL", ""))
+    new = Settings.model_validate(flat)
+    for key in ("model", "fast_model", "escalate_model"):
+        if getattr(new, key):
+            try:
+                parse(getattr(new, key))
+            except ValueError as e:
+                errors.append(f"{key}: {e}")
+    for spec in new.fallback_models:
+        try:
+            parse(spec)
+        except ValueError as e:
+            errors.append(f"fallback model: {e}")
+    with tempfile.TemporaryDirectory(prefix="reportsbot-preview-") as tmp:
+        try:
+            trial = App(new.model_copy(update={"state_dir": Path(tmp)}))
+            trial.target.run("SELECT 1", max_rows=1)
+            trial.target.engine.dispose()
+            trial.store.db.close()
+        except Exception as e:
+            errors.append(f"database: cannot connect ({str(getattr(e, 'orig', e)).splitlines()[0][:200]})")
+    old, cur = app.settings.model_dump(), new.model_dump()
+    secret = lambda k: any(w in k for w in ("key", "secret", "password"))  # noqa: E731
+    changes = [{"setting": k, "from": "***" if secret(k) else str(old.get(k)), "to": "***" if secret(k) else str(v)}
+               for k, v in cur.items() if k != "state_dir" and old.get(k) != v] + (
+              [{"setting": "state_dir", "from": str(old["state_dir"]), "to": str(new.state_dir)}]
+              if old.get("state_dir") != new.state_dir else [])
+    message = msg.say("config_preview_ok", n=len(changes)) if not errors else msg.say("config_preview_bad",
+                                                                                      n=len(errors))
+    return {"ok": not errors, "errors": errors, "changes": changes, "message": message}
+
+
+def save_config(app: "App", user: User, text: str, note: str = "", *, preview: bool = False) -> dict[str, Any]:
+    """Validate and save atomically, with an audit record. preview=True: only report what would happen
+    (preview_config); nothing is written."""
+    if preview:
+        return preview_config(app, user, text)
     _owner_only(user)
     validate_yaml(text)
     path = config_path()

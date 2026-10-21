@@ -55,6 +55,7 @@ Rules behind the table:
 | Import diff preview (admin) | Export / import dialog: **Preview changes** lists every add / edit (field: before → after) / share / withdraw and every error; **Import** is enabled only after a preview of the current text. `POST /api/knowledge/import {yaml, dry_run: true}` | Bulk edits are checked before they touch shared knowledge (B-021) |
 | Bulk review (admin) | Checkboxes on the review queue, one note, **Share selected** (org) / **Reject selected**; `POST /api/review/bulk {item_ids, action: share/reject, note}`. Each item is handled on its own and the note goes into its history; failures are listed | A Monday review of 20 items is 2 clicks, not 20 (B-022) |
 | Usage dashboard (admin/owner) | "Usage (last 90 days)" on the Admin page / `GET /api/admin/stats?days=90`: reports and confirmation rate per ISO week, provenance mix, top questions, items most reported wrong, open requests with age, cost per day at list prices (`llm.PRICES`; turns on unpriced models counted separately). Eval turns excluded | Admins see whether the bot is trusted and what it costs without exporting data (B-023) |
+| Config change preview (owner) | **Check** on the Configuration page / `POST /api/admin/config/preview {yaml}` / `admin.save_config(preview=True)`: validates, parses every model name, builds an App on the new config with a throw-away state dir, runs `SELECT 1` on the database, and lists each setting that would change (secrets masked). No model calls; nothing saved. The proposed tests + 5-question eval are not part of it (they need an LLM key and take minutes) | A wrong database URL or model name is caught before it takes the bot down (B-024) |
 | Re-run with today's data | Button on every report | Same SQL, fresh rows, no model call (B-008) |
 | Follow-up chips | Up to 3 drill-downs under each report | Drill down with one click |
 | Starter questions | "Others often ask: …" from the most-used trusted reports | First question lands on a known-good report |
@@ -73,5 +74,4 @@ Rules behind the table:
 | **"Why did you ask me that?"** | everyone | Show the evidence behind a clarification: the competing readings and their row counts (needs the deterministic ask-gate, doc 18 P1.2) |
 | **Re-run with today's data** | everyone | Button on any past report; reuses the SQL, no model call |
 | **Request SLA / notifications** | admin/owner | Age of open requests; email/webhook when a request is answered or an item goes stale |
-| **Config change preview** | owner | Validate a new configuration and run the offline tests plus a 5-question eval before saving |
 | **Scheduled reports** | everyone | "Send me this every Monday" (needs durable jobs, doc 18 P2.5) |

@@ -71,6 +71,8 @@ MESSAGES: dict[str, str] = {
     # --- configuration and bulk knowledge (owners / admins) --------------------------------
     "config_saved": "Configuration saved and the previous version kept. Restart the bot to apply it.",
     "bulk_review_done": "{n} item(s) {action}; {errors} could not be changed.",
+    "config_preview_ok": "This configuration works: the database answers and every model name is valid. {n} setting(s) would change. Nothing is saved yet.",
+    "config_preview_bad": "This configuration would not work ({n} problem(s), listed below). Nothing is saved.",
     "import_preview": "Import would make: {added} added, {updated} updated, {shared} shared, {retired} withdrawn, {errors} with errors. Nothing has changed yet.",
     "import_done": "Imported: {added} added, {updated} updated, {shared} shared, {retired} withdrawn, {errors} with errors.",
 

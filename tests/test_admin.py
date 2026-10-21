@@ -148,3 +148,21 @@ def test_usage_stats_on_seeded_turns(app):
     assert st["most_reported_wrong"][0]["title"] == "flaky"
     assert st["open_requests"][0]["age_days"] >= 0 and st["unpriced_model_turns"] == 1
     assert st["cost_per_day_usd"] == {"2026-10-26": 2 * (2.00 + 1.00)}   # 1M in at $2 + 0.1M out at $10, twice
+
+
+def test_config_preview_checks_database_and_models_without_saving(app, tmp_path, monkeypatch):
+    cfg = tmp_path / "reportsbot.yaml"
+    cfg.write_text("database: sqlite:///x.db\n", encoding="utf-8")
+    monkeypatch.setenv("REPORTSBOT_CONFIG", str(cfg))
+    good = f"database: {app.settings.database_url}\nmodels:\n  agent: lmstudio:qwen\n"
+    r = admin.save_config(app, OWNER, good, preview=True)
+    assert r["ok"] and {"setting": "model", "from": app.settings.model, "to": "lmstudio:qwen"} in r["changes"]
+    bad_db = f"database: sqlite:///{tmp_path}/no/such/dir/x.db\n"
+    r = admin.save_config(app, OWNER, bad_db, preview=True)
+    assert not r["ok"] and r["errors"][0].startswith("database: cannot connect")
+    r = admin.save_config(app, OWNER, good.replace("lmstudio:qwen", "qwen"), preview=True)
+    assert not r["ok"] and r["errors"][0].startswith("model:")
+    assert cfg.read_text(encoding="utf-8") == "database: sqlite:///x.db\n"      # nothing saved
+    assert app.store.one("SELECT COUNT(*) AS n FROM config_event")["n"] == 0
+    with pytest.raises(PermissionError):
+        admin.save_config(app, ADMIN, good, preview=True)

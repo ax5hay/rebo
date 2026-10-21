@@ -588,8 +588,21 @@ def mount_ui(api: FastAPI, app: App) -> None:
                          "environment variables. Changes are validated, kept in history, and apply after a restart.").classes("text-sm")
                 text = ui.textarea(value=cfg["yaml"]).classes("w-full font-mono").props("rows=22")
                 note = ui.input("Why are you changing it?").classes("w-full")
-                ui.button("Save", on_click=lambda: (_safe(admin_ops.save_config, app, u, text.value or "",
-                                                          note.value or ""), draw())).props("color=primary")
+                checks = ui.column().classes("w-full gap-0")
+
+                def preview():
+                    checks.clear()
+                    res = _safe(admin_ops.save_config, app, u, text.value or "", preview=True)
+                    with checks:
+                        for e in (res or {}).get("errors", []):
+                            ui.label(e).classes("text-sm text-negative")
+                        for c in (res or {}).get("changes", []):
+                            ui.label(f"{c['setting']}: {c['from']} → {c['to']}").classes("text-sm")
+
+                with ui.row():
+                    ui.button("Check", on_click=preview).props("outline")
+                    ui.button("Save", on_click=lambda: (_safe(admin_ops.save_config, app, u, text.value or "",
+                                                              note.value or ""), draw())).props("color=primary")
                 ui.label("History").classes("font-medium mt-4")
                 for e in cfg["history"]:
                     with ui.row().classes("items-center"):
