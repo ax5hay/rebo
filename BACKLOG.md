@@ -306,10 +306,11 @@ do: Set up a `phoenix` service, `OTEL_EXPORTER_OTLP_ENDPOINT` in compose, and ad
 done when: a trace appears for one ask (screenshot or API check).
 result: 2026-10-21, `git log --grep B-035`; spans checked via Phoenix API for a scripted turn; containerised real-model trace not run (no key).
 
-### [ ] B-036 · Standalone login recipe
+### [x] B-036 · Standalone login recipe
 needs: docker
 do: Add `deploy/auth/`: oauth2-proxy in front of the bot (`auth.mode: headers`), plus a Pocket ID option when no IdP exists. Map IdP groups to roles user/admin/owner.
 done when: compose example plus a doc 13 section.
+result: 2026-10-21, `git log --grep B-036`; header stripping verified against oauth2-proxy; also fixed X-User-* spoofing behind the proxy. Pocket ID sign-in not run end to end.
 
 ### [ ] B-037 · Operator runbook
 needs: offline
