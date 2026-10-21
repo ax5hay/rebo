@@ -376,3 +376,5 @@ needs: gemini
 do: Run the demo gold set with `models.agent: google:<current Flash id>` (re-check the id first).
 done when: a results file exists and doc 20 is updated.
 blocked: 2026-10-21. The GEMINI_API_KEY in .env is on Google's free tier: gemini-3.8-flash allows 5 requests/minute, and all 10 demo questions failed with 429 RESOURCE_EXHAUSTED in under a second (one turn needs ~10 requests). Question for the user: provide a paid-tier key, or accept a throttled run (about 2 questions per minute at best, and the free tier's daily cap may still stop it)? Current id re-checked: gemini-3.8-flash; Google direct price added to llm.PRICES.
+
+update 2026-10-21b: staggered free-tier runs as the user asked: gemini-3.8-flash exhausted its 20/day quota; gemini-3.5-flash-lite completed the demo gold set: 7/10, 0 errors, $0 (doc 20 §4.2). Paid-tier 3.8-flash still unmeasured directly.

@@ -1,0 +1,332 @@
+{
+ "run": "2026-10-21",
+ "questions": "as in the cases file",
+ "model": "google:gemini-3.5-flash-lite",
+ "escalate": "",
+ "database": "sqlite:///fixtures/demo_property/greenleaf.db",
+ "summary": {
+  "reports": 9,
+  "clarify": 1,
+  "clarify_rate": 0.1,
+  "gate_answered": 0,
+  "errors": 0,
+  "escalated": 0,
+  "median_seconds": 83.3,
+  "total_cost_usd": null,
+  "execution_match": "7/10"
+ },
+ "cases": [
+  {
+   "id": "gp-01",
+   "kind": "report",
+   "rows": 50,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 7.2,
+   "question": "Which units are vacant right now?",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 23336,
+    "output_tokens": 494,
+    "cache_read_tokens": 5997,
+    "tool_calls": 9,
+    "model": "google:gemini-3.5-flash-lite",
+    "escalated": false,
+    "route": "new",
+    "trace_id": "a99912528bca8adf0426a60cc328990c"
+   },
+   "cost_usd": null,
+   "title": "Vacant Units Right Now",
+   "sql": "SELECT \n    b.name AS building_name, \n    u.unit_number, \n    u.unit_type, \n    u.bedrooms, \n    u.sqft, \n    u.monthly_rent \nFROM unit u \nJOIN building b ON u.building_id = b.building_id \nWHERE NOT EXISTS (\n    SELECT 1 \n    FROM lease l \n    JOIN lease_status ls ON l.status_id = ls.status_id \n    WHERE l.unit_id = u.unit_id AND ls.is_current = 1\n)\nORDER BY b.name, u.unit_number;",
+   "assumptions": [
+    "A unit is vacant if it does not currently have an active lease (where the lease status has is_current = 1)."
+   ]
+  },
+  {
+   "id": "gp-02",
+   "kind": "report",
+   "rows": 109,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 83.3,
+   "question": "List tenants who currently have a lease, with their unit and monthly rent.",
+   "usage": {
+    "requests": 10,
+    "input_tokens": 45972,
+    "output_tokens": 559,
+    "cache_read_tokens": 14003,
+    "tool_calls": 9,
+    "model": "google:gemini-3.5-flash-lite",
+    "escalated": false,
+    "route": "new",
+    "trace_id": "4afdea5be012c1142ec14ebef13d48fa"
+   },
+   "cost_usd": null,
+   "title": "Tenants with Current Leases, Units, and Monthly Rent",
+   "sql": "SELECT \n    t.first_name || ' ' || t.last_name AS tenant_name,\n    u.unit_number AS unit,\n    u.monthly_rent AS monthly_rent,\n    ls.label AS lease_status\nFROM tenant t\nJOIN lease l ON t.tenant_id = l.tenant_id\nJOIN unit u ON l.unit_id = u.unit_id\nJOIN lease_status ls ON l.status_id = ls.status_id\nWHERE ls.is_current = 1\nORDER BY t.last_name, t.first_name",
+   "assumptions": [
+    "Currently having a lease includes leases with status Active - Fixed Term, Active - Month to Month, and Notice Given (as defined by current lease statuses)."
+   ]
+  },
+  {
+   "id": "gp-03",
+   "kind": "report",
+   "rows": 9,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 74.1,
+   "question": "How many maintenance requests are still open in each building?",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 13681,
+    "output_tokens": 327,
+    "cache_read_tokens": 0,
+    "tool_calls": 4,
+    "model": "google:gemini-3.5-flash-lite",
+    "escalated": false,
+    "route": "new",
+    "trace_id": "9931680563e026c2e71266f75a6a2cda"
+   },
+   "cost_usd": null,
+   "title": "Open Maintenance Requests by Building",
+   "sql": "SELECT b.name AS building_name, COUNT(m.request_id) AS open_requests FROM building b JOIN unit u ON b.building_id = u.building_id JOIN maintenance m ON u.unit_id = m.unit_id WHERE m.state = 'open' GROUP BY b.building_id, b.name ORDER BY open_requests DESC",
+   "assumptions": [
+    "Maintenance requests are considered open when their state is 'open'.",
+    "Buildings with zero open maintenance requests are not shown."
+   ]
+  },
+  {
+   "id": "gp-04",
+   "kind": "report",
+   "rows": 135,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 4.5,
+   "question": "Which tenants paid rent late at least once in 2026?",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 10321,
+    "output_tokens": 330,
+    "cache_read_tokens": 1996,
+    "tool_calls": 5,
+    "model": "google:gemini-3.5-flash-lite",
+    "escalated": false,
+    "route": "new",
+    "trace_id": "3ca6c25e8a927bff49e9b2e55e4671b7"
+   },
+   "cost_usd": null,
+   "title": "Tenants Who Paid Rent Late at Least Once in 2026",
+   "sql": "SELECT DISTINCT t.first_name || ' ' || t.last_name AS tenant_name, t.email, t.phone FROM tenant t JOIN lease l ON t.tenant_id = l.tenant_id JOIN payment p ON l.lease_id = p.lease_id WHERE strftime('%Y', p.due_on) = '2026' AND p.paid_on > p.due_on ORDER BY t.last_name, t.first_name",
+   "assumptions": [
+    "Late payment is defined as a payment where paid_on is after due_on.",
+    "Payments in 2026 are determined by their due_on date falling in the year 2026."
+   ]
+  },
+  {
+   "id": "gp-05",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false,
+    "ExecutionMatch": false
+   },
+   "seconds": 113.0,
+   "question": "Total rent collected per region in 2026.",
+   "usage": {
+    "requests": 8,
+    "input_tokens": 27600,
+    "output_tokens": 306,
+    "cache_read_tokens": 1978,
+    "tool_calls": 7,
+    "model": "google:gemini-3.5-flash-lite",
+    "escalated": false,
+    "route": "new",
+    "gate": "asked",
+    "trace_id": "0b95d8fc983506a65056de4a2dd4e8a5"
+   },
+   "cost_usd": null,
+   "questions": [
+    {
+     "question": "Should the rent collected in 2026 be based on when the payment was paid or when it was due?",
+     "options": [
+      "Payments actually paid in 2026 (based on payment date)",
+      "Payments due in 2026 (based on due date)"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "gp-06",
+   "kind": "report",
+   "rows": 17,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 124.3,
+   "question": "Urgent maintenance requests that are not closed, with the technician assigned.",
+   "usage": {
+    "requests": 16,
+    "input_tokens": 77841,
+    "output_tokens": 709,
+    "cache_read_tokens": 33782,
+    "tool_calls": 15,
+    "model": "google:gemini-3.5-flash-lite",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "trace_id": "f7a3f551e7d8c828613e81cad7f74e2e"
+   },
+   "cost_usd": null,
+   "title": "Urgent Maintenance Requests Not Closed",
+   "sql": "SELECT m.request_id AS request_id, b.name AS building_name, u.unit_number AS unit_number, m.category AS category, m.state AS state, m.opened AS opened_date, s.first_name || ' ' || s.last_name AS technician_name FROM maintenance m JOIN unit u ON m.unit_id = u.unit_id JOIN building b ON u.building_id = b.building_id LEFT JOIN staff s ON m.assigned_to = s.staff_id WHERE m.priority = 'urgent' AND m.state != 'closed'",
+   "assumptions": [
+    "Urgent maintenance requests means records where priority is 'urgent'.",
+    "Not closed means state is not equal to 'closed'.",
+    "Assigned technician is retrieved from the staff table based on assigned_to ID."
+   ]
+  },
+  {
+   "id": "gp-07",
+   "kind": "report",
+   "rows": 1,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 11.1,
+   "question": "Average number of days to close a plumbing request.",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 14158,
+    "output_tokens": 587,
+    "cache_read_tokens": 0,
+    "tool_calls": 3,
+    "model": "google:gemini-3.5-flash-lite",
+    "escalated": false,
+    "route": "new",
+    "trace_id": "e7ae7004875a907c99d77807a0fd5f62"
+   },
+   "cost_usd": null,
+   "title": "Average Days to Close Plumbing Requests",
+   "sql": "SELECT \n    ROUND(AVG(julianday(closed) - julianday(opened)), 1) AS average_days_to_close,\n    COUNT(*) AS closed_plumbing_requests_count\nFROM maintenance \nWHERE category = 'plumbing' \n  AND state = 'closed'",
+   "assumptions": [
+    "Only closed plumbing requests are included in the average calculation",
+    "Days to close is calculated as the difference between the closed date and the opened date"
+   ]
+  },
+  {
+   "id": "gp-08",
+   "kind": "report",
+   "rows": 6,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 111.3,
+   "question": "Leases ending between 2026-10-01 and 2026-12-31.",
+   "usage": {
+    "requests": 6,
+    "input_tokens": 24981,
+    "output_tokens": 389,
+    "cache_read_tokens": 4010,
+    "tool_calls": 5,
+    "model": "google:gemini-3.5-flash-lite",
+    "escalated": false,
+    "route": "new",
+    "trace_id": "24450c9075422e95e96820a86f128370"
+   },
+   "cost_usd": null,
+   "title": "Leases Ending Between October and December 2026",
+   "sql": "SELECT l.lease_id, t.first_name || ' ' || t.last_name AS tenant_name, u.unit_number, l.start_date AS start_date, l.end_date AS end_date FROM lease l JOIN tenant t ON l.tenant_id = t.tenant_id JOIN unit u ON l.unit_id = u.unit_id WHERE l.end_date BETWEEN '2026-10-01' AND '2026-12-31'",
+   "assumptions": [
+    "Leases are considered ending between the given dates if their end date falls within the range inclusive."
+   ]
+  },
+  {
+   "id": "gp-09",
+   "kind": "report",
+   "rows": 4,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 107.0,
+   "question": "Which buildings have an elevator and more than 10 units?",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 12399,
+    "output_tokens": 267,
+    "cache_read_tokens": 0,
+    "tool_calls": 3,
+    "model": "google:gemini-3.5-flash-lite",
+    "escalated": false,
+    "route": "new",
+    "trace_id": "6cad8cf318cdd3b466b1f7a676d19c15"
+   },
+   "cost_usd": null,
+   "title": "Buildings with an Elevator and More Than 10 Units",
+   "sql": "SELECT b.name AS building_name, b.street, b.city, COUNT(u.unit_id) AS unit_count FROM building b JOIN unit u ON b.building_id = u.building_id WHERE b.has_elevator = 1 GROUP BY b.building_id HAVING COUNT(u.unit_id) > 10",
+   "assumptions": [
+    "Buildings with an elevator are represented by has_elevator = 1.",
+    "More than 10 units means unit count > 10."
+   ]
+  },
+  {
+   "id": "gp-10",
+   "kind": "report",
+   "rows": 16,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 8.9,
+   "question": "Evicted tenants and their email addresses.",
+   "usage": {
+    "requests": 7,
+    "input_tokens": 29628,
+    "output_tokens": 485,
+    "cache_read_tokens": 6006,
+    "tool_calls": 5,
+    "model": "google:gemini-3.5-flash-lite",
+    "escalated": false,
+    "route": "new",
+    "trace_id": "be40234dc75b1c9e6dbfb66348c5c1c8"
+   },
+   "cost_usd": null,
+   "title": "Evicted Tenants and Their Email Addresses",
+   "sql": "SELECT\n  tenant.first_name AS \"First Name\",\n  tenant.last_name AS \"Last Name\",\n  tenant.email AS Email\nFROM tenant\nJOIN lease ON tenant.tenant_id = lease.tenant_id\nJOIN lease_status ON lease.status_id = lease_status.status_id\nWHERE lease_status.label = 'Evicted'",
+   "assumptions": [
+    "Evicted tenants are those whose lease status is 'Evicted'."
+   ]
+  }
+ ]
+}

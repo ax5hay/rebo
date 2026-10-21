@@ -161,6 +161,22 @@ turns parse failures into answers a person can correct; it does not improve accu
 local model is usable for trying the bot offline, not for answers people rely on. A larger
 tool-calling model (§4 table) was not available here.
 
+### 4.2 Measured: Gemini free tier, staggered (B-045 variant, 2026-10-21b)
+
+Google AI Studio free tier, called directly (`google:`), with PatientModel waiting out HTTP 429s.
+`gemini-3.8-flash`: 5 requests/minute and **20/day**; one turn needs about 10, so the day's quota ran
+out after the first questions and the rest failed (not a model result). `gemini-3.5-flash-lite` has
+its own free quota and completed the demo gold set:
+
+| Model (free tier) | Content match | Reports / clarify / errors | Median s | Cost | File |
+|---|---|---|---|---|---|
+| gemini-3.5-flash-lite | **7/10** | 9 / 1 / 0 | 83 (mostly waiting on the per-minute limit; unthrottled ones 5–11 s) | $0 | `fixtures/demo_property/eval_results_gemini35flashlite_freetier.json` |
+| Sonnet 5.5 (paid), same day | 8/10 | 9 / 1 / 0 | 10.4 | $0.24 | `eval_results_sonnet_2026-10-21b.json` |
+
+Flash-lite was right on gp-06 where Sonnet was wrong, and wrong on gp-03 (9 buildings counted where
+gold has 12) and gp-05 (asked a clarifying question). For trying ReBo without paying, flash-lite on
+the free tier is usable; for daily use the per-minute limit makes answers slow.
+
 ## 5. Measured on the 18 JMS prompts (local synthetic DB, empty knowledge, 2026-10-21)
 
 Results files: `fixtures/jms_staging/eval_results_*.json` (per case: kind, rows, seconds, model,
