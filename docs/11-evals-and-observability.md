@@ -47,8 +47,9 @@ recorded. Each conversation stops at the first report whose rows match `gold_sql
 (`columns_match`). Per conversation: `turns_to_first_correct` (null = never), asked turns, clarify
 turns, cost. Summary: solved, mean turns to the first correct report, clarify rate (clarify turns /
 asked turns), total cost. `fixtures/demo_property/conversations.jsonl` has 5 conversations built
-on demo gold gp-02/03/04/05/06. Offline test with a FunctionModel; no results file yet (needs an
-LLM key):
+on demo gold gp-02/03/04/05/06. Measured 2026-10-21b with Sonnet
+(`fixtures/demo_property/eval_conversations_sonnet.json`): 4 of 5 solved, all at turn 2, clarify rate
+0.1, $0.19; dc-05 (late payers in 2026) never matched gold. Command:
 
 ```bash
 uv run python tools/eval_conversations.py fixtures/demo_property/conversations.jsonl \

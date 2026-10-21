@@ -163,7 +163,10 @@ For a `Report`:
 `new` and that rests on more than 2 assumptions is reviewed once by `models.fast` (question, SQL,
 assumptions, first 10 rows) → `{ok, concern}`. A concern is appended as an assumption
 "Check: …"; `turn.usage.review` = `ok` | `concern`. A failed review call never blocks the report.
-Before/after on the demo gold not yet measured (needs an LLM key).
+Measured 2026-10-21b on the demo gold (Sonnet, `fixtures/demo_property/eval_results_sonnet_2026-10-21b.json`):
+it reviewed 7 of 9 reports and raised 4 concerns; the one wrong report (gp-06) was among them, the
+other 3 concerns were on correct reports (recall 1/1, precision 1/4). Content match 8/10 (7/10 before
+all second-machine changes; not attributable to this change alone).
 
 So **a report is never shown without having run successfully**. The rows the user sees are the
 ones the validator fetched; no second execution happens.

@@ -59,6 +59,7 @@ done when:
 - Offline tests (FunctionModel/MockTransport as in `tests/test_llm.py`): a fan-out report triggers exactly one retry, and a deliberate one-row-per-child report passes on the second attempt.
 - doc 04 §7 updated.
 result: 2026-10-21, `git log --grep B-005`; 94 passed. eval pending: needs llm (re-run the Haiku cascade set to see the fan-out case fixed).
+eval 2026-10-21b: Haiku cascade validated-01 now 3 rows (= Sonnet; was 15), $0.14 for 18; not attributable to the grain check alone (data changed, retries not logged).
 
 ### [x] B-006 · Deterministic ask-gate
 needs: offline
@@ -74,6 +75,7 @@ done when:
 - With `llm`, the 18 JMS prompts' clarify count is recorded in a results file.
 - doc 04 §5 and doc 06 §6 updated.
 result: 2026-10-21, `git log --grep B-006`; offline tests both paths; 98 passed. Implemented option 1 (option_sql in the same run). eval pending: needs llm (record the 18 JMS prompts' clarify count and gate_answered).
+eval 2026-10-21b: Sonnet 18 prompts: 5 clarifications, gate asked 5 / answered 0.
 
 ### [x] B-007 · Remember clarification answers per user (aid)
 needs: offline
@@ -112,12 +114,14 @@ done when:
 - Offline test: two turns produce identical instruction text.
 - With `llm`: a results file showing `cache_read_tokens > 0` on the second question.
 result: 2026-10-21, `git log --grep B-010`; 109 passed. eval pending: needs llm (cache_read_tokens > 0 on the 2nd question).
+eval 2026-10-21b: cache_read_tokens > 0 on every Sonnet turn (3k-27k).
 
 ### [x] B-011 · Multi-turn eval
 needs: offline
 do: `fixtures/*/conversations.jsonl`: scripted conversations of user turns, each with an expectation (report rows / clarify / follow-up chosen). Add `tools/eval_conversations.py`, which reports turns to the first correct report, clarify rate and cost.
 done when: offline test with a FunctionModel; with `llm`, a results file for 5 demo conversations.
 result: 2026-10-21, `git log --grep B-011`; 110 passed; 5 demo conversations written. eval pending: needs llm (results file for the 5 demo conversations).
+eval 2026-10-21b: 4/5 conversations solved at turn 2, $0.19 (eval_conversations_sonnet.json).
 
 ### [x] B-012 · Per-model profiles; re-measure Gemini
 needs: offline
@@ -140,6 +144,7 @@ needs: offline
 do: When provenance is `new` and there are more than 2 assumptions, run the fast model as a reviewer on question + SQL + assumptions + 10 rows. It returns `{ok: bool, concern: str}`; a concern is shown as an extra assumption marked "Check: …". Record `review: ok|concern` in usage.
 done when: offline tests cover both outcomes; with `llm`, demo gold before/after in a results file.
 result: 2026-10-21, `git log --grep B-013`; 115 passed. eval pending: needs llm (demo gold before/after).
+eval 2026-10-21b: demo gold 8/10 (was 7/10); concerns 4, caught the 1 wrong report (precision 1/4).
 
 ### [x] B-014 · Draft real questions for the JMS gold reports
 needs: offline
@@ -350,6 +355,7 @@ needs: docker
 do: Add a per-table correlation spec generated from the profile (e.g. stage given case_type, ordered dates created ≤ completed) under `tools/synth/correlations/`. **Research first** (NeMo Data Designer vs a hand-written spec). Re-generate, then re-run the 18-prompt eval.
 done when: the spec is applied, tests check date ordering, and doc 12 is updated.
 result: 2026-10-21, `git log --grep B-042`; date-order violations 9,809 -> 0 on the local MySQL. eval pending: needs llm (re-run the 18 prompts on the new data). Category correlations impossible from the profile.
+eval 2026-10-21b: Sonnet 18 prompts on the new data: 13 reports, 5 clarify, 0 errors, $2.68.
 
 ### [x] B-043 · Visual UI check
 needs: browser
