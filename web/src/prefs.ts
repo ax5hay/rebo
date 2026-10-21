@@ -35,6 +35,8 @@ export function setPrefs(patch: Partial<Prefs>) {
   listeners.forEach((l) => l());
 }
 
+export const getPrefs = () => current;
+
 export function usePrefs(): Prefs {
   return useSyncExternalStore((l) => { listeners.add(l); return () => listeners.delete(l); }, () => current);
 }

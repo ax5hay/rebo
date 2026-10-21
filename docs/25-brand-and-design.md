@@ -68,3 +68,25 @@ and "Try it" questions. On phones a floating tab bar replaces the section tabs.
 - "How I read your question" is first, each choice on its own line with a tick; a reviewer's "Check"
   line is set apart in amber at the top. Both reading boxes fold to one line (preference).
 - Feedback buttons are tinted (green "Yes", amber "No") so they never blend into the panel.
+
+## Internal pages (2026-10-21)
+
+One kit (`web/src/ui.tsx`) for Knowledge, Review, Admin, Insights, Configuration, You and Help:
+
+- **Page head**: title, a one-line purpose, the page's main action on the right, a strip of numbers
+  (tinted amber when something waits, green when all is well).
+- **Tabs inside a page** (underline bar, counts, each with an anchor so Help and other pages link
+  straight to it), so a page shows one thing at a time instead of a long stack of sections.
+- **Item cards**: a kind icon (green report, indigo word, brass rule, slate join), title and status,
+  the plain text, one line of evidence (confirmations, uses, reported wrong), the query folded; one
+  visible action and the rest in a ⋯ menu (destructive items last, in red, after a separator).
+- **Empty states** say what to do next and offer the action.
+- **Dialogs**: an icon, a title, one sentence of purpose, a close button; the Teach dialog picks the
+  kind with four cards and adapts its labels and examples to it; schedules use a day picker and read
+  back the schedule as a sentence; history is a timeline with Undo.
+- **Review** selects several cards and acts from a floating glass bar; **Admin** is three tool cards
+  that open one tool at a time; **Configuration** is the editor beside a rail with the check result
+  (each changed setting, from and to), the rules of the file, and earlier versions to restore;
+  **Insights** has KPI cards with an icon and tone, and health checks sorted problems-first with a
+  status chip.
+- **⌘K** also runs actions: new question, teach something, change appearance, open history.

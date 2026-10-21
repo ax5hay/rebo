@@ -14,8 +14,8 @@ async function editorParts(lang: Lang) {
   return { ...view, ...state, ...language, ...commands, ...highlight, mode };
 }
 
-export function CodeEditor({ value, onChange, lang, label, rows = 16 }: {
-  value: string; onChange: (v: string) => void; lang: Lang; label: string; rows?: number;
+export function CodeEditor({ value, onChange, lang, label, rows = 16, wrap = lang === "sql" }: {
+  value: string; onChange: (v: string) => void; lang: Lang; label: string; rows?: number; wrap?: boolean;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const view = useRef<any>(null);
@@ -33,14 +33,14 @@ export function CodeEditor({ value, onChange, lang, label, rows = 16 }: {
           extensions: [
             p.lineNumbers(), p.history(), p.drawSelection(), p.highlightActiveLine(), p.indentOnInput(), p.bracketMatching(),
             p.syntaxHighlighting(p.classHighlighter), p.keymap.of([...p.defaultKeymap, ...p.historyKeymap, p.indentWithTab]),
-            p.mode, p.EditorView.lineWrapping, p.EditorView.contentAttributes.of({ "aria-label": label }),
+            p.mode, ...(wrap ? [p.EditorView.lineWrapping] : []), p.EditorView.contentAttributes.of({ "aria-label": label }),
             p.EditorView.updateListener.of((u: any) => { if (u.docChanged) latest.current.onChange(u.state.doc.toString()); }),
           ],
         }),
       });
     });
     return () => { dead = true; view.current?.destroy(); view.current = null; };
-  }, [lang, label]);
+  }, [lang, label, wrap]);
 
   // a new value from outside (loaded, reset, restored) replaces the document
   useEffect(() => {

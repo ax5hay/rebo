@@ -2,10 +2,11 @@
 // this page shows what an admin needs at a glance and links there.
 import * as Plot from "@observablehq/plot";
 import { useQuery } from "@tanstack/react-query";
-import { ExternalLink, RefreshCcw } from "lucide-react";
+import { BadgeCheck, CircleCheck, CircleX, Coins, ExternalLink, MessagesSquare, RefreshCcw, ShieldAlert, ShieldCheck, Target, TriangleAlert, type LucideIcon } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { get, plural, when } from "../api";
 import { Md } from "../md";
+import { PageHead } from "../ui";
 
 const pct = (frac?: string) => {
   if (!frac || !frac.includes("/")) return null;
@@ -24,34 +25,31 @@ export default function InsightsPage() {
   const cost = u ? Object.values(u.cost_per_day_usd as Record<string, number>).reduce((a, b) => a + b, 0) : 0;
   const attention = (d?.checks ?? []).filter((c: any) => c.state !== "ok");
 
+  const fails = attention.filter((c: any) => c.state === "fail").length;
   return (
-    <>
-      <div className="row" style={{ alignItems: "flex-end", marginTop: 8 }}>
-        <div style={{ flex: 1, minWidth: 280 }}>
-          <p className="lead">Is ReBo working, is it right, what does it cost?</p>
-          <p className="intro">Live checks, measured accuracy and use over the last 90 days. Every answer's full trace is in Phoenix.</p>
-        </div>
-        <div className="row">
-          <button className="btn ghost" onClick={() => ins.refetch()}><RefreshCcw />Check again</button>
+    <div className="page wide">
+      <PageHead title="Insights" lede="Is ReBo working, is it right, and what does it cost? Live checks, measured accuracy and the last 90 days of use."
+        actions={<>
+          <button className="btn ghost" onClick={() => ins.refetch()}><RefreshCcw />{ins.isFetching ? "Checking…" : "Check again"}</button>
           {d?.phoenix && <a className="btn" href={d.phoenix} target="_blank" rel="noopener"><ExternalLink />Traces in Phoenix</a>}
-        </div>
-      </div>
+        </>} />
 
       {d && (
-        <div className="panel kpis" style={{ marginTop: 16 }}>
-          <div><div className={`value ${attention.some((c: any) => c.state === "fail") ? "bad" : attention.length ? "warn" : "ok"}`}>{attention.length ? `${attention.length} to look at` : "All healthy"}</div><div className="label">{d.checks.length} checks just now</div></div>
-          <div><div className="value">{latestAccuracy(d.accuracy)}</div><div className="label">Latest measured accuracy</div></div>
-          <div><div className="value">{reports ? `${Math.round((confirmed / reports) * 100)}%` : "–"}</div><div className="label">Answers confirmed by the asker</div></div>
-          <div><div className="value">{u.turns}</div><div className="label">Questions asked</div></div>
-          <div><div className="value">${cost.toFixed(2)}</div><div className="label">Model cost at list prices</div></div>
+        <div className="kpigrid">
+          <Kpi icon={fails ? ShieldAlert : attention.length ? TriangleAlert : ShieldCheck} tone={fails ? "bad" : attention.length ? "warn" : "ok"}
+               value={attention.length ? `${attention.length} to look at` : "All healthy"} label={`${d.checks.length} checks, just now`} />
+          <Kpi icon={Target} value={latestAccuracy(d.accuracy)} label="Latest measured accuracy" />
+          <Kpi icon={BadgeCheck} value={reports ? `${Math.round((confirmed / reports) * 100)}%` : "–"} label="Answers confirmed by the asker" />
+          <Kpi icon={MessagesSquare} value={u.turns} label="Questions asked" />
+          <Kpi icon={Coins} value={`$${cost.toFixed(2)}`} label="Model cost at list prices" />
         </div>
       )}
 
-      <div className="section-title"><h2>Health</h2>{ins.isFetching && <p>checking…</p>}</div>
+      <div className="section-title"><h2>Health</h2><p>{ins.isFetching ? "checking…" : d ? `${d.checks.length - attention.length} of ${d.checks.length} healthy` : ""}</p></div>
       <ul className="list panel checks">
-        {(d?.checks ?? []).map((c: any) => (
+        {(d?.checks ?? []).slice().sort((a: any, b: any) => rank(a.state) - rank(b.state)).map((c: any) => (
           <li key={c.name} className={c.state}>
-            <span className={`state ${c.state}`} aria-label={c.state} />
+            <span className={`statechip ${c.state}`}>{c.state === "ok" ? <CircleCheck /> : c.state === "warn" ? <TriangleAlert /> : <CircleX />}{c.state === "ok" ? "Healthy" : c.state === "warn" ? "Look at" : "Failing"}</span>
             <span className="title">{c.name}</span>
             <span className="sub" style={{ margin: 0 }}><Md inline>{c.detail}</Md></span>
             <span className="ms">{c.ms} ms</span>
@@ -94,8 +92,14 @@ export default function InsightsPage() {
           </li>
         ))}
       </ul>
-    </>
+    </div>
   );
+}
+
+const rank = (s: string) => (s === "fail" ? 0 : s === "warn" ? 1 : 2);
+
+function Kpi({ icon: Icon, value, label, tone }: { icon: LucideIcon; value: React.ReactNode; label: string; tone?: string }) {
+  return <div className={`kpi ${tone ?? ""}`}><span className="kpiicon"><Icon /></span><b>{value}</b><span>{label}</span></div>;
 }
 
 const LABEL: Record<string, string> = { verified: "Verified reports", yours: "People's own reports", adapted: "Built from saved knowledge", new: "New answers" };

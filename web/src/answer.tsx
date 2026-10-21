@@ -3,7 +3,7 @@
 // question was read and what the query does, each foldable.
 import {
   BarChart3, Check, ChevronRight, CircleCheck, Code2, Copy, Download, ExternalLink, Flag, MoreHorizontal, MousePointerClick, Pencil, Pin,
-  RotateCcw, Search, Table as TableIcon, Timer, TriangleAlert, Undo2,
+  RotateCcw, Search, Table as TableIcon, Timer, TriangleAlert, Undo2, X, type LucideIcon,
 } from "lucide-react";
 import { lazy, Suspense, useMemo, useState } from "react";
 import {
@@ -296,13 +296,21 @@ export function Suggestions({ items }: { items?: any[] }) {
   );
 }
 
-export function Sheet({ title, intro, close, children }: { title: string; intro?: string; close: () => void; children: React.ReactNode }) {
+export function Sheet({ title, intro, close, children, icon: Icon, wide }: {
+  title: string; intro?: string; close: () => void; children: React.ReactNode; icon?: LucideIcon; wide?: boolean;
+}) {
   return (
     <ModalOverlay className="overlay" isOpen isDismissable onOpenChange={(open) => !open && close()}>
       <Modal>
-        <Dialog className="dialog">
-          <Heading slot="title">{title}</Heading>
-          {intro && <p className="muted" style={{ marginTop: 4 }}>{intro}</p>}
+        <Dialog className={`dialog${wide ? " wide" : ""}`}>
+          <div className="dialoghead">
+            {Icon && <span className="dialogicon"><Icon /></span>}
+            <div className="grow">
+              <Heading slot="title">{title}</Heading>
+              {intro && <p className="muted">{intro}</p>}
+            </div>
+            <Button className="iconbtn" aria-label="Close" onPress={close}><X /></Button>
+          </div>
           {children}
         </Dialog>
       </Modal>
@@ -313,9 +321,11 @@ export function Sheet({ title, intro, close, children }: { title: string; intro?
 function RequestFix({ turnId, close }: { turnId: string; close: () => void }) {
   const toast = useToast();
   const [text, setText] = useState("");
+  const ideas = ["These numbers look too high", "It should leave out test accounts", "It is counting the wrong thing"];
   return (
-    <Sheet title="Ask an admin to fix this report" intro="Say what is wrong in your own words. An admin sees it with this report attached." close={close}>
-      <textarea className="textarea" rows={4} aria-label="What should change" value={text} onChange={(e) => setText(e.target.value)} autoFocus />
+    <Sheet icon={Flag} title="Ask an admin to fix this report" intro="Say what is wrong in your own words. An admin sees it with this report attached, and you see their answer under Knowledge → My requests." close={close}>
+      <textarea className="textarea" rows={4} aria-label="What should change" placeholder="What is wrong, and what you expected" value={text} onChange={(e) => setText(e.target.value)} autoFocus />
+      <div className="chips small" aria-label="Starting points">{ideas.map((i) => <button key={i} type="button" className="chip" onClick={() => setText(i)}>{i}</button>)}</div>
       <div className="actions">
         <Button className="btn ghost" onPress={close}>Cancel</Button>
         <Button className="btn primary" isDisabled={!text.trim()} onPress={async () => {
@@ -327,27 +337,42 @@ function RequestFix({ turnId, close }: { turnId: string; close: () => void }) {
   );
 }
 
+const DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+const cap = (d: string) => d[0].toUpperCase() + d.slice(1);
+
 function Schedule({ turnId, close }: { turnId: string; close: () => void }) {
   const toast = useToast();
+  const [how, setHow] = useState<"daily" | "weekdays" | "weekly">("weekly");
   const [day, setDay] = useState("monday");
   const [time, setTime] = useState("08:00");
+  const every = how === "weekly" ? day : how;
+  const sentence = how === "daily" ? "Every day" : how === "weekdays" ? "Every weekday" : `Every ${cap(day)}`;
   return (
-    <Sheet title="Send me this regularly" intro="The same query runs again on that day's data. No model is asked, so it costs nothing." close={close}>
-      <div className="row" style={{ marginTop: 12 }}>
-        <select className="select" style={{ maxWidth: 220 }} aria-label="Day" value={day} onChange={(e) => setDay(e.target.value)}>
-          <option value="daily">Every day</option>
-          <option value="weekdays">Every weekday</option>
-          {["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].map((d) =>
-            <option key={d} value={d}>Every {d[0].toUpperCase() + d.slice(1)}</option>)}
-        </select>
-        <input className="input" style={{ maxWidth: 130 }} type="time" aria-label="Time" value={time} onChange={(e) => setTime(e.target.value)} />
+    <Sheet icon={Timer} title="Send me this regularly" intro="The same query runs again on that day's data. No model is asked, so it costs nothing." close={close}>
+      <div className="field"><label>How often</label>
+        <ToggleButtonGroup aria-label="How often" selectionMode="single" disallowEmptySelection className="segmented" selectedKeys={[how]}
+                           onSelectionChange={(k) => setHow([...k][0] as typeof how)}>
+          <ToggleButton id="daily">Every day</ToggleButton><ToggleButton id="weekdays">Weekdays</ToggleButton><ToggleButton id="weekly">Once a week</ToggleButton>
+        </ToggleButtonGroup>
       </div>
+      {how === "weekly" && (
+        <div className="field"><label>On</label>
+          <ToggleButtonGroup aria-label="Day" selectionMode="single" disallowEmptySelection className="daypick" selectedKeys={[day]}
+                             onSelectionChange={(k) => setDay(String([...k][0]))}>
+            {DAYS.map((d) => <ToggleButton key={d} id={d} aria-label={cap(d)}>{cap(d).slice(0, 3)}</ToggleButton>)}
+          </ToggleButtonGroup>
+        </div>
+      )}
+      <div className="field"><label htmlFor="sched-time">At</label>
+        <input id="sched-time" className="input" style={{ maxWidth: 140 }} type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+      </div>
+      <p className="summaryline"><Timer />{sentence} at {time}, on that day's data.</p>
       <div className="actions">
         <Button className="btn ghost" onPress={close}>Cancel</Button>
         <Button className="btn primary" onPress={async () => {
-          try { await call("POST", "/schedules", { turn_id: turnId, every: `${day} ${time}` }); toast(`Scheduled: ${day} at ${time}.`); close(); }
+          try { await call("POST", "/schedules", { turn_id: turnId, every: `${every} ${time}` }); toast(`Scheduled: ${sentence.toLowerCase()} at ${time}.`); close(); }
           catch (e) { toast((e as Error).message); }
-        }}>Schedule</Button>
+        }}>Schedule it</Button>
       </div>
     </Sheet>
   );

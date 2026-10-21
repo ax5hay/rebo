@@ -9,6 +9,7 @@ import { useEffect } from "react";
 import { Link, useLocation } from "react-router";
 import { get } from "../api";
 import { useMe } from "../shell";
+import { PageHead } from "../ui";
 
 type Section = { id: string; title: string; icon: any; admin?: boolean; owner?: boolean; body: React.ReactNode };
 
@@ -105,10 +106,7 @@ export default function HelpPage() {
 
   return (
     <div className="page help">
-      <header className="pagehead">
-        <h1>How to use ReBo</h1>
-        <p className="lede">Ask for reports in plain words, check how they were read, and teach ReBo as you go. Two minutes to read; everything links to where it lives.</p>
-      </header>
+      <PageHead title="How to use ReBo" lede="Ask for reports in plain words, check how they were read, and teach ReBo as you go. Two minutes to read; everything links to where it lives." />
       <div className="helpgrid">
         <nav className="toc" aria-label="On this page">
           {shown.map((s) => <a key={s.id} href={`#${s.id}`}><s.icon />{s.title}</a>)}

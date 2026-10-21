@@ -5,7 +5,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Command } from "cmdk";
 import {
-  Activity, BookMarked, CircleHelp, ClipboardCheck, History, MessagesSquare, Search, Settings2, Shield, SquarePen, UserRound, X,
+  Activity, BookMarked, CircleHelp, ClipboardCheck, History, MessagesSquare, Plus, Search, Settings2, Shield, SquarePen, SunMoon, UserRound, X,
 } from "lucide-react";
 import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
@@ -14,7 +14,7 @@ import { get, setIdentity, when } from "./api";
 import { Mark, Wordmark } from "./brand";
 import { Glass } from "./glass";
 import { Md } from "./md";
-import { applyPrefs } from "./prefs";
+import { applyPrefs, getPrefs, setPrefs } from "./prefs";
 
 export type Me = { id: string; role: "user" | "admin" | "owner"; team: string | null; is_admin: boolean; is_owner: boolean };
 
@@ -85,7 +85,7 @@ export default function Shell() {
           <PhoneTabs openHistory={() => setHistory(true)} />
         </div>
         {history && m && <HistorySheet close={() => setHistory(false)} />}
-        {palette && m && <Palette me={m} close={() => setPalette(false)} />}
+        {palette && m && <Palette me={m} close={() => setPalette(false)} openHistory={() => setHistory(true)} />}
         <Toaster position="top-center" offset={78} toastOptions={{ className: "toast" }} />
       </PaletteContext.Provider>
     </MeContext.Provider>
@@ -169,7 +169,7 @@ function HistorySheet({ close }: { close: () => void }) {
   );
 }
 
-function Palette({ me, close }: { me: Me; close: () => void }) {
+function Palette({ me, close, openHistory }: { me: Me; close: () => void; openHistory: () => void }) {
   const navigate = useNavigate();
   const [q, setQ] = useState("");
   const recent = useQuery({ queryKey: ["conversations"], queryFn: () => get<any[]>("/conversations") });
@@ -186,6 +186,12 @@ function Palette({ me, close }: { me: Me; close: () => void }) {
               <Command.Item value={`ask ${q}`} onSelect={() => go(`/?q=${encodeURIComponent(q)}`)}><MessagesSquare />Ask “{q}”</Command.Item>
             </Command.Group>
           )}
+          <Command.Group heading="Actions">
+            <Command.Item value="action new question" onSelect={() => go("/")}><SquarePen />New question</Command.Item>
+            <Command.Item value="action teach something new knowledge" onSelect={() => go("/knowledge?teach=1")}><Plus />Teach ReBo something</Command.Item>
+            <Command.Item value="action appearance dark light theme" onSelect={() => { const p = getPrefs(); setPrefs({ theme: p.theme === "dark" ? "light" : p.theme === "light" ? "auto" : "dark" }); close(); }}><SunMoon />Change appearance (auto, dark, light)</Command.Item>
+            <Command.Item value="action history conversations" onSelect={() => { close(); openHistory(); }}><History />Your conversations</Command.Item>
+          </Command.Group>
           <Command.Group heading="Go to">
             {places.map((p) => <Command.Item key={p.to} value={`go ${p.label}`} onSelect={() => go(p.to)}><p.icon />{p.label}</Command.Item>)}
           </Command.Group>
