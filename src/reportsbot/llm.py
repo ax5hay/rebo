@@ -34,6 +34,7 @@ class Profile:
     tool_call_factor: float = 1.0          # multiplies limits.tool_calls for turns on this model
     parallel_tool_calls: bool | None = None
     output: Literal["tool", "prompted"] = "tool"  # prompted: JSON in text, for models that fail tool calls
+    output_retries: int = 2                # validator retries (SQL that fails) before the turn errors
 
 
 # First entry whose key is a substring of the model name wins. Researched 2026-10-21 against
@@ -41,6 +42,7 @@ class Profile:
 # OpenRouter's reasoning effort. Gemini values are a first guess, to be measured (B-012).
 PROFILES: list[tuple[str, Profile]] = [
     ("gemini-3", Profile(thinking="low", tool_call_factor=1.6, parallel_tool_calls=True)),
+    ("gemma-4", Profile(output_retries=4)),
 ]
 
 

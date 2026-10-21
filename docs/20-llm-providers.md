@@ -133,8 +133,27 @@ Suggested local models (Q4, approximate VRAM; tool-use badge in LM Studio):
 
 Verified: the `lmstudio:` path drives a full agent turn over the OpenAI-compatible protocol
 (`tests/test_llm.py::test_lmstudio_wire_protocol_end_to_end`, against a stand-in server).
-**Not verified:** a real LM Studio install, since none is on this machine. Expect to tune
+A real LM Studio install was run on the second machine (§4.1). Expect to tune
 `limits.tool_calls` and possibly use `PromptedOutput` for weaker local models (doc 18 P1.10).
+
+### 4.1 Measured: LM Studio with google/gemma-4-e2b (B-044, 2026-10-21)
+
+LM Studio on this Mac (arm64, 24 GB) with `google/gemma-4-e2b` loaded (a ~2B model), demo gold set,
+`models.agent` and `models.fast` both `lmstudio:google/gemma-4-e2b`, empty knowledge:
+
+| Run | Reports | Errors | Content match (gold) | Median s/question | File |
+|---|---|---|---|---|---|
+| default profile (2 output retries) | 7 + 1 plain answer | 2 (SQL that never parsed: retries exhausted) | **1/10** | 77 | `fixtures/demo_property/eval_results_lmstudio.json` |
+| `gemma-4` profile, 4 output retries, the 2 failed questions only | 2 | 0 | 0/2 | 44 | `eval_results_lmstudio_retries4_gp03_gp09.json` |
+| Sonnet 5.5 for comparison | 9 + 1 clarification | 0 | 7/10 | 8.9 | `eval_results_sonnet.json` |
+
+gp-01 in the full run was served by the exact answer cache (B-031) from a one-question trial run
+just before (same model, same question), hence 0 s. Tool calling works over the OpenAI-compatible
+protocol; the model finds the right tables but gets grain and filters wrong (e.g. counting units
+instead of rent collected, building ids instead of names). Profile `gemma-4` → `output_retries: 4`
+turns parse failures into answers a person can correct; it does not improve accuracy. Verdict: a 2B
+local model is usable for trying the bot offline, not for answers people rely on. A larger
+tool-calling model (§4 table) was not available here.
 
 ## 5. Measured on the 18 JMS prompts (local synthetic DB, empty knowledge, 2026-10-21)
 

@@ -464,3 +464,12 @@ async def test_per_user_rate_limit(app):
     await app.ask(User("bob"), "one")                                          # per person
     r = TestClient(create_app(app, with_ui=False)).post("/api/ask", json={"text": "four"}, headers={"X-User-Id": "alice"})
     assert r.status_code == 429
+
+
+def test_profile_output_retries_reach_the_agent(app, monkeypatch):
+    from reportsbot import llm
+    assert llm.profile("lmstudio:google/gemma-4-e2b").output_retries == 4
+    assert llm.profile("openrouter:anthropic/claude-sonnet-5.5").output_retries == 2
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test")
+    app.settings.model = "lmstudio:google/gemma-4-e2b"
+    assert app.agent._max_output_retries == 4

@@ -121,7 +121,8 @@ class App:
         s = self.settings
         if not credentials_present(s.model, s):
             raise RuntimeError(f"No API key in the environment for model '{s.model}' (see .env.example)")
-        return build_agent(build_model(s.model, s, s.fallback_models), output=profile(s.model).output)
+        p = profile(s.model)
+        return build_agent(build_model(s.model, s, s.fallback_models), output=p.output, retries=p.output_retries)
 
     @cached_property
     def fast_agent_model(self):

@@ -169,7 +169,7 @@ def entity_key(sql: str, dialect: str, pks: dict[str, list[str]]) -> tuple[int, 
     return None
 
 
-def build_agent(model: Model, output: Literal["tool", "prompted"] = "tool") -> Agent[Deps, Outcome]:
+def build_agent(model: Model, output: Literal["tool", "prompted"] = "tool", retries: int = 2) -> Agent[Deps, Outcome]:
     """`model` comes from llm.build_model (any provider; settings such as caching travel with it).
     `output="prompted"` asks for the outcome as JSON in text, for models whose tool calls fail."""
     outputs: Any = ([ToolOutput(Report, name="present_report"), ToolOutput(Clarify, name="ask_clarifying_question"),
@@ -179,7 +179,7 @@ def build_agent(model: Model, output: Literal["tool", "prompted"] = "tool") -> A
         deps_type=Deps,
         output_type=outputs,
         instructions=INSTRUCTIONS,
-        retries=2,
+        retries=retries,
         name="reportsbot",
     )
 

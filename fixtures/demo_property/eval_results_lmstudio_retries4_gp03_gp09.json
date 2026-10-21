@@ -1,0 +1,80 @@
+{
+ "run": "2026-10-21",
+ "questions": "as in the cases file",
+ "model": "lmstudio:google/gemma-4-e2b",
+ "escalate": "",
+ "database": "sqlite:///fixtures/demo_property/greenleaf.db",
+ "summary": {
+  "reports": 2,
+  "clarify": 0,
+  "clarify_rate": 0.0,
+  "gate_answered": 0,
+  "errors": 0,
+  "escalated": 0,
+  "median_seconds": 53.9,
+  "total_cost_usd": null,
+  "execution_match": "0/2"
+ },
+ "cases": [
+  {
+   "id": "gp-03",
+   "kind": "report",
+   "rows": 9,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 53.9,
+   "question": "How many maintenance requests are still open in each building?",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 15026,
+    "output_tokens": 2035,
+    "cache_read_tokens": 0,
+    "tool_calls": 4,
+    "model": "lmstudio:google/gemma-4-e2b",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": null,
+   "title": "Open Maintenance Requests by Building",
+   "sql": "SELECT\n  T2.name AS BuildingName,\n  COUNT(T1.request_id) AS OpenRequestsCount\nFROM maintenance AS T1\nINNER JOIN unit AS T3\n  ON T1.unit_id = T3.unit_id\nINNER JOIN building AS T2\n  ON T3.building_id = T2.building_id\nWHERE\n  T1.state = 'open'\nGROUP BY\n  T2.name;",
+   "assumptions": [
+    "The current date is 2026-10-21, and we are only considering maintenance requests that are currently 'open'.",
+    "The request asks to group the open maintenance requests by the name of the building where the unit resides."
+   ]
+  },
+  {
+   "id": "gp-09",
+   "kind": "report",
+   "rows": 4,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 34.6,
+   "question": "Which buildings have an elevator and more than 10 units?",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 6583,
+    "output_tokens": 1119,
+    "cache_read_tokens": 0,
+    "tool_calls": 2,
+    "model": "lmstudio:google/gemma-4-e2b",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": null,
+   "title": "Buildings with Elevators and More Than 10 Units",
+   "sql": "SELECT T1.building_id, COUNT(T2.unit_id) AS unit_count FROM building AS T1 INNER JOIN unit AS T2 ON T1.building_id = T2.building_id WHERE T1.has_elevator = 1 GROUP BY T1.building_id HAVING COUNT(T2.unit_id) > 10;",
+   "assumptions": [
+    "Today's date is 2026-10-21.",
+    "The user ID 'eval' should be used when referring to their own information."
+   ]
+  }
+ ]
+}

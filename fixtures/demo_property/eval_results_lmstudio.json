@@ -1,0 +1,285 @@
+{
+ "run": "2026-10-21",
+ "questions": "as in the cases file",
+ "model": "lmstudio:google/gemma-4-e2b",
+ "escalate": "",
+ "database": "sqlite:///fixtures/demo_property/greenleaf.db",
+ "summary": {
+  "reports": 7,
+  "clarify": 0,
+  "clarify_rate": 0.0,
+  "gate_answered": 0,
+  "errors": 2,
+  "escalated": 0,
+  "median_seconds": 77.4,
+  "total_cost_usd": null,
+  "execution_match": "1/10"
+ },
+ "cases": [
+  {
+   "id": "gp-01",
+   "kind": "report",
+   "rows": 63,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 0.0,
+   "question": "Which units are vacant right now?",
+   "usage": {
+    "requests": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "cache_read_tokens": 0,
+    "tool_calls": 0,
+    "model": null,
+    "escalated": false,
+    "route": "cache"
+   },
+   "cost_usd": null,
+   "title": "Vacant Units Report",
+   "sql": "SELECT T1.unit_number FROM unit AS T1\nLEFT JOIN lease AS T2 ON T1.unit_id = T2.unit_id\nLEFT JOIN lease_status AS T3 ON T2.status_id = T3.status_id\nWHERE T3.label IN ('Ended', 'Evicted') OR T2.lease_id IS NULL;",
+   "assumptions": [
+    "Today is 2026-10-21.",
+    "The user ID 'eval' refers to the current user context, but no data in the schema explicitly requires filtering by this ID for finding vacant units.",
+    "A unit is considered vacant if it has no associated records in the lease table, or if its lease status indicates it is ended or evicted."
+   ]
+  },
+  {
+   "id": "gp-02",
+   "kind": "report",
+   "rows": 109,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 85.2,
+   "question": "List tenants who currently have a lease, with their unit and monthly rent.",
+   "usage": {
+    "requests": 6,
+    "input_tokens": 23706,
+    "output_tokens": 2408,
+    "cache_read_tokens": 0,
+    "tool_calls": 5,
+    "model": "lmstudio:google/gemma-4-e2b",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": null,
+   "title": "Active Tenant Lease Information",
+   "sql": "SELECT\n  T.first_name AS Tenant_First_Name,\n  T.last_name AS Tenant_Last_Name,\n  U.unit_number AS Unit_Number,\n  U.monthly_rent AS Monthly_Rent\nFROM tenant AS T\nINNER JOIN lease AS L\n  ON T.tenant_id = L.tenant_id\nINNER JOIN lease_status AS LS\n  ON L.status_id = LS.status_id\nINNER JOIN unit AS U\n  ON L.unit_id = U.unit_id\nWHERE\n  LS.is_current = 1;",
+   "assumptions": [
+    "The current date is 2026-10-21, so the query focuses on currently active leases.",
+    "A lease is considered 'current' if its status in the lease status table indicates it is active (is_current = 1)."
+   ]
+  },
+  {
+   "id": "gp-03",
+   "kind": "error",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false,
+    "ExecutionMatch": false
+   },
+   "seconds": 147.4,
+   "question": "How many maintenance requests are still open in each building?",
+   "usage": {},
+   "cost_usd": null
+  },
+  {
+   "id": "gp-04",
+   "kind": "answer",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false,
+    "ExecutionMatch": false
+   },
+   "seconds": 222.1,
+   "question": "Which tenants paid rent late at least once in 2026?",
+   "usage": {
+    "requests": 9,
+    "input_tokens": 29927,
+    "output_tokens": 7246,
+    "cache_read_tokens": 0,
+    "tool_calls": 7,
+    "model": "lmstudio:google/gemma-4-e2b",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": null
+  },
+  {
+   "id": "gp-05",
+   "kind": "report",
+   "rows": 3,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 108.2,
+   "question": "Total rent collected per region in 2026.",
+   "usage": {
+    "requests": 6,
+    "input_tokens": 16066,
+    "output_tokens": 3657,
+    "cache_read_tokens": 0,
+    "tool_calls": 5,
+    "model": "lmstudio:google/gemma-4-e2b",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": null,
+   "title": "Total Monthly Rent per Region (2026 Estimate)",
+   "sql": "SELECT\n  T3.name AS RegionName,\n  SUM(T1.monthly_rent) AS TotalRent2026\nFROM unit AS T1\nINNER JOIN building AS T2\n  ON T1.building_id = T2.building_id\nINNER JOIN region AS T3\n  ON T2.region_id = T3.region_id\nGROUP BY\n  T3.name;",
+   "assumptions": [
+    "I am calculating the total rent by grouping all units based on the region they belong to.",
+    "The monthly rent listed in the unit table represents the relevant rental amount for aggregation."
+   ]
+  },
+  {
+   "id": "gp-06",
+   "kind": "report",
+   "rows": 14,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 71.7,
+   "question": "Urgent maintenance requests that are not closed, with the technician assigned.",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 14107,
+    "output_tokens": 1554,
+    "cache_read_tokens": 0,
+    "tool_calls": 4,
+    "model": "lmstudio:google/gemma-4-e2b",
+    "escalated": false,
+    "route": "new",
+    "review": "ok"
+   },
+   "cost_usd": null,
+   "title": "Urgent Open Maintenance Requests with Assigned Technicians",
+   "sql": "SELECT T1.request_id, T1.opened, T1.assigned_to FROM maintenance AS T1 WHERE T1.priority = 'urgent' AND T1.state != 'closed' AND T1.assigned_to IS NOT NULL",
+   "assumptions": [
+    "I filtered the maintenance requests to only include those with the priority 'urgent'.",
+    "I excluded any maintenance requests that have been marked as 'closed'.",
+    "I included only those requests that have an assigned technician."
+   ]
+  },
+  {
+   "id": "gp-07",
+   "kind": "report",
+   "rows": 1,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 47.5,
+   "question": "Average number of days to close a plumbing request.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 7557,
+    "output_tokens": 1559,
+    "cache_read_tokens": 0,
+    "tool_calls": 2,
+    "model": "lmstudio:google/gemma-4-e2b",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": null,
+   "title": "Average Time to Close Plumbing Requests",
+   "sql": "SELECT AVG(CAST(SUBSTR(closed, 1, 10) AS DATE) - CAST(SUBSTR(opened, 1, 10) AS DATE)) FROM maintenance WHERE category = 'plumbing' AND state = 'closed'",
+   "assumptions": [
+    "Today's date is 2026-10-21, and this was used as the reference point for any relative dates if necessary."
+   ]
+  },
+  {
+   "id": "gp-08",
+   "kind": "report",
+   "rows": 6,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 55.8,
+   "question": "Leases ending between 2026-10-01 and 2026-12-31.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 8022,
+    "output_tokens": 1841,
+    "cache_read_tokens": 0,
+    "tool_calls": 2,
+    "model": "lmstudio:google/gemma-4-e2b",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": null,
+   "title": "Leases Ending in Q4 2026",
+   "sql": "SELECT\n  T1.lease_id,\n  T1.start_date,\n  T1.end_date,\n  T2.tenant_id\nFROM lease AS T1\nINNER JOIN tenant AS T2\n  ON T1.tenant_id = T2.tenant_id\nWHERE\n  T1.end_date BETWEEN '2026-10-01' AND '2026-12-31'",
+   "assumptions": [
+    "The user is interested in lease information that ends within the specified date range of October 1, 2026, and December 31, 2026."
+   ]
+  },
+  {
+   "id": "gp-09",
+   "kind": "error",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false,
+    "ExecutionMatch": false
+   },
+   "seconds": 77.4,
+   "question": "Which buildings have an elevator and more than 10 units?",
+   "usage": {},
+   "cost_usd": null
+  },
+  {
+   "id": "gp-10",
+   "kind": "report",
+   "rows": 16,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 71.7,
+   "question": "Evicted tenants and their email addresses.",
+   "usage": {
+    "requests": 7,
+    "input_tokens": 22917,
+    "output_tokens": 2639,
+    "cache_read_tokens": 0,
+    "tool_calls": 6,
+    "model": "lmstudio:google/gemma-4-e2b",
+    "escalated": false,
+    "route": "new"
+   },
+   "cost_usd": null,
+   "title": "Email Addresses of Evicted Tenants",
+   "sql": "SELECT T1.email FROM tenant AS T1 INNER JOIN lease AS T2 ON T1.tenant_id = T2.tenant_id INNER JOIN lease_status AS T3 ON T2.status_id = T3.status_id WHERE T3.label = 'Evicted'",
+   "assumptions": [
+    "I ignored the provided date and user ID because they were not relevant to finding the requested data.",
+    "I interpreted \"Evicted tenants and their email addresses\" to mean tenants whose leases have a status of 'Evicted'."
+   ]
+  }
+ ]
+}
