@@ -436,6 +436,15 @@ def mount_ui(api: FastAPI, app: App) -> None:
                     ui.button("Export / import", on_click=bulk_dialog).props("outline")
                 for item in queue:
                     queue_card(item)
+                with ui.expansion("See as user X: what another person's question would be given").classes(
+                        "w-full mt-4"):
+                    with ui.row().classes("items-center gap-2 w-full"):
+                        pv_user = ui.input("user id").props("dense")
+                        pv_q = ui.input("question").props("dense").classes("grow")
+                        pv_out = ui.code("", language="xml").classes("w-full")
+                        ui.button("Preview", on_click=lambda: setattr(pv_out, "content", (_safe(
+                            app.preview_as, u, pv_user.value or "", pv_q.value or "") or {}).get("context", ""))).props(
+                            "outline dense")
                 reqs = app.list_requests(u)
                 ui.label(f"Open requests ({len(reqs)})").classes("text-lg font-semibold mt-4")
                 for r in reqs:

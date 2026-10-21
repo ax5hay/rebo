@@ -58,3 +58,18 @@ def test_knowledge_export_edit_import_roundtrip(app):
     assert app.knowledge.get(personal["id"])["status"] == "verified"
     app.restore(ADMIN, term["id"])                        # an import edit is undoable like any edit
     assert app.knowledge.get(term["id"])["body"] == "spent over 1000"
+
+
+def test_admin_preview_shows_what_another_user_would_get(app):
+    from fastapi.testclient import TestClient
+
+    from reportsbot.api import create_app
+    from reportsbot.knowledge import User
+    app.knowledge.add(User("alice"), kind="term", title="paused", body="a customer on hold")
+    client = TestClient(create_app(app, with_ui=False))
+    r = client.get("/api/admin/preview", params={"user": "alice", "q": "paused customers"},
+                   headers={"X-User-Id": "ada", "X-User-Role": "admin"})
+    assert r.status_code == 200 and "a customer on hold" in r.json()["context"]
+    assert r.json()["knowledge"][0]["owner"] == "alice" and "'alice'" in r.json()["context"]
+    assert client.get("/api/admin/preview", params={"user": "alice", "q": "paused"},
+                      headers={"X-User-Id": "bob"}).status_code == 403

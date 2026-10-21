@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException
+from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException, Query
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 
@@ -230,6 +230,11 @@ def router(app: App) -> APIRouter:
     @r.get("/review")
     def review(user: User = Depends(current_user)):
         return guard_errors(lambda: app.review_queue(user))
+
+    @r.get("/admin/preview")
+    def preview(user_id: str = Query(..., alias="user"), q: str = "", team: str | None = None,
+                user: User = Depends(current_user)):
+        return guard_errors(lambda: app.preview_as(user, user_id, q, team))
 
     @r.get("/admin/config")
     def get_config(user: User = Depends(current_user)):

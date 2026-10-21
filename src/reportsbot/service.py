@@ -600,6 +600,16 @@ class App:
         values = [{k: v[k] for k in ("value", "table", "column", "freq")} for v in self.index.search_values(q, top=10)]
         return {"query": q, "knowledge": groups, "schema": schema, "values": values}
 
+    def preview_as(self, admin: User, user_id: str, q: str, team: str | None = None) -> dict[str, Any]:
+        """"See as user X": the context block (visible knowledge, defaults, likely tables, values) that
+        user X would get for this question. Admins only; read-only, no model call."""
+        if not admin.is_admin:
+            raise PermissionError("Only admins can preview what another user sees.")
+        x = User(id=user_id.strip(), team=team or None)
+        items = self.knowledge.search(x, q, top=6)
+        return {"user": x.id, "team": x.team, "question": q, "context": self._context_block(x, q, items),
+                "knowledge": [self.knowledge_for_prompt(i, x) | {"owner": i["owner"]} for i in items]}
+
     DEFAULT_PREFIX = "default: "
 
     def my_defaults(self, user: User) -> list[dict[str, Any]]:
