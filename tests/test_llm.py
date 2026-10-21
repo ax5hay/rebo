@@ -51,6 +51,22 @@ async def test_all_open_questions_come_back_in_one_clarify_turn(app):
     assert r["kind"] == "clarify" and [q["question"] for q in r["questions"]] == ["Which customers?", "Which date?"]
 
 
+async def test_failed_turn_escalates_once_to_the_stronger_model(app):
+    bad = _completion("present_report", {"title": "x", "sql": "SELECT nope FROM customer", "assumptions": []})
+    good = _completion("present_report", {"title": "Paused", "assumptions": [],
+                                          "sql": "SELECT full_name FROM customer WHERE status = 'paused'"})
+    cheap = httpx.AsyncClient(transport=httpx.MockTransport(lambda req: httpx.Response(200, json=bad)))
+    strong = httpx.AsyncClient(transport=httpx.MockTransport(lambda req: httpx.Response(200, json=good)))
+    app.__dict__["agent"] = build_agent(build_model("lmstudio:cheap", app.settings, http_client=cheap))
+    app.__dict__["escalation_model"] = build_model("lmstudio:strong", app.settings, http_client=strong)
+    app.settings.escalate_model = "lmstudio:strong"
+    r = await app.ask(User("alice"), "paused customers")
+    assert r["kind"] == "report" and len(r["rows"]) == 10
+    assert r["trace"][0]["tool"] == "escalate"
+    usage = json.loads(app.store.one("SELECT usage FROM turn WHERE id=?", (r["turn_id"],))["usage"])
+    assert usage["escalated"] is True and usage["model"] == "lmstudio:strong"
+
+
 async def test_lmstudio_wire_protocol_end_to_end(app):
     """A stand-in for LM Studio's OpenAI-compatible server: one tool call, then a validated report."""
     seen = []

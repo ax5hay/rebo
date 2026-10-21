@@ -65,6 +65,11 @@ class App:
             raise RuntimeError(f"No API key in the environment for model '{s.model}' (see .env.example)")
         return build_agent(build_model(s.model, s, s.fallback_models))
 
+    @cached_property
+    def escalation_model(self):
+        s = self.settings
+        return build_model(s.escalate_model, s) if s.escalate_model else None
+
     # ---- bootstrap / maintenance ----------------------------------------------------------
     def bootstrap(self, *, describe: bool = False, progress=print) -> dict[str, int]:
         describer = self._describe_table if describe else None
@@ -190,9 +195,21 @@ class App:
         deps = Deps(app=self, user=user)
         turn_id = new_id("turn")
         limits = UsageLimits(request_limit=40, tool_calls_limit=self.settings.max_tool_calls)
+        prompt = self._context_block(user, text)
+        escalated = False
         try:
-            result = await self.agent.run(self._context_block(user, text), deps=deps, message_history=history,
-                                          usage_limits=limits)
+            try:
+                result = await self.agent.run(prompt, deps=deps, message_history=history, usage_limits=limits)
+            except Exception as first:
+                # Cost cascade: the cheap model failed (SQL never validated, budget, API error) ->
+                # one retry on the stronger escalation model, from a clean slate.
+                if not self.escalation_model:
+                    raise
+                log.info("escalating after %s: %s", type(first).__name__, str(first)[:200])
+                deps = Deps(app=self, user=user, trace=[*deps.trace, {"tool": "escalate", "after": type(first).__name__}])
+                escalated = True
+                result = await self.agent.run(prompt, deps=deps, message_history=history, usage_limits=limits,
+                                              model=self.escalation_model)
         except UsageLimitExceeded:
             return self._record(turn_id, conv_id, user, text, "error", {"message": msg.say("error_budget")}, deps)
         except Exception:
@@ -206,7 +223,8 @@ class App:
         out = result.output
         usage = result.usage
         usage_d = {"requests": usage.requests, "input_tokens": usage.input_tokens, "output_tokens": usage.output_tokens,
-                   "tool_calls": usage.tool_calls}
+                   "cache_read_tokens": getattr(usage, "cache_read_tokens", None), "tool_calls": usage.tool_calls,
+                   "model": self.settings.escalate_model if escalated else self.settings.model, "escalated": escalated}
         if isinstance(out, Report) and deps.final is not None:
             prov = self._provenance(user, out.sql, out.used_knowledge)
             self.knowledge.mark_used(prov["item_ids"])

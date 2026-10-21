@@ -7,8 +7,10 @@ database: mysql+pymysql://reports_ro:reports_ro@127.0.0.1:3307/jms   # read-only
 models:                                    # "<provider>:<model>"
   agent: openrouter:anthropic/claude-sonnet-5.5
   fast: openrouter:anthropic/claude-haiku-5.5
-  fallback: []                             # tried in order if the agent model's API fails, e.g.
-                                           # [google:<gemini model id>, lmstudio:<local model id>]
+  escalate: ""                             # stronger model for turns the agent model fails, e.g.
+                                           # openrouter:anthropic/claude-sonnet-5.5 (cost cascade)
+  fallback: []                             # tried in order if the agent model's API is down, e.g.
+                                           # [google:gemini-3.8-flash, lmstudio:<local model id>]
 lmstudio_url: http://127.0.0.1:1234/v1     # only used by "lmstudio:" models
 
 state_dir: data                            # the bot's memory (back this up)

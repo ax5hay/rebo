@@ -21,6 +21,7 @@ _YAML_KEYS = {
     ("models", "agent"): "model",
     ("models", "fast"): "fast_model",
     ("models", "fallback"): "fallback_models",
+    ("models", "escalate"): "escalate_model",
     ("lmstudio_url",): "lmstudio_url",
     ("state_dir",): "state_dir",
     ("limits", "rows"): "row_limit",
@@ -80,6 +81,7 @@ class Settings(BaseSettings):
     model: str = "openrouter:anthropic/claude-sonnet-5.5"
     fast_model: str = "openrouter:anthropic/claude-haiku-5.5"
     fallback_models: list[str] = Field(default_factory=list)
+    escalate_model: str = ""  # re-run a failed turn once on this stronger model (cost cascade)
     lmstudio_url: str = "http://127.0.0.1:1234/v1"
     # 3. Where the bot keeps what it learns.
     state_dir: Path = Path("data")
