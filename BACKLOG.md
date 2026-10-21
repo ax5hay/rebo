@@ -113,10 +113,11 @@ done when:
 - With `llm`: a results file showing `cache_read_tokens > 0` on the second question.
 result: 2026-10-21, `git log --grep B-010`; 109 passed. eval pending: needs llm (cache_read_tokens > 0 on the 2nd question).
 
-### [ ] B-011 · Multi-turn eval
+### [x] B-011 · Multi-turn eval
 needs: offline
 do: `fixtures/*/conversations.jsonl`: scripted conversations of user turns, each with an expectation (report rows / clarify / follow-up chosen). Add `tools/eval_conversations.py`, which reports turns to the first correct report, clarify rate and cost.
 done when: offline test with a FunctionModel; with `llm`, a results file for 5 demo conversations.
+result: 2026-10-21, `git log --grep B-011`; 110 passed; 5 demo conversations written. eval pending: needs llm (results file for the 5 demo conversations).
 
 ### [ ] B-012 · Per-model profiles; re-measure Gemini
 needs: offline
