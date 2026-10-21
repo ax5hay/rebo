@@ -184,10 +184,11 @@ do: Add a My knowledge section "My defaults" (date range, region, …) stored as
 done when: offline test with a FunctionModel checking the default reaches the prompt.
 result: 2026-10-21, `git log --grep B-019`; 121 passed. eval pending: needs llm (prompt gained one instruction line).
 
-### [ ] B-020 · See as user X (admin)
+### [x] B-020 · See as user X (admin)
 needs: offline
 do: Add `GET /api/admin/preview?user=X&q=…`, which returns the context block (visible knowledge) that user X would get. Admin only. Add a UI panel on the Admin page.
 done when: offline test showing an admin sees X's personal items in the preview and a user gets 403.
+result: 2026-10-21, `git log --grep B-020`; 122 passed. UI panel not browser-tested.
 
 ### [ ] B-021 · Import diff preview (admin)
 needs: offline
