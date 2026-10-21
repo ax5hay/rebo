@@ -194,3 +194,19 @@ the stack trace logged.
 Both are environment settings (`REBO_MODEL`, `REBO_FAST_MODEL`). Any OpenRouter model with
 tool calling works. Pydantic AI also supports Anthropic, Bedrock and OpenAI directly by swapping
 the model class in `build_agent`.
+
+### Back-translation in the second opinion (2026-10-21, B-049)
+
+The reviewer's output now starts with `restated`: what the SQL returns, read from the SQL alone, and
+only then `ok` / `concern` (GBV-SQL-style back-translation, doc 16 §5). `usage.review_restated` keeps
+it for evals and traces; it is not shown. Demo gold, Sonnet agent + Haiku reviewer, concerns on gp-01…10:
+
+| Run | Concerns on correct reports (false alarms) | Concerns on wrong reports | Wrong reports not flagged | Content match (12 cases) | Cost |
+|---|---|---|---|---|---|
+| before (2026-10-21b) | 3 | 1 | 0 | 8/10 (10 cases) | $0.236 |
+| restate first, run 1 | 0 | 1 | 0 | 10/12 | $0.269 |
+| restate first, run 2 | 1 | 1 | 2 | 9/12 | $0.225 |
+
+False alarms fell (3 → 0 and 1) but one run missed two wrong reports: precision up, recall unsteady.
+Two runs of a 10-case set cannot settle it; kept because false "Check:" notes on correct answers
+erode trust and the cost is unchanged. Files: `eval_results_sonnet_backtranslate_{1,2}.json`.

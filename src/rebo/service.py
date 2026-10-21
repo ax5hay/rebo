@@ -70,6 +70,10 @@ class RateLimited(Exception):
 
 
 class Review(BaseModel):
+    # Back-translation first (GBV-SQL, arXiv 2509.12612; doc 16 §5): the reviewer says what the SQL returns
+    # before judging it, so it compares two readings of the question instead of re-reading the model's.
+    restated: str = Field("", description="First: what this SQL returns, in one plain sentence, read from the SQL "
+                                          "itself and not from the assumptions")
     ok: bool = Field(description="true when the report answers the question as asked")
     concern: str = Field("", description="When not ok: the one thing a person should check, in plain words")
 
@@ -139,7 +143,8 @@ class App:
     def review_agent(self) -> Agent:
         return Agent(name="second-opinion", output_type=ToolOutput(Review, name="review"), retries=1, instructions=(
             "You check a database report before a business user sees it. Given the question, the SQL, the "
-            "assumptions made and the first rows, decide whether the report answers the question. Flag only a "
+            "assumptions made and the first rows: first restate what the SQL returns, from the SQL alone; then "
+            "compare that with the question and decide whether the report answers it. Flag only a "
             "concrete problem a person should check (wrong filter, wrong grain, missing condition, a reading "
             "that contradicts the question), in one plain sentence without table or column names. "
             "Otherwise ok."))
@@ -430,6 +435,7 @@ class App:
             log.info("second opinion failed; report shown without it", exc_info=True)
             return
         usage_d["review"] = "ok" if review.ok or not review.concern.strip() else "concern"
+        usage_d["review_restated"] = review.restated.strip()[:300]  # for evals and traces; not shown
         if usage_d["review"] == "concern":
             out.assumptions.append(msg.say("review_concern", concern=review.concern.strip()))
 

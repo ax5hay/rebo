@@ -391,9 +391,10 @@ needs: llm
 do: Behind a setting (default off), for turns that `_second_opinion` would review: 2 extra SQLs from the fast model, executed through `_run_report_sql`, compared with `same_result`. Agreement keeps the answer; disagreement goes to a judge given the retrieved knowledge (MaP-SQL style) or becomes a Clarify naming both readings ("Two Surfaces of Ambiguity", VLDB'26 AIDB).
 done when: gold with the flag on and off, 3 runs each; content match, clarifications and cost recorded in doc 16 §5.
 
-### [ ] B-049 · Back-translation in the second opinion
+### [x] B-049 · Back-translation in the second opinion
 needs: llm
 do: The reviewer restates the SQL in plain words before comparing with the question (`_second_opinion`, review output type). Measure concern precision/recall on gold against 1/4 precision, 1/1 recall (2026-10-21b).
+result: 2026-10-21. Two runs: precision 1/1 and 1/2 (was 1/4), recall 1/1 and 1/3 (was 1/1); content 10/12 and 9/12; cost unchanged. doc 04.
 
 ### [ ] B-050 · SQL-skeleton similarity for confirmed examples
 do: After a draft SQL exists, re-rank confirmed examples by skeleton similarity (sqlglot, literals stripped; Jaccard over node types and tables). Offline test first; then B-009-style eval with saved examples.

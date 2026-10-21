@@ -336,7 +336,7 @@ async def test_prompted_output_turn_end_to_end(app):
     assert r["kind"] == "report" and len(r["rows"]) == 10
 
 
-@pytest.mark.parametrize("verdict, review", [({"ok": True}, "ok"),
+@pytest.mark.parametrize("verdict, review", [({"restated": "Names of paused customers.", "ok": True}, "ok"),
                                              ({"ok": False, "concern": "Closed customers may be wanted too."}, "concern")])
 async def test_new_report_with_many_assumptions_gets_a_second_opinion(app, verdict, review):
     three = ["Paused is the stored status.", "All regions.", "Any signup date."]
@@ -354,6 +354,8 @@ async def test_new_report_with_many_assumptions_gets_a_second_opinion(app, verdi
     usage = json.loads(app.store.one("SELECT usage FROM turn WHERE id=?", (r["turn_id"],))["usage"])
     assert len(reviews) == 1 and "first_rows" in reviews[0] and usage["review"] == review and len(seen) == 1
     assert (r["assumptions"][-1] == "Check: Closed customers may be wanted too.") == (review == "concern")
+    assert usage["review_restated"] == verdict.get("restated", "")          # back-translation kept for evals
+    assert '"restated"' in reviews[0]                                       # and asked for in the review schema
 
 
 async def test_no_second_opinion_with_two_assumptions_or_fewer(app):
