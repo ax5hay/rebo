@@ -1,5 +1,11 @@
 # 19 · Self-hosted, open-source alternatives (evaluated 2026-10-21)
 
+> **These are suggestions, not decisions.** They reflect one research pass on 2026-10-21. Versions,
+> licences and project health change. Before adopting anything listed here, the implementing agent or
+> developer must research it again and look for newer alternatives, following the protocol in
+> `AGENTS.md` §4 (re-verify on primary sources, check licence and maintenance, prototype behind a
+> flag, measure with `tools/eval_run.py`, record the decision).
+
 Question: are there better open-source components that run locally or in Docker (a powerful PC is
 fine at first)? LLM inference is out of scope here (doc 20). Versions, dates, licences and archive
 status were checked on GitHub/PyPI/Docker Hub on 2026-10-21. **[U]** = unverified.

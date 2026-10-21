@@ -189,3 +189,21 @@ table migration, using the same idea as Snowflake's evaluation runs (re-generate
 - Promotion to shared. A curator always decides; the system only *proposes*.
 - Free-text facts the user did not confirm.
 - Deleting anything.
+
+## 10. People editing knowledge directly (added 2026-10-21)
+
+- **Admins and owners** can add knowledge that is shared at once (`verified`, `verified_by` = them)
+  and edit any item's title, question, body or SQL (`Knowledge.edit`). SQL is validated like the bot's
+  (examples must run; joins must name real columns; term conditions must work in a WHERE clause).
+- **Users** can add personal items and edit their own unshared ones. Shared items need a **request**.
+- Every edit logs `edited` with the before and after values. **Undo** (`restore`) puts the previous
+  wording back, one step at a time, then walks back status changes.
+- **Undo feedback** (`undo_feedback`) reverses exactly what one confirmation or rejection did, using
+  the `turn_id` on its events:
+  - it withdraws the example the confirmation created,
+  - it takes back confirmations and rejections,
+  - it reverses auto-proposals and quarantines.
+
+  Giving new feedback on the same answer replaces the old one.
+- **Export/import** (`admin.py`): admins edit everything as YAML and import it through the same paths,
+  so imports are validated, logged and undoable.

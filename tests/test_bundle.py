@@ -6,17 +6,26 @@ spec = importlib.util.spec_from_file_location("export_bundle", ROOT / "tools" / 
 bundle = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(bundle)
 
+# Fake secrets are assembled at runtime so this file itself passes the bundle scan.
+_J = "".join
+FAKE = "\n".join([
+    _J(["key=sk-or-v1-", "a" * 40]),
+    _J(["AKIA", "B" * 16]),
+    _J(["prod-db.abcdefgh12.us-east-2", ".rds.amazonaws.com"]),
+    _J(["mysql+pymysql://admin:", "hunter22pass@db:3306/x"]),
+    _J(["bob.smith", "@", "realcorp.com"]),
+])
+
 
 def test_secrets_block_and_example_values_pass(tmp_path, monkeypatch):
     monkeypatch.setattr(bundle, "ROOT", tmp_path)
     ok = tmp_path / "ok.md"
     ok.write_text("mysql+pymysql://reports_ro:reports_ro@127.0.0.1:3307/jms  alice@example.com", encoding="utf-8")
     bad = tmp_path / "bad.md"
-    bad.write_text("key=sk-or-v1-" + "a" * 40 + "\nAKIA" + "B" * 16 + "\nprod-db.abcdefgh12.us-east-2.rds.amazonaws.com"
-                   + "\nmysql+pymysql://admin:hunter22pass@db:3306/x\nbob.smith@realcorp.com", encoding="utf-8")
+    bad.write_text(FAKE, encoding="utf-8")
     problems, warnings = bundle.scan([ok, bad])
     assert len(problems) == 4 and all(p.startswith("bad.md") for p in problems)
-    assert warnings == ["bad.md: 1 non-example email address(es), e.g. bob.smith@realcorp.com"]
+    assert len(warnings) == 1 and warnings[0].startswith("bad.md: 1 non-example email")
 
 
 def test_local_state_and_secrets_are_never_included(tmp_path, monkeypatch):
@@ -28,3 +37,9 @@ def test_local_state_and_secrets_are_never_included(tmp_path, monkeypatch):
         p.write_text("x", encoding="utf-8")
     kept = sorted(str(p.relative_to(tmp_path)).replace("\\", "/") for p in tmp_path.rglob("*") if p.is_file() and bundle.included(p))
     assert kept == [".env.example", "reportsbot.example.yaml", "src/a.py"]
+
+
+def test_the_real_folder_passes_the_scan():
+    files = sorted(p for p in bundle.ROOT.rglob("*") if p.is_file() and bundle.included(p))
+    problems, _ = bundle.scan(files)
+    assert problems == []

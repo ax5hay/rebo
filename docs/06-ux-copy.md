@@ -133,3 +133,20 @@ bot    ▸ [Same as a report you confirmed earlier] …         ← Alice's pers
 carol, dan confirm the same SQL as alice → auto-proposed → cora (curator) approves
 everyone ▸ [Verified report · checked by cora on 2026-10-22] …
 ```
+
+## 9. Sentences added for roles and aids
+
+| Key | Text |
+|---|---|
+| `feedback_undone` | Your feedback on this answer is undone. Anything it changed has been put back. |
+| `fix_with_words` | Thanks. I'm reworking the report with what you wrote. |
+| `request_sent` | Sent to {an admin / an owner}. You'll see the answer under My requests; nothing changes until they act on it. |
+| `request_done` / `request_declined` | Marked done / Declined. The person who asked will see your note. |
+| `edited` | Saved. "{title}" now reads as you wrote it. The previous version is kept; use Undo to go back. |
+| `edit_undone` | Undone. "{title}" is back to its previous wording. |
+| `added_shared` | Added for everyone: "{title}". It applies to the next question anyone asks. |
+| `edit_bad_sql` | That SQL can't be saved: {error} |
+| `config_saved` | Configuration saved and the previous version kept. Restart the bot to apply it. |
+| `import_done` | Imported: {added} added, {updated} updated, {shared} shared, {retired} withdrawn, {errors} with errors. |
+
+"Curator" was renamed "admin" in every user-facing sentence.

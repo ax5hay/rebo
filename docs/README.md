@@ -2,6 +2,8 @@
 
 Read in order the first time. Each document names the code it describes (`file.py`, function names).
 
+Start with **[AGENTS.md](../AGENTS.md)**: the direction and the rules that do not change.
+
 | # | Document | Read it for |
 |---|---|---|
 | 01 | [Overview](01-overview.md) | What the bot is, goals and non-goals, how it differs from the two previous JMS bots |
@@ -25,3 +27,5 @@ Read in order the first time. Each document names the code it describes (`file.p
 | 19 | [Self-hosted alternatives](19-self-hosted-alternatives.md) | Open-source, Docker/local options for every component, verdicts, production and lean stacks |
 | 20 | [LLM providers](20-llm-providers.md) | Claude / Gemini / LM Studio / OpenRouter, routing, prices, measured comparison |
 | 21 | [Direction audit](21-direction-audit.md) | Every requirement vs what is built, with evidence and gaps |
+| 22 | [Roles and user aids](22-roles-and-user-aids.md) | user / admin / owner permissions, every aid that exists, aids to add next |
+| 23 | [Offline bundle](23-offline-bundle.md) | What leaves this machine, what was captured from JMS, setup with no JMS, made-up demo domain, checklist |

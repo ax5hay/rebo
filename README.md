@@ -13,6 +13,9 @@ A self-contained, self-learning natural-language reports bot for any SQL databas
 
 JMS is the first test database (`fixtures/jms_staging/`). Nothing in `src/` is JMS-specific.
 
+Read **AGENTS.md** first (direction and rules). Roles: users ask and teach for themselves, admins manage
+learned knowledge, owners manage the ~10–20 line configuration (docs/22).
+
 ## Quick start
 
 ```bash
@@ -23,7 +26,7 @@ cp reportsbot.example.yaml reportsbot.yaml               # the whole config (~10
 cp .env.example .env                                     # API keys only
 uv run reportsbot bootstrap --describe                   # learn the database
 uv run reportsbot serve                                  # http://127.0.0.1:8080/?user=alice
-uv run pytest                                            # 56 offline tests (no network, no LLM)
+uv run pytest                                            # offline tests (no network, no LLM)
 ```
 
 Curator view: `http://127.0.0.1:8080/review?user=cora&role=curator`.
@@ -43,6 +46,7 @@ docs/                design and operations documentation (start at docs/README.m
 
 Models: Claude (OpenRouter or Anthropic), Gemini, LM Studio (offline) or OpenAI: see docs/20.
 JMS integration without JMS: `mocks/jms/` + `adapters: [jms]`: see docs/18 §4.
+A second, made-up domain: `fixtures/demo_property/` (docs/23 §4). Shipping it: `tools/export_bundle.py` (docs/23).
 
 ## Documentation
 

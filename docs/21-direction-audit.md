@@ -23,6 +23,22 @@ closes the gap.
 | 15 | Nothing on the remote; rest of the repo unaffected | **Met** | Branch has no upstream; only `reports-bot/` changed |
 | 16 | Extremely detailed docs, down to code and the exact user-facing sentences | **Met** | docs 01–21 |
 
+## Added 2026-10-21 (second request)
+
+| # | Requirement | Verdict | Evidence |
+|---|---|---|---|
+| 17 | Open-source suggestions are suggestions; the agent researches for itself | **Met** | `AGENTS.md` §4 research protocol; banners on docs 19 and 20; doc 18 §0 |
+| 18 | Everything needed from JMS is inside the zip; nothing JMS is reachable afterwards | **Met** | doc 23 §2 inventory: structure, profile, contract schemas, JWT/WS/Builder rules, 18 prompts, 79 gold reports, mock JMS, adapter; `tools/export_bundle.py` with secret/host checks |
+| 19 | Replicate the DB and run everything locally | **Met** | Docker MySQL 8.0.44 + synthetic rows; bot, mocks and evals run with no JMS |
+| 20 | A made-up similar setup with different data, only the config changed | **Met** | `fixtures/demo_property/` (builder, 5-line YAML, 10 gold); live 7/10 content match, 9/10 row counts |
+| 21 | Config stays ~10–20 lines; people may edit it by hand | **Met** | `reportsbot.example.yaml`; `reportsbot config check`; owner API/UI with validation, audit and rollback |
+| 22 | Only higher admins change config | **Met** | role `owner`; `admin.save_config` raises for others; `test_only_owners_touch_configuration` |
+| 23 | Normal admins add and edit what the bot learned (memories) | **Met** | `add_knowledge` / `edit_knowledge`; export/import YAML; `test_editing.py`, `test_admin.py` |
+| 24 | Users request fixes they can't make | **Met** | `create_request` routed to admins or owners; resolve with a note; `test_requests_route_to_the_right_people` |
+| 25 | Feedback can be reverted and given in full words | **Met** | `undo_feedback` (reverses exactly what it did); notes stored and run as the correction; tests |
+| 26 | More user aids | **Partial** | 12 aids live (doc 22 §2); 14 more specified as one commit each (doc 22 §3, doc 18 P1.11+) |
+| 27 | Accurate with minimal error margin, measured | **Partial** | Demo domain 7/10 content and 9/10 row-count match. The JMS gold needs PO-written questions before it can measure anything (doc 18 P1.1) |
+
 ## Deviations to be aware of
 
 - **Snapshot without rows.** You asked for a "complete snapshot". I captured the complete structure

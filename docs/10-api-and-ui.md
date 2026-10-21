@@ -7,7 +7,7 @@ The bot has no login of its own. It trusts three headers set by the host applica
 | Header | Required | Values |
 |---|---|---|
 | `X-User-Id` | yes | Stable user id from the host (JMS: admin id) |
-| `X-User-Role` | no (`member`) | `member` or `curator` (JMS: map an admin permission to curator) |
+| `X-User-Role` | no (`user`) | `user`, `admin` or `owner` (`member`/`curator` accepted as older names) |
 | `X-User-Team` | no | Team/agency id for team-scoped sharing |
 
 **Never expose `/api` directly to browsers.** Put it behind the host's authenticated proxy, which
@@ -65,6 +65,16 @@ prefixed `"Correction to the previous report: "`.
 | `GET /api/review` | curator | items `proposed` or `quarantined`, oldest first |
 | `POST /api/admin/revalidate` | curator | `{"checked", "unchanged", "repaired", "stale"}` |
 | `GET /api/health` | anyone | `{"ok": true, "bootstrapped_at": …}` |
+| `POST /api/knowledge` `{kind, title, body?, sql?, question?, scope?}` | anyone | add knowledge: admins → shared at once; users → personal |
+| `PATCH /api/knowledge/{id}` `{title?, question?, body?, sql?}` | admin, or the owner of an unshared item | edit (SQL validated); history keeps before/after; `restore` undoes |
+| `DELETE /api/turns/{id}/feedback` | the person who gave it | undo feedback (reverses everything it changed) |
+| `POST /api/requests` `{kind: fix_knowledge / fix_report / access / config / other, text, item_id?, turn_id?}` | anyone | ask someone else to change something; routed to admins, or owners for access/config |
+| `GET /api/requests?status=open` | anyone | users: their own; admins: admin-targeted + own; owners: all |
+| `POST /api/requests/{id}/resolve` `{status: done / declined, resolution}` | admin (admin requests), owner (all) | the requester sees the note |
+| `GET /api/turns/{id}/csv` | the asker | the report as CSV |
+| `GET /api/starter` | anyone | starter questions from the most-used trusted reports |
+| `GET /api/knowledge/export` / `POST /api/knowledge/import` `{yaml}` | admin | everything learned as editable YAML, and back |
+| `GET/PUT /api/admin/config` `{yaml, note}`, `POST /api/admin/config/rollback/{id}` | owner | view/change/roll back `reportsbot.yaml` (validated, atomic, audited) |
 
 ## 3. Dev UI (`ui.py`, NiceGUI 3.18 mounted on the same FastAPI app)
 

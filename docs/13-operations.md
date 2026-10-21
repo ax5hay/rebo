@@ -38,6 +38,9 @@ The only setting with business meaning (`protected_columns`) is a safety control
 | `reportsbot revalidate` | Re-check saved knowledge against the current catalog |
 | `reportsbot eval FILE.jsonl [--limit N]` | pydantic-evals run (doc 11) |
 | `reportsbot mcp` | MCP server over stdio (needs `--extra mcp`) |
+| `reportsbot knowledge export [file] [--all]` / `reportsbot knowledge import file [--as name]` | Everything learned as editable YAML, and back (acts as an owner) |
+| `reportsbot config check` | Validate `reportsbot.yaml` |
+| `python tools/export_bundle.py [--with-models]` | The checked zip for another machine (doc 23) |
 
 ## 3. Set up on a new PC (from the zip)
 

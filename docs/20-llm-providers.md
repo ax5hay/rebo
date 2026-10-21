@@ -1,5 +1,8 @@
 # 20 · LLM providers, offline inference and routing
 
+> Model IDs and prices below were checked on 2026-10-21 and change often. They are a starting point:
+> re-check vendor pages and `openrouter.ai/api/v1/models` before changing defaults (`AGENTS.md` §4).
+
 Code: `src/reportsbot/llm.py` (registry), `service.py` (`agent`, `fast_agent_model`,
 `escalation_model`, routing in `ask`). Config: `models.*` and `lmstudio_url` in `reportsbot.yaml`.
 

@@ -99,3 +99,13 @@ Undo reads the last `status:%` event's `from_status`.
 Turns hold result rows, which may include personal data from the target DB. Purge old turns with
 a scheduled `DELETE FROM turn WHERE created_at < …` according to the host's retention policy;
 knowledge items keep only SQL, titles and definitions, never rows.
+
+## Added later (in-place migrations in `store.MIGRATIONS`)
+
+- `knowledge_event.turn_id`: the turn whose feedback caused the event, so `undo_feedback` reverses exactly that.
+- `turn.feedback_note`: feedback in the user's own words.
+- `request(id, kind, target, requester, item_id, turn_id, text, status, resolver, resolution, created_at, updated_at)`:
+  fix/access/config requests. `kind` is `fix_knowledge`, `fix_report`, `access`, `config` or `other`;
+  `target` is `admin` or `owner`; `status` is `open`, `done` or `declined`.
+- `config_event(id, at, actor, previous, current, note)`: every configuration change made through
+  the API, with the full previous file for rollback.

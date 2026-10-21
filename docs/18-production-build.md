@@ -7,6 +7,10 @@ doc change, so every behaviour change is traceable in `git log`.
 
 ## 0. Ground rules for every commit
 
+The direction and the non-negotiables are in `AGENTS.md`. Tools and models named in this plan are
+**suggestions**: research them again before adopting (`AGENTS.md` §4).
+
+
 | Rule | Why |
 |---|---|
 | One behaviour change per commit; tests and docs for that change in the same commit | `git log -p <file>` explains every line; reverts are surgical |
@@ -78,8 +82,17 @@ behaviour unchanged): `state_url` (Postgres instead of SQLite, P2.1), `embedding
 | `f8672333` | no JMS table names in model-facing text |
 | `c0f10b3e` | cost cascade: failed turns re-run on `models.escalate` |
 | `0bd04df1` | knowledge-aware routing (reuse → fast model) + eval cost reporting |
+| `f29f5a78` | docs 18–21 |
+| `e71e15b6`, `9c498508` | captured from JMS while reachable: 79 human-built reports (gold SQL), the chat contract (schemas, JWT, WS, Builder rules) |
+| `047e3f09` | roles user / admin / owner |
+| `e0d24266` | admins add/edit learned knowledge; history and undo; in-place migrations |
+| `0185c8fc` | undo feedback, feedback in full words, fix/access requests |
+| `cd5c1dfb` | owner config editing (audit, rollback); knowledge export/import; CLI |
+| `445219b3` | UI for roles and aids; CSV; starter questions |
+| `01258676`, `a7335fde`, `c4633ac0` | made-up Greenleaf demo domain + gold; content-not-presentation metric; JMS gold labelled |
+| `2edaeb5c` | export_bundle: the checked zip that leaves this machine |
 
-56 offline tests. Live measurements in doc 20 §5 and doc 17.
+79 offline tests. Live measurements in doc 20 §5, doc 17 and doc 23 §4. Direction and rules: `AGENTS.md`.
 
 ## 4. JMS without JMS: what is mocked and how it maps
 
@@ -121,7 +134,7 @@ Each line is one commit. "Gate" is the measurable condition to merge the phase.
 - *Gate:* CI green on a fresh clone with no network except PyPI.
 
 ### Phase P1: accuracy and fewest turns (the product core, 1–2 weeks)
-- **P1.1** `eval: gold answers for the 18 prompts` by confirming correct reports in the UI and `evals.export_confirmed`; add execution-match scores to `eval_run.py`
+- **P1.1** `eval: JMS gold questions`: a PO writes one real question for each of the 79 captured reports (`fixtures/jms_staging/gold_custom_reports.jsonl`: 67 are only `Show me <title>` today) and confirms the 18 validated prompts in the UI (`evals.export_confirmed`). Execution match (`evals.columns_match`) and the runner already exist; the demo domain already scores 7/10 (doc 23 §4)
 - **P1.2** `feat(agent): deterministic ask-gate` (CIGAsk: prompting alone over- or under-asks). When the model returns `Clarify`, run the top option of each question as SQL; if all readings return the same rows, answer instead of asking and state the assumption. Measure clarify rate vs execution match.
 - **P1.3** `feat(knowledge): remember clarification answers per user` (a `note` like "for me, 'active' = not archived") so the same question is never asked twice
 - **P1.4** `feat(agent): low-confidence second opinion`: when provenance is `new` and assumptions > 2, a fast-model reviewer gets question + SQL + 10 rows → `ok | concern`; concerns shown as assumptions (about +6 points in Anthropic's data-team report; only on these turns)
@@ -132,6 +145,8 @@ Each line is one commit. "Gate" is the measurable condition to merge the phase.
 - **P1.9** `eval: multi-turn eval`: scripted conversations (clarify → answer → drill-down) scored on turns-to-correct-answer
 - **P1.10** `feat(llm): per-model profiles`: thinking level (`low` for Gemini 3.x), tool budget, parallel tool calls and output mode (ToolOutput, or PromptedOutput for weak local models), chosen by model family in `llm.py`. Re-measure Gemini 3.8 Flash (10/18 errors as-is, doc 20 §5) and an LM Studio model
 - *Gate:* execution match ≥ 85% on the confirmed set; ≤ 1 clarification per question on average; median cost per question ≤ $0.03 with the cascade.
+
+- **P1.11–P1.20** `feat(aids): …` one commit per user aid in doc 22 §3, in this order: remember clarification answers (= P1.3), re-run with today's data, favourites, "what do you know about X", explain this number, personal defaults, see-as-user (admin), import diff preview (admin), bulk review (admin), config change preview (owner)
 
 ### Phase P2: production plumbing (1–2 weeks)
 - **P2.1** `feat(store): Postgres state backend` (`state_url`): Postgres 18 + pgvector 0.8.7 + pg_textsearch 1.5.1 (BM25, PostgreSQL licence) with RRF in SQL; SQLite stays the default (doc 19 §3)
