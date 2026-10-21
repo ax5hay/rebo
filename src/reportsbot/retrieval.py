@@ -7,7 +7,9 @@ lists are merged with Reciprocal Rank Fusion. See docs/07-retrieval.md.
 from __future__ import annotations
 
 import logging
+import os
 import re
+from pathlib import Path
 from functools import lru_cache
 from typing import Iterable
 
@@ -62,7 +64,10 @@ class Embedder:
     def _get(self):
         if self._model is None:
             from fastembed import TextEmbedding
-            self._model = TextEmbedding(EMBED_MODEL)
+            # An offline bundle ships the model in models/fastembed (tools/export_bundle.py --with-models).
+            bundled = Path(__file__).resolve().parents[2] / "models" / "fastembed"
+            cache = os.environ.get("FASTEMBED_CACHE_PATH") or (str(bundled) if bundled.is_dir() else None)
+            self._model = TextEmbedding(EMBED_MODEL, cache_dir=cache)
         return self._model
 
     def embed(self, texts: list[str]) -> np.ndarray:
