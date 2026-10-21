@@ -305,6 +305,38 @@ class Catalog:
                 "joins": [f"{j['from_table']}.{j['from_cols']} = {j['to_table']}.{j['to_cols']} ({j['source']})"
                           for j in joins]}
 
+    def describe_compact(self, table: str, learned_joins: list[dict] | None = None) -> dict[str, Any] | None:
+        """describe() as one line per column for the agent (B-054): the same facts without repeating JSON
+        keys, and value lists cut to 5 where values look free-form (many distinct, each rare), which says
+        little about meaning and was most of the size."""
+        d = self.describe(table, learned_joins)
+        if not d:
+            return None
+        lines = []
+        for c in d["columns"]:
+            bits = [c["name"], c["type"]]
+            if c.get("pk"):
+                bits.append("primary key")
+            if c.get("protected"):
+                bits.append("PROTECTED: never select")
+            if c.get("null_rate"):
+                bits.append(f"{round(c['null_rate'] * 100)}% empty")
+            if "distinct" in c:
+                bits.append(f"{c['distinct']} distinct")
+            if "min" in c and not c.get("pk"):
+                bits.append(f"{c['min']} to {c['max']}")
+            line = ", ".join(str(b) for b in bits)
+            if c.get("about"):
+                line += f". {c['about']}"
+            vals = c.get("values") or []
+            counts = [int(v.rsplit("(", 1)[1].rstrip(")")) for v in vals if v.endswith(")") and "(" in v]
+            free_form = c.get("distinct", 0) > 50 and counts and max(counts) <= 5
+            if vals:
+                shown = vals[:5] if free_form else vals
+                line += f" Values: {'; '.join(shown)}" + ("; free-form, use search_values" if free_form else "")
+            lines.append(line)
+        return {"table": d["table"], "rows": d["rows"], "about": d["about"], "columns": lines, "joins": d["joins"]}
+
     def join_path(self, start: str, goal: str, learned: list[dict] | None = None) -> list[dict] | None:
         """Cheapest join path. Cost: confirmed in saved reports 0.6, learned 0.8, declared FK 1.0, inferred 1.5
         (lower = preferred)."""

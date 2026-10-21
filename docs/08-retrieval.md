@@ -128,3 +128,13 @@ web text); schema documents are terse column descriptions, where keyword + embed
 does better. Files: `fixtures/jms_staging/rerank_compare_2026-10-21.json`,
 `fixtures/demo_property/rerank_compare_2026-10-21.json`. Re-open only with a reranker trained on schema
 linking.
+
+## Compact table descriptions for the agent (2026-10-21, B-054)
+
+`describe_table` now returns `Catalog.describe_compact`: one line per column with the same facts
+(type, key, protection, empty share, distinct count, range, meaning, values), without repeated JSON
+keys, and value lists cut to 5 where values look free-form (more than 50 distinct, none more than 5
+times). JMS catalogue: median 3,316 → 2,608 characters per table (−22 %). Same 6 JMS prompts, Sonnet:
+input tokens 534k → 398k (−25 %), cost $0.392 → $0.373 (−5 %: most input is already cached since
+B-052). Demo gold 11/12 at $0.190 (was 10/12 at $0.254; within run-to-run variance, no harm).
+Files: `fixtures/jms_staging/eval_results_sonnet_compact6.json`, `fixtures/demo_property/eval_results_sonnet_compact.json`.

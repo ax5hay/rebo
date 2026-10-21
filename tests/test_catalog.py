@@ -128,3 +128,13 @@ def test_join_path_survives_ties_between_equal_paths(app):
                {"from_table": "note", "from_cols": "author_id", "to_table": "orders", "to_cols": "customer_id", "source": "learned"}]
     path = app.catalog.join_path("note", "customer", learned)
     assert path is not None and len(path) == 1
+
+
+def test_compact_describe_keeps_the_facts_in_one_line_per_column(app):
+    full, compact = app.catalog.describe("customer"), app.catalog.describe_compact("customer")
+    assert len(compact["columns"]) == len(full["columns"]) and compact["joins"] == full["joins"]
+    status = next(line for line in compact["columns"] if line.startswith("status"))
+    assert "paused" in status and "distinct" in status
+    assert any("PROTECTED" in line for line in compact["columns"])        # password_hash stays marked
+    import json
+    assert len(json.dumps(compact)) < len(json.dumps(full))

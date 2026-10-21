@@ -416,8 +416,9 @@ needs: llm
 do: Haiku as the agent by default; escalate to Sonnet when a trap, grain, second-opinion concern, agreement disagreement or clarification fires. Demo gold 3 runs per arm against Sonnet 8–10/12; record the escalation rate and cost.
 result: 2026-10-21 (one run per arm, budget). Sonnet 10/12 $0.254; Haiku 7/12 $0.017; Haiku→Sonnet on doubt 8/12 $0.106, 2 escalations. Signals catch 2 of 5 Haiku errors: Sonnet stays default. doc 20.
 
-### [ ] B-054 · Tool result budgets
+### [x] B-054 · Tool result budgets
 do: per-tool token budgets; describe_table returns the columns relevant to the question first (by retrieval score) and a count of the rest. Measure input tokens per question and schema recall@5 (doc 08).
+result: 2026-10-21. Compact describe_table: JMS input tokens −25 % on 6 prompts, cost −5 % (cache already cheap), demo 11/12. Schema recall unaffected (retrieval unchanged). doc 08.
 
 ### [x] B-055 · Learned part library (doc 26 §3)
 do: offline first: decompose gold reports (entity/grain, filters, measures, dimensions, join paths), count recurring parts, and measure leave-one-out coverage. Build the compiler only if coverage is meaningful.

@@ -1,0 +1,218 @@
+{
+ "run": "2026-10-21",
+ "questions": "as in the cases file",
+ "model": "openrouter:anthropic/claude-sonnet-5.5",
+ "escalate": "",
+ "database": "mysql+pymysql://reports_ro:***@127.0.0.1:3307/jms",
+ "summary": {
+  "reports": 5,
+  "clarify": 0,
+  "clarify_rate": 0.0,
+  "gate_answered": 0,
+  "errors": 0,
+  "escalated": 0,
+  "median_seconds": 18.2,
+  "total_cost_usd": 0.3731
+ },
+ "cases": [
+  {
+   "id": "validated-01",
+   "kind": "report",
+   "rows": 3,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 16.8,
+   "question": "Show me all active surrogates in Screening and list their current substage.",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 49140,
+    "output_tokens": 1343,
+    "cache_read_tokens": 33328,
+    "tool_calls": 6,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "The SQL returns one row per case whose type is surrogate, whose active flag is 1, and whose stage is screening, listing its case ID, name, current status label, and the first not-yet-completed Screening sub-stage in workflow order (blank if none remain).",
+    "trace_id": "cebd6c33996f6b378d3a16dd0b589ad9"
+   },
+   "cost_usd": 0.04839,
+   "title": "Active surrogates in Screening with current sub-stage",
+   "sql": "SELECT g.case_id AS case_id, g.case_file_name AS surrogate, st.status AS status, t.title AS current_substage\nFROM gc_case g\nLEFT JOIN status st ON st.status_id = g.status_id\nLEFT JOIN (\n  SELECT s.gc_case_id, s.base_sub_stage_id,\n         ROW_NUMBER() OVER (PARTITION BY s.gc_case_id ORDER BY s.ordering, s.sub_stage_id) AS rn\n  FROM custom_sub_stage s\n  WHERE s.stage = 'screening' AND s.completed IS NULL\n) cs ON cs.gc_case_id = g.case_id AND cs.rn = 1\nLEFT JOIN template_sub_stage t ON t.sub_stage_id = cs.base_sub_stage_id\nWHERE g.case_type = 'surrogate' AND g.active = 1 AND g.stage = 'screening'\nORDER BY g.case_file_name",
+   "assumptions": [
+    "Surrogates are cases of type 'surrogate'; active means the case is flagged active.",
+    "In Screening means the case's current stage is Screening.",
+    "Current sub-stage is taken as the first not-yet-completed Screening sub-stage in workflow order (ties broken by creation order); blank if all Screening sub-stages are completed.",
+    "The case's current status label is shown alongside for context."
+   ]
+  },
+  {
+   "id": "validated-02",
+   "kind": "report",
+   "rows": 12,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 17.4,
+   "question": "Which IP cases are in matching right now? Include the names and emails for both IPs.",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 80115,
+    "output_tokens": 1203,
+    "cache_read_tokens": 53385,
+    "tool_calls": 7,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For every IP case whose stage is exactly 'matching', the query returns one row with the case number, the case file name, and the name and email of the first IP and second IP on the case's family record (second IP blank when there is none), ordered by case number.",
+    "trace_id": "544c3bf8206de8c653fd3e0aae15b514"
+   },
+   "cost_usd": 0.07083,
+   "title": "IP cases currently in matching, with both IPs' names and emails",
+   "sql": "SELECT c.case_id AS case_number, c.case_file_name AS case_name, CONCAT_WS(' ', c1.first_name, c1.last_name) AS ip_1_name, c1.email AS ip_1_email, CONCAT_WS(' ', c2.first_name, c2.last_name) AS ip_2_name, c2.email AS ip_2_email FROM ip_case c LEFT JOIN family f ON f.family_id = c.family_id LEFT JOIN contact c1 ON c1.contact_id = f.ip_1_id LEFT JOIN contact c2 ON c2.contact_id = f.ip_2_id WHERE c.stage = 'matching' ORDER BY c.case_id",
+   "assumptions": [
+    "'In matching' means the case's current workflow stage is 'matching'.",
+    "The two IPs are the first and second contacts on the case's family record; many cases have only one IP, so the second IP's name and email are blank.",
+    "Emails come from each IP's contact record.",
+    "No filter on active/inactive was applied (all matching-stage cases are active anyway)."
+   ]
+  },
+  {
+   "id": "validated-03",
+   "kind": "answer",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 7.2,
+   "question": "List every active case assigned to [admin name].",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 24129,
+    "output_tokens": 541,
+    "cache_read_tokens": 6636,
+    "tool_calls": 2,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "trace_id": "e7e278c1c3ecbf2186eafe3a00dccb53"
+   },
+   "cost_usd": 0.04106
+  },
+  {
+   "id": "validated-04",
+   "kind": "report",
+   "rows": 2,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 18.2,
+   "question": "Which cases have had their profiles approved in the last 30 days?",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 73119,
+    "output_tokens": 1511,
+    "cache_read_tokens": 51230,
+    "tool_calls": 8,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For each intended-parent case whose linked family's profile approval timestamp falls from 2026-09-21 through the end of 2026-10-21, it returns the case ID, case name, stage, family ID and approval timestamp, newest approval first.",
+    "trace_id": "b5960545ac04ea75cf32df3b0f31ef53"
+   },
+   "cost_usd": 0.06401,
+   "title": "Intended-parent cases with profile approved in the last 30 days",
+   "sql": "SELECT ic.case_id AS case_id, ic.case_file_name AS case_name, ic.stage AS stage, f.family_id AS family_id, f.profile_approved AS profile_approved_on FROM ip_case ic JOIN family f ON f.family_id = ic.family_id WHERE f.profile_approved >= DATE_SUB('2026-10-21', INTERVAL 30 DAY) AND f.profile_approved < DATE_ADD('2026-10-21', INTERVAL 1 DAY) ORDER BY f.profile_approved DESC",
+   "assumptions": [
+    "'Cases' means intended-parent cases, since profile approval is recorded on the family linked to that case.",
+    "'Last 30 days' means 2026-09-21 through today (2026-10-21).",
+    "Donor and surrogate profile approvals (egg donor, sperm donor, gestational carrier) were checked and none fall in this window, so they are not included.",
+    "A case counts if its family's profile approval date falls in the window."
+   ]
+  },
+  {
+   "id": "validated-05",
+   "kind": "report",
+   "rows": 319,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 21.6,
+   "question": "Show me the most recent notes on this journey, pinned ones first.",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 58648,
+    "output_tokens": 2065,
+    "cache_read_tokens": 39796,
+    "tool_calls": 5,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "concern",
+    "review_restated": "This SQL returns every case note in the system, about 319 rows, across all intended-parent and gestational carrier or donor cases. Each row shows the case name, which side the case is on, a Pinned label, the note text, tags, the author's admin ID, and the created and updated timestamps. Pinned notes",
+    "trace_id": "7fd0d208569ae7944c55e0d9f4e9b6a9"
+   },
+   "cost_usd": 0.06233,
+   "title": "Most recent case notes, pinned first",
+   "sql": "SELECT COALESCE(ip.case_file_name, gc.case_file_name) AS case_name,\n       CASE WHEN n.ip_case_id IS NOT NULL THEN 'Intended parent' ELSE 'Gestational carrier / donor' END AS case_side,\n       CASE WHEN n.pinned = 1 THEN 'Pinned' ELSE '' END AS pinned,\n       n.note AS note,\n       n.tags AS tags,\n       n.created_by_id AS author_admin_id,\n       n.created AS created_at,\n       n.updated AS last_updated_at\nFROM case_note n\nLEFT JOIN ip_case ip ON ip.case_id = n.ip_case_id\nLEFT JOIN gc_case gc ON gc.case_id = n.gc_case_id\nORDER BY n.pinned DESC, n.created DESC",
+   "assumptions": [
+    "No specific journey was identified in your request, so this shows notes across all cases. Tell me the case name and I will narrow it to that one.",
+    "'Journey' is read as a case, and notes cover both intended-parent cases and gestational carrier or donor cases.",
+    "'Most recent' means by the date the note was created, newest first.",
+    "Pinned notes are listed first, and within pinned and unpinned notes the newest comes first.",
+    "The note author is shown as an admin ID only.",
+    "A note linked to both an intended-parent case and a carrier/donor case shows the intended-parent name.",
+    "Check: The question asks about one specific journey, but the query has no filter for a case, so it lists notes for all cases and the user will not get the notes for their journey. Also, many rows have no case name, so those notes cannot be tied to a journey. Narrow the query to the one case before this goes to the user."
+   ]
+  },
+  {
+   "id": "validated-06",
+   "kind": "report",
+   "rows": 95,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 30.7,
+   "question": "List all overdue tasks across my journeys.",
+   "usage": {
+    "requests": 6,
+    "input_tokens": 112699,
+    "output_tokens": 2340,
+    "cache_read_tokens": 85453,
+    "tool_calls": 9,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "concern",
+    "review_restated": "This SQL returns every task linked to a carrier/donor case or an intended-parent case that has no completion time, a status other than 'completed', and a due date before 2026-10-21, with the days overdue counted from that fixed date, sorted by due date. It covers all admins' journeys, with no filter",
+    "trace_id": "7622fb6ae4c24a200546e1d6c6185b3b"
+   },
+   "cost_usd": 0.08644,
+   "title": "Overdue tasks across journeys",
+   "sql": "SELECT t.task_id AS 'Task ID', t.task_title AS 'Task', t.task_type AS 'Task type', t.task_status AS 'Status', t.must_be_completed_by AS 'Due date', DATEDIFF('2026-10-21', t.must_be_completed_by) AS 'Days overdue', gc.case_file_name AS 'Carrier/donor journey', ipc.case_file_name AS 'Intended parent journey', CONCAT(ta.first_name, ' ', ta.last_name) AS 'Task assigned to', CONCAT(ca.first_name, ' ', ca.last_name) AS 'Journey assigned admin'\nFROM case_task t\nLEFT JOIN gc_case gc ON gc.case_id = t.gc_case_id\nLEFT JOIN ip_case ipc ON ipc.case_id = t.ip_case_id\nLEFT JOIN admin ta ON ta.admin_id = t.task_assigned_to_id\nLEFT JOIN admin ca ON ca.admin_id = COALESCE(gc.assigned_admin, ipc.assigned_admin)\nWHERE t.completed IS NULL\n  AND t.task_status <> 'completed'\n  AND t.must_be_completed_by < '2026-10-21'\n  AND (t.gc_case_id IS NOT NULL OR t.ip_case_id IS NOT NULL)\nORDER BY t.must_be_completed_by, t.task_id",
+   "assumptions": [
+    "Your login could not be matched to a specific admin user, so the list covers all journeys, not only yours. The task assignee and journey admin columns let you filter to your own.",
+    "A journey is a case, either a carrier/donor case or an intended-parent case. Tasks not linked to any case are left out.",
+    "Overdue means the task is not completed (no completion time and status not 'completed') and its due date is before today, 2026-10-21.",
+    "Deferred and pending tasks count as overdue if their due date has passed.",
+    "The journey admin is taken from the carrier/donor case first, then the intended-parent case if there is none.",
+    "Check: The question asks for overdue tasks across \"my\" journeys, but the report includes every admin's journeys, so before sharing it you need to filter it to your own journeys (by journey admin or task assignee) or confirm which admin you are."
+   ]
+  }
+ ]
+}

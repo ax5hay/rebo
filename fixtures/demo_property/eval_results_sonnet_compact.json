@@ -1,0 +1,424 @@
+{
+ "run": "2026-10-21",
+ "questions": "as in the cases file",
+ "model": "openrouter:anthropic/claude-sonnet-5.5",
+ "escalate": "",
+ "database": "sqlite:///fixtures/demo_property/greenleaf.db",
+ "summary": {
+  "reports": 11,
+  "clarify": 1,
+  "clarify_rate": 0.083,
+  "gate_answered": 0,
+  "errors": 0,
+  "escalated": 0,
+  "median_seconds": 10.5,
+  "total_cost_usd": 0.1896,
+  "execution_match": "11/12"
+ },
+ "cases": [
+  {
+   "id": "gp-01",
+   "kind": "report",
+   "rows": 50,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 12.8,
+   "question": "Which units are vacant right now?",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 14253,
+    "output_tokens": 865,
+    "cache_read_tokens": 9954,
+    "tool_calls": 5,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "The SQL returns each unit, with its building name, type, bedrooms, square footage and monthly rent, that has no lease whose status is flagged as current, sorted by building and unit number (50 rows in the first result).",
+    "trace_id": "14f409469479b2006cd094894d4b8180"
+   },
+   "cost_usd": 0.01824,
+   "title": "Vacant units right now",
+   "sql": "SELECT b.name AS building, u.unit_number AS unit, u.unit_type AS type, u.bedrooms AS bedrooms, u.sqft AS sqft, u.monthly_rent AS monthly_rent\nFROM unit u\nJOIN building b ON b.building_id = u.building_id\nWHERE NOT EXISTS (\n  SELECT 1 FROM lease l\n  JOIN lease_status s ON s.status_id = l.status_id\n  WHERE l.unit_id = u.unit_id AND s.is_current = 1\n)\nORDER BY b.name, u.unit_number",
+   "assumptions": [
+    "A unit is vacant if it has no current lease; current means Active (fixed term or month to month) or Notice Given.",
+    "Units with only ended, evicted or pending-signature leases, or no lease, count as vacant.",
+    "Units whose tenant has given notice are still treated as occupied until the lease ends."
+   ]
+  },
+  {
+   "id": "gp-02",
+   "kind": "report",
+   "rows": 109,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 12.8,
+   "question": "List tenants who currently have a lease, with their unit and monthly rent.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 15974,
+    "output_tokens": 826,
+    "cache_read_tokens": 6636,
+    "tool_calls": 6,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "The SQL returns one row per lease whose status is flagged as current, showing the tenant's full name, the building name, the unit number, the unit's monthly rent, and the lease status label, sorted by tenant last name and first name.",
+    "trace_id": "759e53ae1b6afcbcfe93278c3aab3731"
+   },
+   "cost_usd": 0.0276,
+   "title": "Tenants with a current lease, their unit and monthly rent",
+   "sql": "SELECT t.first_name || ' ' || t.last_name AS \"Tenant\", b.name AS \"Building\", u.unit_number AS \"Unit\", u.monthly_rent AS \"Monthly Rent\", ls.label AS \"Lease Status\"\nFROM lease l\nJOIN lease_status ls ON ls.status_id = l.status_id\nJOIN tenant t ON t.tenant_id = l.tenant_id\nJOIN unit u ON u.unit_id = l.unit_id\nJOIN building b ON b.building_id = u.building_id\nWHERE ls.is_current = 1\nORDER BY t.last_name, t.first_name",
+   "assumptions": [
+    "'Currently has a lease' means the lease status is one of the current ones: Active - Fixed Term, Active - Month to Month, or Notice Given.",
+    "Pending Signature, Ended and Evicted leases are excluded.",
+    "Monthly rent is the listed rent of the unit.",
+    "The unit is shown as building name plus unit number."
+   ]
+  },
+  {
+   "id": "gp-03",
+   "kind": "report",
+   "rows": 12,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 12.7,
+   "question": "How many maintenance requests are still open in each building?",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 9144,
+    "output_tokens": 893,
+    "cache_read_tokens": 6636,
+    "tool_calls": 3,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For each building that has at least one maintenance request not marked closed, it counts those requests (joined through units to buildings) and shows how many are in each of the open, in_progress and waiting_parts states, sorted by the total descending.",
+    "trace_id": "003d49c02ad2f9347e5f290cede5552e"
+   },
+   "cost_usd": 0.01461,
+   "title": "Unresolved maintenance requests by building",
+   "sql": "SELECT b.name AS building, COUNT(*) AS still_open_requests, SUM(CASE WHEN m.state = 'open' THEN 1 ELSE 0 END) AS state_open, SUM(CASE WHEN m.state = 'in_progress' THEN 1 ELSE 0 END) AS state_in_progress, SUM(CASE WHEN m.state = 'waiting_parts' THEN 1 ELSE 0 END) AS state_waiting_parts FROM maintenance m JOIN unit u ON u.unit_id = m.unit_id JOIN building b ON b.building_id = u.building_id WHERE m.state <> 'closed' GROUP BY b.building_id, b.name ORDER BY still_open_requests DESC, b.name",
+   "assumptions": [
+    "'Still open' is read as any request not yet closed, which covers the statuses open, in progress and waiting for parts.",
+    "The breakdown columns show how many of each building's requests have each status. The 'open' column alone gives the narrower reading.",
+    "Buildings with no unresolved requests are not listed."
+   ]
+  },
+  {
+   "id": "gp-04",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false,
+    "ExecutionMatch": false
+   },
+   "seconds": 10.5,
+   "question": "Which tenants paid rent late at least once in 2026?",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 14661,
+    "output_tokens": 980,
+    "cache_read_tokens": 10491,
+    "tool_calls": 4,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "gate": "asked",
+    "trace_id": "6c7f259765aa7de0e1d64f1ef470612c"
+   },
+   "cost_usd": 0.01919,
+   "questions": [
+    {
+     "question": "What counts as paying rent late?",
+     "options": [
+      "Paid any day after the due date",
+      "Paid more than 5 days after the due date (allowing a short grace period)"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "gp-05",
+   "kind": "report",
+   "rows": 3,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 9.8,
+   "question": "Total rent collected per region in 2026.",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 8753,
+    "output_tokens": 699,
+    "cache_read_tokens": 6636,
+    "tool_calls": 3,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For each region name, the SQL adds up the amounts of all payments that have a paid date between 1 January 2026 and 31 December 2026, rounds the total to two decimals, counts the payments, and lists regions from highest to lowest total.",
+    "trace_id": "f807f8c5ff8141aad6bcdac66bb990ce"
+   },
+   "cost_usd": 0.01189,
+   "title": "Rent collected per region in 2026",
+   "sql": "SELECT r.name AS region, ROUND(SUM(p.amount),2) AS total_rent_collected, COUNT(*) AS payments\nFROM payment p\nJOIN lease l ON l.lease_id = p.lease_id\nJOIN unit u ON u.unit_id = l.unit_id\nJOIN building b ON b.building_id = u.building_id\nJOIN region r ON r.region_id = b.region_id\nWHERE p.paid_on IS NOT NULL AND p.paid_on >= '2026-01-01' AND p.paid_on < '2027-01-01'\nGROUP BY r.name\nORDER BY total_rent_collected DESC",
+   "assumptions": [
+    "Rent collected means payments that have actually been received (have a paid date); unpaid ones are excluded.",
+    "2026 is based on the date the payment was received, from 2026-01-01 through today's year end.",
+    "Each payment is assigned to the region of the building containing the leased unit."
+   ]
+  },
+  {
+   "id": "gp-06",
+   "kind": "report",
+   "rows": 17,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 10.2,
+   "question": "Urgent maintenance requests that are not closed, with the technician assigned.",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 8558,
+    "output_tokens": 559,
+    "cache_read_tokens": 6636,
+    "tool_calls": 2,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "This SQL returns every maintenance request whose priority is 'urgent' and whose status is anything other than 'closed', listing request, unit, category, status, opened date and assigned technician name, oldest first. Requests with no assigned staff member still appear, with a blank technician.",
+    "trace_id": "54a7dcbe885cb63ab9aa7564fc1c533f"
+   },
+   "cost_usd": 0.0101,
+   "title": "Open urgent maintenance requests with assigned technician",
+   "sql": "SELECT m.request_id AS \"Request\", m.unit_id AS \"Unit\", m.category AS \"Category\", m.state AS \"Status\", m.opened AS \"Opened\", s.first_name || ' ' || s.last_name AS \"Technician\"\nFROM maintenance m\nLEFT JOIN staff s ON s.staff_id = m.assigned_to\nWHERE m.priority = 'urgent' AND m.state <> 'closed'\nORDER BY m.opened",
+   "assumptions": [
+    "Urgent means priority is 'urgent'.",
+    "Not closed means status is open, in progress or waiting for parts.",
+    "The technician is the staff member the request is assigned to.",
+    "Requests with nobody assigned are still listed, with a blank technician."
+   ]
+  },
+  {
+   "id": "gp-07",
+   "kind": "report",
+   "rows": 1,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 6.9,
+   "question": "Average number of days to close a plumbing request.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 12549,
+    "output_tokens": 554,
+    "cache_read_tokens": 9954,
+    "tool_calls": 2,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "trace_id": "df97ef376e7b0c6bbc0355fb17ee9d11"
+   },
+   "cost_usd": 0.01173,
+   "title": "Average days to close a plumbing request",
+   "sql": "SELECT COUNT(*) AS closed_plumbing_requests, ROUND(AVG(julianday(closed) - julianday(opened)), 1) AS avg_days_to_close FROM maintenance WHERE category = 'plumbing' AND state = 'closed' AND closed IS NOT NULL",
+   "assumptions": [
+    "Only plumbing requests that are already closed are counted; open, in-progress and waiting-for-parts requests are excluded.",
+    "Days to close = calendar days from the date opened to the date closed."
+   ]
+  },
+  {
+   "id": "gp-08",
+   "kind": "report",
+   "rows": 6,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 15.2,
+   "question": "Leases ending between 2026-10-01 and 2026-12-31.",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 26917,
+    "output_tokens": 944,
+    "cache_read_tokens": 18339,
+    "tool_calls": 7,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "This SQL returns every lease whose end date falls from 1 October 2026 to 31 December 2026 inclusive, across all statuses, showing the lease ID, tenant name, building, unit number, status label, start and end dates, and the unit's current monthly rent, sorted by end date.",
+    "trace_id": "b215385a9653fe9bca80e39392016a95"
+   },
+   "cost_usd": 0.02843,
+   "title": "Leases ending 1 Oct \u2013 31 Dec 2026",
+   "sql": "SELECT l.lease_id AS \"Lease\", t.first_name || ' ' || t.last_name AS \"Tenant\", b.name AS \"Building\", u.unit_number AS \"Unit\", s.label AS \"Lease Status\", l.start_date AS \"Start Date\", l.end_date AS \"End Date\", u.monthly_rent AS \"Monthly Rent\" FROM lease l JOIN tenant t ON t.tenant_id = l.tenant_id JOIN unit u ON u.unit_id = l.unit_id JOIN building b ON b.building_id = u.building_id JOIN lease_status s ON s.status_id = l.status_id WHERE l.end_date BETWEEN '2026-10-01' AND '2026-12-31' ORDER BY l.end_date",
+   "assumptions": [
+    "Both dates are included in the range (1 Oct to 31 Dec 2026).",
+    "Leases with no end date are left out.",
+    "All lease statuses are included, not just current ones.",
+    "Rent shown is the unit's current monthly rent."
+   ]
+  },
+  {
+   "id": "gp-09",
+   "kind": "report",
+   "rows": 4,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 7.7,
+   "question": "Which buildings have an elevator and more than 10 units?",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 8913,
+    "output_tokens": 477,
+    "cache_read_tokens": 6636,
+    "tool_calls": 2,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For each building flagged as having an elevator, the query counts all of its unit records (leased or not) and returns only those with more than 10 units, listed by name, street, city and unit count, highest count first.",
+    "trace_id": "5899d96acdde740728e49977990bd0b7"
+   },
+   "cost_usd": 0.00999,
+   "title": "Buildings with an elevator and more than 10 units",
+   "sql": "SELECT b.name AS building, b.street AS street, b.city AS city, COUNT(u.unit_id) AS unit_count\nFROM building b\nJOIN unit u ON u.building_id = b.building_id\nWHERE b.has_elevator = 1\nGROUP BY b.building_id, b.name, b.street, b.city\nHAVING COUNT(u.unit_id) > 10\nORDER BY unit_count DESC",
+   "assumptions": [
+    "A building has an elevator when its elevator flag is set to yes.",
+    "Unit count is the number of units on record for the building, whether or not they are currently leased.",
+    "\"More than 10\" means 11 or more units."
+   ]
+  },
+  {
+   "id": "gp-10",
+   "kind": "report",
+   "rows": 16,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 4.7,
+   "question": "Evicted tenants and their email addresses.",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 8867,
+    "output_tokens": 501,
+    "cache_read_tokens": 6636,
+    "tool_calls": 3,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "trace_id": "68d3a98f1d07efa35e68cf35bf492391"
+   },
+   "cost_usd": 0.01014,
+   "title": "Evicted tenants and their email addresses",
+   "sql": "SELECT DISTINCT t.first_name AS \"First name\", t.last_name AS \"Last name\", t.email AS \"Email\"\nFROM tenant t\nJOIN lease l ON l.tenant_id = t.tenant_id\nJOIN lease_status s ON s.status_id = l.status_id\nWHERE s.label = 'Evicted'\nORDER BY t.last_name, t.first_name",
+   "assumptions": [
+    "Evicted tenants are those with a lease whose status is 'Evicted'.",
+    "Each tenant is listed once, sorted by last name then first name."
+   ]
+  },
+  {
+   "id": "gp-11",
+   "kind": "report",
+   "rows": 1,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 5.6,
+   "question": "How many plumbin requests are waiting_part?",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 12354,
+    "output_tokens": 397,
+    "cache_read_tokens": 9954,
+    "tool_calls": 2,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "trace_id": "43110e4b8993a659950c36210eec167e"
+   },
+   "cost_usd": 0.00977,
+   "title": "Plumbing requests waiting for parts",
+   "sql": "select count(*) as plumbing_requests_waiting_parts from maintenance where category='plumbing' and state='waiting_parts'",
+   "assumptions": [
+    "Read 'plumbin' as the plumbing category and 'waiting_part' as the 'waiting for parts' status.",
+    "Counted all such requests regardless of date, priority or building."
+   ]
+  },
+  {
+   "id": "gp-12",
+   "kind": "report",
+   "rows": 5,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 13.4,
+   "question": "Show open electricle maintenance requests with their unit.",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 18382,
+    "output_tokens": 639,
+    "cache_read_tokens": 13272,
+    "tool_calls": 4,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "concern",
+    "review_restated": "The SQL returns every maintenance request in the electrical category whose state is exactly 'open', listed oldest first, with its ID, opened date, priority, building name, unit number and cost.",
+    "trace_id": "00151e39732efedefaadf4788a972e3a"
+   },
+   "cost_usd": 0.01794,
+   "title": "Open electrical maintenance requests by unit",
+   "sql": "SELECT m.request_id AS \"Request ID\", m.opened AS \"Opened\", m.priority AS \"Priority\", b.name AS \"Building\", u.unit_number AS \"Unit\", m.cost AS \"Cost\"\nFROM maintenance m\nJOIN unit u ON u.unit_id = m.unit_id\nJOIN building b ON b.building_id = u.building_id\nWHERE m.category = 'electrical' AND m.state = 'open'\nORDER BY m.opened",
+   "assumptions": [
+    "'Electricle' was read as the electrical category.",
+    "'Open' means requests whose status is exactly open; requests that are in progress or waiting for parts are not included.",
+    "The unit is shown as building name plus unit number, since unit numbers repeat across buildings.",
+    "Check: Check whether \"open\" was meant as \"not yet closed\". The query keeps only requests in the exact 'open' state and drops those already in progress or waiting for parts, which are still unresolved. If the user wants all unresolved electrical requests, the result is missing rows and should be widened to include those states."
+   ]
+  }
+ ]
+}
