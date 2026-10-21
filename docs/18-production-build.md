@@ -17,7 +17,7 @@ The direction and the non-negotiables are in `AGENTS.md`. Tools and models named
 | Commit message: `type(scope): what` + a body saying *why* and how it was measured | Conventional Commits; the body is the changelog |
 | `uv run pytest` green before committing (offline, no network) | The suite runs on a SQLite fixture and mocked LLM/JMS, so it is fast and deterministic |
 | Behaviour that changes answers: run `tools/eval_run.py` and commit the results file | Accuracy and cost are tracked like code |
-| No domain words in `src/` (CI check, commit P0.4) | Keeps the product generic; JMS lives in fixtures, mocks and adapters only |
+| No domain words in `src/` (CI check, commit P0.4; `tests/test_no_domain_words.py`) | Keeps the product generic; JMS lives in fixtures, mocks and adapters only |
 | Secrets never in files; config only in `reportsbot.yaml` | One place to look; nothing leaks into git |
 
 Type prefixes: `feat` (behaviour), `fix`, `perf` (cost/latency), `eval` (eval sets/results), `docs`,

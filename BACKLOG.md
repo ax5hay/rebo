@@ -32,12 +32,13 @@ do: `.pre-commit-config.yaml` with ruff (same rules as B-001) and a local hook r
 done when: `uv run python tools/export_bundle.py --check-only` exits 0 on a clean tree and 1 when a fake key is planted (test).
 result: 2026-10-21, see `git log --grep B-002`; 82 passed; pre-commit run --all-files passes. CONTRIBUTING mention left to B-004.
 
-### [ ] B-003 · Guard: no domain words in src/
+### [x] B-003 · Guard: no domain words in src/
 needs: offline
 do: `tests/test_no_domain_words.py`:
 - Collect table names from `fixtures/*/profile.json` and the table names in `fixtures/demo_property/build.py`.
 - Fail if any appears as a whole word in `src/reportsbot/**/*.py`, excluding `adapters/`.
 done when: the test passes now and fails if `gc_case` is added to `agent.py`.
+result: 2026-10-21, `git log --grep B-003`; verified both ways; 13 plain-English table names allow-listed in the test.
 
 ### [ ] B-004 · CONTRIBUTING.md
 needs: offline
