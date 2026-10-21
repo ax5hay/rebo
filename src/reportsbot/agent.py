@@ -35,7 +35,7 @@ class Learnable(BaseModel):
     title: str = Field(description="Short name, e.g. 'active client' or 'case to contact'")
     body: str = Field(description="The meaning or rule in plain words, as the user stated it")
     sql: str | None = Field(None, description=(
-        "term: the SQL predicate that implements it, e.g. \"gc_case.active = 1\"; "
+        "term: the SQL predicate that implements it, e.g. \"orders.status = 'shipped'\"; "
         "join: \"table_a.col = table_b.col\"; note: usually empty"))
 
 

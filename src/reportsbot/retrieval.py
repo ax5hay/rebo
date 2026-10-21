@@ -25,7 +25,7 @@ _STOP = {"the", "a", "an", "of", "in", "on", "for", "to", "and", "or", "me", "sh
 
 
 def split_identifier(name: str) -> str:
-    """'gc_case.sperm_donor' -> 'gc case sperm donor'; 'createdAt' -> 'created At'."""
+    """'order_item.unit_price' -> 'order item unit price'; 'createdAt' -> 'created At'."""
     name = re.sub(r"([a-z])([A-Z])", r"\1 \2", name)
     return re.sub(r"[_.\-]+", " ", name)
 
