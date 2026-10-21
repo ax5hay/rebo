@@ -20,7 +20,7 @@ def main(argv: list[str] | None = None) -> int:
     a = sub.add_parser("ask", help="one question from the terminal")
     a.add_argument("text")
     a.add_argument("--user", default="cli")
-    a.add_argument("--role", default="member", choices=["member", "curator"])
+    a.add_argument("--role", default="user", choices=["user", "admin", "owner"])
     sub.add_parser("revalidate", help="re-check saved knowledge after schema changes")
     e = sub.add_parser("eval", help="run an eval set (JSONL of {id, question, ...})")
     e.add_argument("path")

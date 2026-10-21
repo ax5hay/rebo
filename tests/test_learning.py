@@ -7,7 +7,7 @@ from reportsbot.knowledge import User
 from reportsbot.store import new_id, now
 
 ALICE, BOB, CAROL, DAN = User("alice"), User("bob"), User("carol"), User("dan")
-CURATOR = User("cora", role="curator")
+ADMIN = User("cora", role="admin")
 SQL = "SELECT full_name AS customer, status FROM customer WHERE status = 'active'"
 
 
@@ -54,7 +54,7 @@ def test_three_independent_confirmations_auto_propose(app):
     app.feedback(BOB, fake_turn(app, BOB), "correct")
     r = app.feedback(CAROL, fake_turn(app, CAROL), "correct")
     assert "3 people" in r["message"]
-    queue = app.review_queue(CURATOR)
+    queue = app.review_queue(ADMIN)
     assert len(queue) == 1 and queue[0]["status"] == "proposed"
     with pytest.raises(PermissionError):
         app.review_queue(BOB)
@@ -70,14 +70,14 @@ def test_differently_written_sql_with_same_rows_counts_as_agreement(app):
     assert "have now confirmed" not in r["message"]  # a different result is not agreement
     r = app.feedback(DAN, fake_turn(app, DAN, sql=other + " "), "correct")
     assert "3 people" in r["message"]
-    assert len(app.review_queue(CURATOR)) == 1
+    assert len(app.review_queue(ADMIN)) == 1
 
 
 def test_promotion_makes_it_visible_to_everyone_and_only_curators_promote(app):
     item = app.feedback(ALICE, fake_turn(app, ALICE), "correct")["item"]
     with pytest.raises(PermissionError):
         app.promote(BOB, item["id"])
-    r = app.promote(CURATOR, item["id"])
+    r = app.promote(ADMIN, item["id"])
     assert "Shared" in r["message"]
     assert item["id"] in app.knowledge.visible_ids(DAN)
     assert app._provenance(DAN, SQL, [])["label"] == "verified"
@@ -85,7 +85,7 @@ def test_promotion_makes_it_visible_to_everyone_and_only_curators_promote(app):
 
 def test_member_report_flags_then_second_report_quarantines(app):
     item = app.feedback(ALICE, fake_turn(app, ALICE), "correct")["item"]
-    app.promote(CURATOR, item["id"])
+    app.promote(ADMIN, item["id"])
     prov = {"item_ids": [item["id"]]}
     r1 = app.feedback(BOB, fake_turn(app, BOB, prov=prov), "wrong", "should include paused")
     assert app.knowledge.get(item["id"])["status"] == "verified"
@@ -118,7 +118,7 @@ def test_teaching_a_term_is_personal_and_replaces_own_previous(app):
 def test_teaching_against_shared_term_goes_to_review(app):
     term = {"kind": "term", "title": "good customer", "body": "active", "sql": None}
     item = app.remember(ALICE, _suggest(app, ALICE, term), True)["item"]
-    app.promote(CURATOR, item["id"])
+    app.promote(ADMIN, item["id"])
     r = app.remember(BOB, _suggest(app, BOB, {**term, "body": "spent over 100"}), True)
     assert "shared meaning" in r["message"]
     assert r["item"]["status"] == "proposed"
@@ -127,7 +127,7 @@ def test_teaching_against_shared_term_goes_to_review(app):
 def test_shared_term_wins_in_retrieval_over_users_own_conflicting_version(app):
     term = {"kind": "term", "title": "good customer", "body": "active", "sql": None}
     item = app.remember(ALICE, _suggest(app, ALICE, term), True)["item"]
-    app.promote(CURATOR, item["id"])
+    app.promote(ADMIN, item["id"])
     app.remember(BOB, _suggest(app, BOB, {**term, "body": "spent over 100"}), True)
     found = [i for i in app.knowledge.search(BOB, "good customer") if i["kind"] == "term"]
     assert [i["body"] for i in found] == ["active"]
@@ -156,3 +156,9 @@ def test_schema_change_marks_stale_then_repairs(app):
         db.execute("UPDATE knowledge SET sql=? WHERE id=?", (SQL, item["id"]))
     assert app.revalidate()["repaired"] == 1
     assert app.knowledge.get(item["id"])["status"] == "active"
+
+
+def test_roles_and_legacy_aliases():
+    assert User("x", role="curator").role == "admin" and User("x", role="member").role == "user"
+    assert User("x", role="owner").is_admin and User("x", role="owner").is_owner
+    assert not User("x", role="admin").is_owner and not User("x", role="nonsense").is_admin

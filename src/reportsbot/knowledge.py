@@ -8,10 +8,10 @@ Four kinds of item, all learned from people in chat (never from config files):
 
 Lifecycle (docs/04-learning-and-trust.md has the full state machine):
   active      personal: used for its owner only
-  proposed    still personal, and waiting in the curator queue to be shared
+  proposed    still personal, and waiting in the admin queue to be shared
   verified    shared: used for everyone in its scope (team or org)
   stale       the tables it uses changed and re-checking failed; not used until fixed
-  quarantined reported wrong; not used until a curator decides
+  quarantined reported wrong; not used until an admin decides
   retired     withdrawn or replaced; kept for audit and undo (valid_to is set)
 """
 from __future__ import annotations
@@ -25,19 +25,36 @@ from .retrieval import Index
 from .safety import GuardError, canonical_hash, tables_in
 from .store import Store, new_id, now
 
-Role = Literal["member", "curator"]
+Role = Literal["user", "admin", "owner"]
 USABLE = ("active", "proposed", "verified")
+# Older names accepted from hosts and tokens.
+ROLE_ALIASES = {"member": "user", "curator": "admin", "superadmin": "owner", "super_admin": "owner"}
+
+
+def normalise_role(raw: str | None) -> Role:
+    r = ROLE_ALIASES.get(str(raw or "").strip().lower(), str(raw or "").strip().lower())
+    return r if r in ("user", "admin", "owner") else "user"  # type: ignore[return-value]
 
 
 @dataclass(frozen=True)
 class User:
+    """user: asks, gives feedback, teaches for themselves, requests fixes.
+    admin: also adds/edits/shares/withdraws any learned knowledge and handles requests.
+    owner: also changes the configuration (docs/22-roles-and-user-aids.md)."""
     id: str
-    role: Role = "member"
+    role: Role = "user"
     team: str | None = None
 
+    def __post_init__(self):
+        object.__setattr__(self, "role", normalise_role(self.role))
+
     @property
-    def is_curator(self) -> bool:
-        return self.role == "curator"
+    def is_admin(self) -> bool:
+        return self.role in ("admin", "owner")
+
+    @property
+    def is_owner(self) -> bool:
+        return self.role == "owner"
 
 
 @dataclass
@@ -91,7 +108,7 @@ class Knowledge:
         # Shared, verified knowledge first; then the user's own; most-confirmed first within each.
         rank = {"verified": 0, "proposed": 1, "active": 1}
         items = sorted([i for i in items if i], key=lambda i: (rank.get(i["status"], 2), -i["confirmations"]))
-        # A shared term/note wins over the user's own differing version until a curator decides.
+        # A shared term/note wins over the user's own differing version until an admin decides.
         seen: set[tuple[str, str]] = set()
         out = []
         for i in items:
@@ -222,7 +239,7 @@ class Knowledge:
             if item["owner"] == user.id and item["status"] != "verified":
                 self._set_status(item_id, "retired", actor=user.id, note="owner reported it wrong")
                 out.append(Outcome("reject_retired_own", self.get(item_id)))
-            elif user.is_curator or item["rejections"] + 1 >= 2:
+            elif user.is_admin or item["rejections"] + 1 >= 2:
                 self._set_status(item_id, "quarantined", actor=user.id, note=reason)
                 out.append(Outcome("reject_quarantined", self.get(item_id)))
             else:
@@ -260,40 +277,40 @@ class Knowledge:
         item = self.get(item_id)
         if not item or item["owner"] != user.id:
             raise PermissionError("Only the owner can ask to share an item.")
-        if user.is_curator:
+        if user.is_admin:
             return Outcome("promoted", self._promote(user, item, "org"))
         return Outcome("share_requested", self._set_status(item_id, "proposed", actor=user.id, note="owner asked to share"))
 
-    def _promote(self, curator: User, item: dict, scope: str) -> dict:
+    def _promote(self, admin: User, item: dict, scope: str) -> dict:
         with self.store.tx() as db:
-            db.execute("UPDATE knowledge SET verified_by=?, verified_at=? WHERE id=?", (curator.id, now(), item["id"]))
-        return self._set_status(item["id"], "verified", actor=curator.id, scope=scope, note=f"shared with {scope}")
+            db.execute("UPDATE knowledge SET verified_by=?, verified_at=? WHERE id=?", (admin.id, now(), item["id"]))
+        return self._set_status(item["id"], "verified", actor=admin.id, scope=scope, note=f"shared with {scope}")
 
-    def promote(self, curator: User, item_id: str, scope: str = "org") -> Outcome:
-        if not curator.is_curator:
-            raise PermissionError("Only curators can share knowledge with others.")
+    def promote(self, admin: User, item_id: str, scope: str = "org") -> Outcome:
+        if not admin.is_admin:
+            raise PermissionError("Only admins can share knowledge with others.")
         item = self.get(item_id)
         if not item:
             raise KeyError(item_id)
         if scope == "team" and not item.get("team"):
             scope = "org"
-        return Outcome("promoted", self._promote(curator, item, scope))
+        return Outcome("promoted", self._promote(admin, item, scope))
 
     def retire(self, user: User, item_id: str, reason: str = "") -> Outcome:
         item = self.get(item_id)
-        if not item or (item["owner"] != user.id and not user.is_curator):
-            raise PermissionError("Only the owner or a curator can withdraw this.")
+        if not item or (item["owner"] != user.id and not user.is_admin):
+            raise PermissionError("Only the owner or an admin can withdraw this.")
         return Outcome("retired", self._set_status(item_id, "retired", actor=user.id, note=reason))
 
     def restore(self, user: User, item_id: str) -> Outcome:
-        """Undo the last status change (owner for personal items, curator for anything)."""
+        """Undo the last status change (owner for personal items, admin for anything)."""
         item = self.get(item_id)
-        if not item or (item["owner"] != user.id and not user.is_curator):
-            raise PermissionError("Only the owner or a curator can undo this.")
+        if not item or (item["owner"] != user.id and not user.is_admin):
+            raise PermissionError("Only the owner or an admin can undo this.")
         last = self.store.one("SELECT from_status FROM knowledge_event WHERE item_id=? AND action LIKE 'status:%' "
                               "ORDER BY id DESC LIMIT 1", (item_id,))
         back = (last or {}).get("from_status") or "active"
-        if back == "verified" and not user.is_curator:
+        if back == "verified" and not user.is_admin:
             back = "proposed"
         return Outcome("restored", self._set_status(item_id, back, actor=user.id, note="undo"))
 

@@ -40,7 +40,7 @@ def serve_mcp(app: App) -> None:
 
     @mcp.tool
     def verified_reports(query: str) -> list[dict[str, Any]]:
-        """Reports a curator verified for everyone, best match first."""
+        """Reports an admin verified for everyone, best match first."""
         from .knowledge import User
         anyone = User(id="__mcp__")
         return [app.knowledge_for_prompt(i, anyone) for i in app.knowledge.search(anyone, query)

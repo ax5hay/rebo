@@ -40,7 +40,7 @@ def client(app, monkeypatch):
     return TestClient(create_app(app, with_ui=False))
 
 
-def token(user_id=7, role="member", bot_type="reports"):
+def token(user_id=7, role="user", bot_type="reports"):
     t = mock_jms.token(mock_jms.TokenIn(user_id=user_id, role=role))["token"]
     if bot_type != "reports":
         import jwt
@@ -76,8 +76,8 @@ def test_jwt_rules(client):
 def test_core_api_uses_jwt_identity_when_configured(client):
     assert client.get("/api/knowledge", headers={"X-User-Id": "7"}).status_code == 422
     assert client.get("/api/knowledge", headers=token(user_id=7)).status_code == 200
-    assert client.get("/api/review", headers=token(role="curator")).status_code == 200
-    assert client.get("/api/review", headers=token(role="member")).status_code == 403
+    assert client.get("/api/review", headers=token(role="admin")).status_code == 200
+    assert client.get("/api/review", headers=token(role="user")).status_code == 403
 
 
 @pytest.mark.parametrize("sql,problem", [

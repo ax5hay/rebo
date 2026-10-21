@@ -23,12 +23,12 @@ MESSAGES: dict[str, str] = {
     # --- feedback: "Yes, this is right" --------------------------------------------
     "confirm_saved_personal": (
         "Thanks, saved. Next time you ask something like this, I'll start from this report. "
-        "This only tunes the bot for you; other people won't see the change unless a curator shares it."
+        "This only tunes the bot for you; other people won't see the change unless an admin shares it."
     ),
     "confirm_reinforced": "Thanks. You've confirmed this report before, so I'll keep relying on it for you.",
     "confirm_matches_verified": "Thanks. This matches a report your team has already verified.",
     "confirm_auto_proposed": (
-        "{n} people have now confirmed this same report, so I've sent it to a curator to share with everyone."
+        "{n} people have now confirmed this same report, so I've sent it to an admin to share with everyone."
     ),
 
     # --- feedback: "No, fix it" -----------------------------------------------------------
@@ -36,25 +36,25 @@ MESSAGES: dict[str, str] = {
     "reject_retired_own": "Understood. I've stopped using the earlier report you confirmed for this.",
     "reject_flagged": (
         "Thanks for flagging this. The report was built from shared knowledge; I've noted your report "
-        "for the curators. Your correction below applies to you right away."
+        "for the admins. Your correction below applies to you right away."
     ),
     "reject_quarantined": (
-        "Thanks. The shared knowledge behind this report is now on hold for everyone until a curator reviews it."
+        "Thanks. The shared knowledge behind this report is now on hold for everyone until an admin reviews it."
     ),
 
     # --- "Remember this?" cards ----------------------------------------------------------
     "remember_header": "Should I remember this for next time?",
-    "remember_scope_note": "Only for you. A curator can share it with everyone later.",
+    "remember_scope_note": "Only for you. An admin can share it with everyone later.",
     "teach_saved_personal": "Got it. I'll use \"{title}\" in your future questions. Only you are affected.",
     "teach_replaced_own": "Updated. Your earlier meaning of \"{title}\" is replaced (you can undo this in My knowledge).",
     "teach_conflicts_shared": (
         "Your team already has a shared meaning for \"{title}\": {shared_body}. I'll keep using the shared one "
-        "for now and have sent your version to a curator to review."
+        "for now and have sent your version to an admin to review."
     ),
     "remember_dismissed": "OK, I won't remember that.",
 
     # --- sharing ----------------------------------------------------------------------
-    "share_requested": "Sent to a curator. Until it's approved it keeps working for you only.",
+    "share_requested": "Sent to an admin. Until it's approved it keeps working for you only.",
     "promoted": "Shared. Everyone in {scope} will now get answers that use \"{title}\".",
     "retired": "Withdrawn. It's no longer used. You can undo this from its history.",
     "restored": "Restored. \"{title}\" is back to {status}.",
@@ -65,10 +65,10 @@ MESSAGES: dict[str, str] = {
 
     # --- trust labels (knowledge page) -----------------------------------------------------
     "status_active": "Yours: used only for you",
-    "status_proposed": "Waiting for a curator: used only for you until approved",
+    "status_proposed": "Waiting for an admin: used only for you until approved",
     "status_verified": "Shared with {scope}",
     "status_stale": "Paused: the data it uses changed and it needs a re-check",
-    "status_quarantined": "On hold: reported wrong, waiting for a curator",
+    "status_quarantined": "On hold: reported wrong, waiting for an admin",
     "status_retired": "Withdrawn",
 
     # --- system -------------------------------------------------------------------------

@@ -88,7 +88,7 @@ INSTRUCTIONS = """\
 You build database reports for business users who do not know SQL or the schema.
 
 How to work
-1. Read <learned_knowledge> first. Items marked "verified" were checked by a curator; items marked
+1. Read <learned_knowledge> first. Items marked "verified" were checked by an admin; items marked
    "yours" were taught by this user and apply to them. When a saved example answers the same kind of
    question, adapt it (change only literal values, dates, grouping) instead of starting over, and list
    its id in used_knowledge. When a learned term defines a word the user used, follow it exactly.

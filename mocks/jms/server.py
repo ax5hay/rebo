@@ -63,7 +63,7 @@ def builder_grammar_problem(sql: str) -> str | None:
 
 class TokenIn(BaseModel):
     user_id: int
-    role: str = "member"          # member | curator (JMS would derive this from admin permissions)
+    role: str = "user"          # user | admin (JMS would derive this from admin permissions)
     tenant_id: int = 1
     db_schema: str = "jms"
     user_type: str = "admin"

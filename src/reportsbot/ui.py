@@ -1,6 +1,6 @@
-"""Developer / pilot UI (NiceGUI). Three pages: chat, my knowledge, curator review.
+"""Developer / pilot UI (NiceGUI). Three pages: chat, my knowledge, admin review.
 
-Identity is taken from the URL (?user=alice&role=curator&team=ops) because this UI is for
+Identity is taken from the URL (?user=alice&role=admin&team=ops; roles user|admin|owner) because this UI is for
 local testing; a host application uses the HTTP API with its own login instead.
 Layouts are described screen by screen in docs/09-api-and-ui.md.
 """
@@ -19,7 +19,7 @@ _BADGE = {"verified": "positive", "yours": "primary", "adapted": "info", "new": 
 
 
 def _user(user: str, role: str, team: str | None) -> User:
-    return User(id=user or "guest", role="curator" if role == "curator" else "member", team=team or None)
+    return User(id=user or "guest", role=role, team=team or None)  # role normalised by User
 
 
 def _nav(u: User) -> None:
@@ -28,7 +28,7 @@ def _nav(u: User) -> None:
         ui.label("Reports").classes("text-lg font-semibold")
         ui.link("Ask", f"/{q}").classes("text-white")
         ui.link("My knowledge", f"/knowledge{q}").classes("text-white")
-        if u.is_curator:
+        if u.is_admin:
             ui.link("Review queue", f"/review{q}").classes("text-white")
         ui.space()
         ui.label(f"{u.id} · {u.role}" + (f" · team {u.team}" if u.team else "")).classes("text-sm opacity-80")
@@ -36,7 +36,7 @@ def _nav(u: User) -> None:
 
 def mount_ui(api: FastAPI, app: App) -> None:
     @ui.page("/")
-    def chat(user: str = "guest", role: str = "member", team: str | None = None):
+    def chat(user: str = "guest", role: str = "user", team: str | None = None):
         u = _user(user, role, team)
         _nav(u)
         state = {"conversation_id": None, "correcting": None}
@@ -153,7 +153,7 @@ def mount_ui(api: FastAPI, app: App) -> None:
                 ui.button("Send", on_click=lambda: send(box.value))
 
     @ui.page("/knowledge")
-    def knowledge(user: str = "guest", role: str = "member", team: str | None = None):
+    def knowledge(user: str = "guest", role: str = "user", team: str | None = None):
         u = _user(user, role, team)
         _nav(u)
         body = ui.column().classes("w-full max-w-5xl mx-auto gap-3 p-4")
@@ -192,9 +192,9 @@ def mount_ui(api: FastAPI, app: App) -> None:
                 with ui.row():
                     if own and item["status"] == "active":
                         ui.button("Share with everyone", on_click=lambda i=item: act(app.share, i)).props("flat")
-                    if (own or u.is_curator) and item["status"] != "retired":
+                    if (own or u.is_admin) and item["status"] != "retired":
                         ui.button("Withdraw", on_click=lambda i=item: act(app.retire, i)).props("flat color=negative")
-                    if own or u.is_curator:
+                    if own or u.is_admin:
                         ui.button("Undo last change", on_click=lambda i=item: act(app.restore, i)).props("flat")
                     ui.button("History", on_click=lambda i=item: show_history(i)).props("flat")
 
@@ -217,7 +217,7 @@ def mount_ui(api: FastAPI, app: App) -> None:
         draw()
 
     @ui.page("/review")
-    def review(user: str = "guest", role: str = "member", team: str | None = None):
+    def review(user: str = "guest", role: str = "user", team: str | None = None):
         u = _user(user, role, team)
         _nav(u)
         body = ui.column().classes("w-full max-w-5xl mx-auto gap-3 p-4")
@@ -225,8 +225,8 @@ def mount_ui(api: FastAPI, app: App) -> None:
         def draw():
             body.clear()
             with body:
-                if not u.is_curator:
-                    ui.label("Only curators can review shared knowledge.")
+                if not u.is_admin:
+                    ui.label("Only admins can review shared knowledge.")
                     return
                 queue = app.review_queue(u)
                 ui.label(f"Review queue ({len(queue)})").classes("text-lg font-semibold")

@@ -8,7 +8,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException
 from pydantic import BaseModel
 
-from .knowledge import User
+from .knowledge import ROLE_ALIASES, User, normalise_role  # noqa: F401
 from .service import App
 
 
@@ -34,11 +34,11 @@ class ReasonIn(BaseModel):
     reason: str = ""
 
 
-def user_from_headers(x_user_id: str = Header(...), x_user_role: str = Header("member"),
+def user_from_headers(x_user_id: str = Header(...), x_user_role: str = Header("user"),
                       x_user_team: str | None = Header(None)) -> User:
     """auth.mode=headers: identity comes from the host app's gateway. Never expose without one."""
-    if x_user_role not in ("member", "curator"):
-        raise HTTPException(400, "X-User-Role must be member or curator")
+    if x_user_role.strip().lower() not in {"user", "admin", "owner", *ROLE_ALIASES}:
+        raise HTTPException(400, "X-User-Role must be user, admin or owner")
     return User(id=x_user_id, role=x_user_role, team=x_user_team)  # type: ignore[arg-type]
 
 
@@ -58,11 +58,11 @@ def decode_jwt(token: str, settings) -> dict:
 
 
 def user_from_claims(claims: dict) -> User:
-    """Claim names: user id = sub | user_id; role = role (member|curator); team = team | tenant_id."""
+    """Claim names: user id = sub | user_id; role = role (user|admin|owner); team = team | tenant_id."""
     uid = claims.get("sub") or claims.get("user_id")
     if uid in (None, ""):
         raise HTTPException(401, "Token has no user id (sub or user_id)")
-    role = "curator" if str(claims.get("role", "")).lower() == "curator" else "member"
+    role = normalise_role(claims.get("role"))
     team = claims.get("team") or claims.get("tenant_id")
     return User(id=str(uid), role=role, team=str(team) if team is not None else None)
 
@@ -137,8 +137,8 @@ def router(app: App) -> APIRouter:
 
     @r.post("/admin/revalidate")
     def revalidate(user: User = Depends(current_user)):
-        if not user.is_curator:
-            raise HTTPException(403, "curators only")
+        if not user.is_admin:
+            raise HTTPException(403, "admins only")
         return app.revalidate()
 
     return r

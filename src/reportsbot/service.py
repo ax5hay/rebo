@@ -181,7 +181,7 @@ class App:
         if verified:
             when = dt.datetime.fromtimestamp(verified["verified_at"] or verified["updated_at"]).date().isoformat()
             return {"label": "verified", "item_ids": [verified["id"]],
-                    "text": msg.say("prov_verified", who=verified["verified_by"] or "a curator", when=when)}
+                    "text": msg.say("prov_verified", who=verified["verified_by"] or "an admin", when=when)}
         if same:
             return {"label": "yours", "item_ids": [same[0]["id"]], "text": msg.say("prov_yours")}
         used_items = [self.knowledge.get(i) for i in used if i in visible]
@@ -350,6 +350,6 @@ class App:
         return {"mine": items, "shared": shared, "notice": msg.say("stale_notice", n=stale) if stale else None}
 
     def review_queue(self, user: User) -> list[dict[str, Any]]:
-        if not user.is_curator:
-            raise PermissionError("Only curators can see the review queue.")
+        if not user.is_admin:
+            raise PermissionError("Only admins can see the review queue.")
         return self.knowledge.review_queue()
