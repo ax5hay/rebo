@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 const ask = async (page, text: string) => {
   await page.getByRole("textbox", { name: "Your question" }).fill(text);
-  await page.getByRole("button", { name: "Ask" }).click();
+  await page.getByRole("button", { name: "Ask", exact: true }).click();
 };
 
 test("a report with feedback, undo, a follow-up chip and a remember card", async ({ page }) => {
@@ -13,8 +13,8 @@ test("a report with feedback, undo, a follow-up chip and a remember card", async
   await expect(card.locator("tbody tr")).toHaveCount(10);
   await expect(card).toContainText("Paused means the stored status 'paused'.");
   await card.getByRole("button", { name: "Yes, this is right" }).click();
-  await expect(page.locator(".toast")).toContainText("only tunes the bot for you");
-  await expect(card).toContainText("You confirmed this.");
+  await expect(page.locator("[data-sonner-toast]").first()).toContainText("only tunes the bot for you");
+  await expect(card).toContainText("You confirmed this");
   await card.getByRole("button", { name: "Undo my feedback" }).click();
   await expect(card.getByRole("button", { name: "Yes, this is right" })).toBeVisible();
   await page.getByTestId("remember").getByRole("button", { name: "Remember, only for me" }).click();
@@ -35,6 +35,6 @@ test("a clarification answered with a chip, then a correction in words", async (
   await expect(report).toContainText("Closed customers");
   await report.getByRole("button", { name: "No, fix it" }).click();
   await page.getByRole("textbox", { name: "Your question" }).fill("I meant the active ones");
-  await page.getByRole("button", { name: "Fix it" }).click();
+  await page.getByRole("button", { name: "Fix it", exact: true }).click();
   await expect(page.getByTestId("report").nth(1)).toContainText("Active customers");
 });

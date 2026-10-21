@@ -1,5 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Inbox } from "lucide-react";
 import { useState } from "react";
+import { Checkbox } from "react-aria-components";
 import { call, get, when } from "../api";
 import { useToast } from "../shell";
 import { EditItem } from "./knowledge";
@@ -15,66 +17,66 @@ export default function ReviewPage() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const refresh = () => { qc.invalidateQueries({ queryKey: ["review"] }); qc.invalidateQueries({ queryKey: ["requests"] }); setPicked(new Set()); };
   const act = async (fn: () => Promise<any>) => { try { const r = await fn(); if (r?.message) toast(r.message); refresh(); } catch (e) { toast((e as Error).message); } };
-  const toggle = (id: string) => setPicked((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggle = (id: string, on: boolean) => setPicked((p) => { const n = new Set(p); on ? n.add(id) : n.delete(id); return n; });
+  const items = queue.data ?? [];
 
   return (
     <>
-      <div className="pagehead">
-        <h1>Review</h1>
-        <p>Things people taught that are ready to be shared with everyone, and requests people cannot do
-          themselves. Sharing makes an item apply to every answer; it can always be undone.</p>
-      </div>
+      <p className="lead">Review</p>
+      <p className="intro">What people taught that is ready to be shared with everyone, and requests people cannot
+        do themselves. Sharing makes an item apply to every answer; it can always be undone.</p>
 
-      <h2>Waiting to be shared ({queue.data?.length ?? 0})</h2>
-      {(queue.data?.length ?? 0) > 0 && (
-        <div className="row" style={{ padding: "10px 0" }}>
-          <input className="input" style={{ maxWidth: 420 }} aria-label="Note for the selected items" placeholder="A note kept in each item's history" value={note} onChange={(e) => setNote(e.target.value)} />
-          <button className="btn primary" disabled={!picked.size} onClick={() => act(() => call("POST", "/review/bulk", { item_ids: [...picked], action: "share", note }))}>Share {picked.size || ""} with everyone</button>
-          <button className="btn danger" disabled={!picked.size} onClick={() => act(() => call("POST", "/review/bulk", { item_ids: [...picked], action: "reject", note }))}>Withdraw {picked.size || ""}</button>
-        </div>
-      )}
-      <div className="ledger">
-        {(queue.data ?? []).length === 0 && <p className="empty">Nothing is waiting. Items arrive here when an owner asks to share them, or when three people independently confirm the same report.</p>}
-        {(queue.data ?? []).map((i) => (
-          <div className="entry" key={i.id}>
-            <div className="kind">
-              <label className="row"><input type="checkbox" checked={picked.has(i.id)} onChange={() => toggle(i.id)} aria-label={`Select ${i.title}`} />{i.kind}</label>
-              <span>from {i.owner}</span>
-            </div>
+      <div className="section-title">
+        <h2>Waiting to be shared</h2><p>{items.length}</p><span className="spacer" />
+        {items.length > 0 && (
+          <div className="row">
+            <input className="input" style={{ width: 300 }} aria-label="Note for the selected items" placeholder="Note kept in each item's history" value={note} onChange={(e) => setNote(e.target.value)} />
+            <button className="btn primary" disabled={!picked.size} onClick={() => act(() => call("POST", "/review/bulk", { item_ids: [...picked], action: "share", note }))}>Share {picked.size || ""}</button>
+            <button className="btn danger" disabled={!picked.size} onClick={() => act(() => call("POST", "/review/bulk", { item_ids: [...picked], action: "reject", note }))}>Withdraw {picked.size || ""}</button>
+          </div>
+        )}
+      </div>
+      <ul className="list panel">
+        {items.length === 0 && <li className="empty"><Inbox size={22} />Nothing is waiting. Items arrive when an owner asks to share them, or when three people independently confirm the same report.</li>}
+        {items.map((i) => (
+          <li key={i.id} style={{ gridTemplateColumns: "28px minmax(0,1fr) auto" }}>
+            <Checkbox className="row" aria-label={`Select ${i.title}`} isSelected={picked.has(i.id)} onChange={(on) => toggle(i.id, on)}>
+              <span className="pill" style={{ padding: "3px 6px" }}>{picked.has(i.id) ? "✓" : " "}</span>
+            </Checkbox>
             <div>
-              <div className="title">{i.title}</div>
-              {i.question && <div className="body">Asked as “{i.question}”</div>}
-              {i.body && <div className="body">{i.body}</div>}
-              {i.sql && <pre className="sql">{i.sql}</pre>}
-              <div className="meta">Confirmed by {i.confirmers?.length ?? 0} people, reported wrong {i.rejections} times</div>
+              <div className="row" style={{ gap: 6 }}><span className="pill">{i.kind}</span><span className="small muted">from {i.owner}, confirmed by {i.confirmers?.length ?? 0}, reported wrong {i.rejections}×</span></div>
+              <div className="title" style={{ marginTop: 6 }}>{i.title}</div>
+              {i.question && <div className="sub">Asked as “{i.question}”</div>}
+              {i.body && <div className="sub">{i.body}</div>}
+              {i.sql && <details className="query"><summary>Query</summary><pre className="code">{i.sql}</pre></details>}
             </div>
             <div className="acts">
               <button className="btn" onClick={() => act(() => call("POST", `/knowledge/${i.id}/promote`, { scope: "org" }))}>Share with everyone</button>
-              {i.team && <button className="btn quiet" onClick={() => act(() => call("POST", `/knowledge/${i.id}/promote`, { scope: "team" }))}>Share with team {i.team}</button>}
-              <button className="btn quiet" onClick={() => setEditing(i)}>Edit first</button>
-              <button className="btn quiet danger" onClick={() => act(() => call("POST", `/knowledge/${i.id}/retire`, { reason: "rejected in review" }))}>Withdraw</button>
+              {i.team && <button className="btn ghost" onClick={() => act(() => call("POST", `/knowledge/${i.id}/promote`, { scope: "team" }))}>Share with {i.team}</button>}
+              <button className="btn ghost" onClick={() => setEditing(i)}>Edit first</button>
+              <button className="btn ghost danger" onClick={() => act(() => call("POST", `/knowledge/${i.id}/retire`, { reason: "rejected in review" }))}>Withdraw</button>
             </div>
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
 
-      <h2>Open requests ({requests.data?.length ?? 0})</h2>
-      <div className="ledger">
-        {(requests.data ?? []).length === 0 && <p className="empty">No open requests.</p>}
+      <div className="section-title"><h2>Open requests</h2><p>{requests.data?.length ?? 0}</p></div>
+      <ul className="list panel">
+        {(requests.data ?? []).length === 0 && <li className="empty">No open requests.</li>}
         {(requests.data ?? []).map((r) => (
-          <div className="entry" key={r.id}>
-            <div className="kind">{r.kind.replace("_", " ")}<span>{r.requester}, {when(r.created_at)}</span></div>
+          <li key={r.id}>
             <div>
-              <div className="body">{r.text}</div>
-              <input className="input" style={{ marginTop: 8 }} aria-label="Answer to the requester" placeholder="Your answer, shown to the requester" value={answers[r.id] ?? ""} onChange={(e) => setAnswers({ ...answers, [r.id]: e.target.value })} />
+              <div className="row" style={{ gap: 6 }}><span className="pill yours">{r.kind.replace("_", " ")}</span><span className="small muted">{r.requester}, {when(r.created_at)}</span></div>
+              <div className="title" style={{ fontWeight: 500, marginTop: 6 }}>{r.text}</div>
+              <input className="input" style={{ marginTop: 10 }} aria-label="Answer to the requester" placeholder="Your answer, shown to the requester" value={answers[r.id] ?? ""} onChange={(e) => setAnswers({ ...answers, [r.id]: e.target.value })} />
             </div>
             <div className="acts">
-              <button className="btn" onClick={() => act(() => call("POST", `/requests/${r.id}/resolve`, { status: "done", resolution: answers[r.id] ?? "" }))}>Done</button>
-              <button className="btn quiet danger" onClick={() => act(() => call("POST", `/requests/${r.id}/resolve`, { status: "declined", resolution: answers[r.id] ?? "" }))}>Decline</button>
+              <button className="btn primary" onClick={() => act(() => call("POST", `/requests/${r.id}/resolve`, { status: "done", resolution: answers[r.id] ?? "" }))}>Done</button>
+              <button className="btn ghost danger" onClick={() => act(() => call("POST", `/requests/${r.id}/resolve`, { status: "declined", resolution: answers[r.id] ?? "" }))}>Decline</button>
             </div>
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
       {editing && <EditItem item={editing} close={() => { setEditing(null); refresh(); }} />}
     </>
   );

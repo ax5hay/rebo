@@ -161,10 +161,20 @@ open trace), **What I taught** (lookup, defaults, saved knowledge with edit / sh
 withdraw, schedules, requests), **Review** and **Admin** (admins), **Insights** (admins, owners),
 **Configuration** (owners). Screenshots: `docs/screenshots/`.
 
-Design: a marked-up working sheet. Square edges; 2px ink rules; the question as each answer's
-headline; trust as the coloured left edge (verified / yours / adapted / new); the reading of the
-question highlighted; one typeface (Schibsted Grotesk, self-hosted); dark mode; visible focus;
-reduced motion respected.
+Design (second version, 2026-10-21): a calm, current product look, deliberately not the generic "AI"
+style. Neutral canvas with white working surfaces, one deep green accent for trust and learning (not
+the usual indigo or violet), amber reserved for how a question was read; no gradients; 12px panels,
+8px controls, pill-shaped status; Instrument Sans for the interface and JetBrains Mono for queries
+only (both self-hosted, OFL). Structure follows current production tools and research: a persistent
+sidebar with sections and recent conversations (a drawer on phones), a ⌘K command palette (cmdk), secondary actions in a
+menu so the answer stays calm (progressive disclosure), tables first and charts only for trends, one
+focal health figure on Insights. From the human-AI interaction guidelines (Amershi et al., CHI 2019):
+each answer says where it came from and why (trust pill, "How I read your question"), correction is
+one click away and in words, and every action says whom it affects. From text-to-SQL verification
+research (Berant et al. 2018; DIY, IUI 2021; SQLucid; EMNLP 2023): "What the query does" lists the
+query as plain steps generated from its syntax tree, next to the data, so people can check an answer
+without reading SQL. Libraries added for this: cmdk 1.1.1 (MIT), lucide-react 1.61 (ISC icons),
+sonner 2.0.8 (MIT toasts).
 
 Libraries (npm, 2026-10-21): React 19.3, react-aria-components 1.22.1 (Apache-2.0; accessible
 unstyled primitives: tables with sorting, dialogs, toggle groups), TanStack Query 5.104, React Router
