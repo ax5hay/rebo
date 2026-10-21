@@ -36,6 +36,11 @@ also in git history; this file is the short version a new session reads first.
   per checked turn; no clear gain, kept off. Open: B-050 (skeleton similarity).
 - **Design v4 (2026-10-21d):** Liquid Glass navigation, island bar, You and Help pages, logo and brand
   (doc 25), scannable answers. Safari/Firefox rendering not checked on this machine.
+- **2026-10-21e (seventh pass):** row-level security (`database_role: "{user}"`, SET LOCAL ROLE, B-058);
+  "Read as" value switches at $0 (B-060); chat as a numbered ledger with figures and a live work trail;
+  charts only for measured comparisons (never ids); ask once, ask well (demo conversations 3/5 → 4/5);
+  cheaper agents measured, `models.decide` off, **Sonnet stays the default** (doc 20 §5b); doc 27 lists
+  what the model sees and everything tried and not adopted.
 - **Direction and rules:** `AGENTS.md`. Plan and gates: `docs/18-production-build.md`.
 
 ## 2. Measured facts (do not re-derive; re-measure only when a change could affect them)
@@ -118,3 +123,4 @@ on gold answers, not on row counts of unconfirmed answers.
 | 2026-10-21 | fourth pass (macOS) | B-048 (agent, merged, kept off); Liquid Glass design system with per-element lensing; logo and brand doc 25; You and Help pages; answer readability (facts line, row shading, filter, copy, reading first) | B-050; Safari/Firefox visual check |
 | 2026-10-21 | fifth pass (macOS) | internal pages redesigned; WebKit + Firefox (CI) tests; B-050 measured (kept off); B-052 caching: JMS $2.68 → $1.22; doc 26 assessment and the verified-parts idea, coverage test (JMS 42 % of reports composable) | B-055 join-and-entity library; B-053 cascade; B-054 tool budgets |
 | 2026-10-21 | sixth pass (macOS) | B-055 join library: no gain offline, not wired (join_path tie crash fixed); B-053 doubt cascade 8/12 $0.106 vs Sonnet 10/12 (Sonnet stays); B-054 compact describe −25 % tokens; B-057 fan-out probe (demo 2→7/10, JMS 50→58 %); B-058 cartesian trap (RLS [!]); B-059 `rebo eval --confirmed`; B-056 deferred; grain-check parent-id false alarm fixed. LLM spend this pass ≈ $1.5 | open: B-015/041/045/058-RLS need a person; B-056 deferred |
+| 2026-10-21 | seventh pass (macOS) | CI fixed (regression test needed a key); repo homepage cleared; B-058 RLS via SET LOCAL ROLE (tested on Postgres); B-060 Read as switches; chat redesign; chart rules; B-061 cheap models + doubt-gated decide (Luna 9/12 $0.03 demo, but JMS no saving; Sonnet stays); ask-once policy 3/5 → 4/5 conversations; doc 27. LLM spend ≈ $1.6 | larger validated gold set (B-015) to tell 9/12 from 11/12; tiered mode on a bigger schema |
