@@ -284,3 +284,20 @@ async def test_saved_report_with_new_values_is_filled_in_without_the_agent(app):
     assert usage["route"] == "params" and usage["model"] == app.settings.fast_model
     other = await app.ask(alice, "list customers with status and name grouped by month")   # not a value change
     assert len(seen) == calls + 1 and other["kind"] == "report"
+
+
+async def test_instructions_are_identical_across_turns_and_users(app):
+    from pydantic_ai.messages import ModelResponse, ToolCallPart, UserPromptPart
+    from pydantic_ai.models.function import FunctionModel
+    seen = []
+
+    def model(messages, info):
+        seen.append((messages[-1].instructions, [p.content for p in messages[-1].parts if isinstance(p, UserPromptPart)]))
+        return ModelResponse(parts=[ToolCallPart("reply", {"text": "hi"})])
+
+    app.__dict__["agent"] = build_agent(FunctionModel(model))
+    await app.ask(User("alice"), "hello")
+    await app.ask(User("bob", role="admin"), "something else")
+    (first, p1), (second, p2) = seen
+    assert first == second and "customer(40)" in first and "alice" not in first
+    assert "Today is" in p1[0] and "'alice'" in p1[0] and "'bob'" in p2[0]

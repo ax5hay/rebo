@@ -53,8 +53,8 @@ def build_one(spec: str, settings: Settings, *, http_client: Any = None) -> Mode
         from pydantic_ai.providers.anthropic import AnthropicProvider
         return AnthropicModel(name, provider=AnthropicProvider(api_key=_env("ANTHROPIC_API_KEY")),
                               settings=AnthropicModelSettings(max_tokens=_MAX_TOKENS,
-                                                              anthropic_cache_instructions=True,
-                                                              anthropic_cache_tool_definitions=True))
+                                                              anthropic_cache_instructions="1h",
+                                                              anthropic_cache_tool_definitions="1h"))
     if provider == "google":
         from pydantic_ai.models.google import GoogleModel, GoogleModelSettings
         from pydantic_ai.providers.google import GoogleProvider

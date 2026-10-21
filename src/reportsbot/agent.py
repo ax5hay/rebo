@@ -11,7 +11,6 @@ and the database; failures go back to the model as a retry. See docs/03-agent-lo
 """
 from __future__ import annotations
 
-import datetime as dt
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -167,13 +166,12 @@ def build_agent(model: Model) -> Agent[Deps, Outcome]:
 
     @agent.instructions
     def database_context(ctx: RunContext[Deps]) -> str:
+        # Byte-identical across turns and users (changes only on bootstrap), so the instructions and
+        # tool definitions form a cacheable prefix. Date and user go in the per-turn context block.
         app = ctx.deps.app
         tables = app.store.all("SELECT name, rows FROM cat_table ORDER BY name")
         listing = ", ".join(f"{t['name']}({t['rows'] if t['rows'] is not None else '?'})" for t in tables)
-        return (f"Today is {dt.date.today().isoformat()}. SQL dialect: {app.target.dialect}. "
-                f"The user is a {ctx.deps.user.role} whose id in the host application is "
-                f"'{ctx.deps.user.id}' (use it for 'my' / 'me' when a table stores that id).\n"
-                f"Tables (row counts): {listing}")
+        return f"SQL dialect: {app.target.dialect}.\nTables (row counts): {listing}"
 
     @agent.tool
     def search_schema(ctx: RunContext[Deps], query: str) -> list[dict[str, Any]]:

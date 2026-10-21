@@ -17,7 +17,7 @@ agent = Agent(
         openrouter_cache_instructions=True, openrouter_cache_tool_definitions=True),
     retries=2,
 )
-@agent.instructions  def database_context(ctx)   # date, dialect, role, every table with its row count
+@agent.instructions  def database_context(ctx)   # dialect + every table with its row count (same every turn)
 @agent.tool          search_schema / describe_table / search_values / find_join_path / search_knowledge / run_sql
 @agent.output_validator def validate(ctx, output) # runs the final SQL; ModelRetry on failure
 ```
@@ -25,7 +25,12 @@ agent = Agent(
 - **No `temperature`.** OpenRouter lists no `temperature` / `top_p` / `top_k` support for the
   Claude 5.x models, so none are sent.
 - **Prompt caching.** Instructions and tool definitions are marked cacheable, so repeat turns pay
-  only for the new context.
+  only for the new context. The prefix is byte-identical across turns and users (B-010): static
+  `INSTRUCTIONS`, then the dialect and the sorted table list, which change only on bootstrap; the
+  date and the user's role and id are in the per-turn context block. `anthropic:` models use the
+  1-hour TTL (`anthropic_cache_instructions="1h"`, tool definitions likewise); OpenRouter keeps the
+  default 5 minutes. Offline test: `test_instructions_are_identical_across_turns_and_users`. Cache
+  hits on a real API not yet measured (needs an LLM key).
 - **Typed outcomes as tools.** The model ends a turn by calling exactly one of three output tools.
   Pydantic validates the arguments, and invalid arguments go back to the model automatically.
 
@@ -63,6 +68,7 @@ Built by `App._context_block(user, text)`, with no LLM call, so cheap and determ
 Shape below; the ids and counts are illustrative:
 
 ```xml
+<turn>Today is 2026-10-21. The user is a user whose id in the host application is '42' (use it for 'my' / 'me' when a table stores that id).</turn>
 <learned_knowledge>
 {"id":"ex_3f…","kind":"example","trust":"verified","title":"Active surrogates in screening","question":"…","sql":"…","confirmed_by":4}
 {"id":"te_91…","kind":"term","trust":"yours","title":"in intake","body":"active cases whose current stage is intake","sql":"gc_case.stage='intake' AND gc_case.active=1"}

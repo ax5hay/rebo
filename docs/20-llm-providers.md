@@ -11,7 +11,7 @@ Code: `src/reportsbot/llm.py` (registry), `service.py` (`agent`, `fast_agent_mod
 | String | Provider | Secret | Notes |
 |---|---|---|---|
 | `openrouter:anthropic/claude-sonnet-5.5` | OpenRouter (any model it lists) | `OPENROUTER_API_KEY` | prompt caching on (`openrouter_cache_instructions`, `…_tool_definitions`) |
-| `anthropic:claude-sonnet-5-5` | Anthropic API | `ANTHROPIC_API_KEY` | `anthropic_cache_instructions`, `anthropic_cache_tool_definitions` |
+| `anthropic:claude-sonnet-5-5` | Anthropic API | `ANTHROPIC_API_KEY` | `anthropic_cache_instructions`, `anthropic_cache_tool_definitions`, both `"1h"` |
 | `google:gemini-3.8-flash` | Gemini API | `GEMINI_API_KEY` or `GOOGLE_API_KEY` | implicit caching (needs a stable prefix ≥ 4,096 tokens) |
 | `lmstudio:<id from GET /v1/models>` | LM Studio, local | none | OpenAI-compatible server at `lmstudio_url` |
 | `openai:<model>` | OpenAI | `OPENAI_API_KEY` | — |

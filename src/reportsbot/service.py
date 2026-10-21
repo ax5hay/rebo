@@ -173,7 +173,9 @@ class App:
         hits = self.index.search_schema(text, top=20)
         tables = list(dict.fromkeys(h["table"] for h in hits))[:8]
         values = self.index.search_values(text, top=8)
-        parts = ["<learned_knowledge>"]
+        parts = [f"<turn>Today is {dt.date.today().isoformat()}. The user is a {user.role} whose id in the host "
+                 f"application is '{user.id}' (use it for 'my' / 'me' when a table stores that id).</turn>",
+                 "<learned_knowledge>"]
         parts += [json.dumps(self.knowledge_for_prompt(i, user), default=str) for i in items] or ["(none yet)"]
         parts += ["</learned_knowledge>", "<likely_tables>"]
         for t in tables:
