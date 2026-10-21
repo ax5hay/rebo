@@ -442,9 +442,10 @@ class App:
     def _cache_key(self, user: User, text: str) -> str:
         """Exact answer cache key (never semantic): the normalised question, who asks (personal and team
         knowledge differ), the knowledge version (the latest history event: any change to anything
-        learned moves it) and the catalog version (last bootstrap)."""
+        learned moves it), the catalog version (last bootstrap) and the agent model."""
         kv = (self.store.one("SELECT MAX(id) AS v FROM knowledge_event") or {}).get("v")
-        raw = json.dumps([_norm_question(text), user.id, user.team, kv, self.store.meta_get("bootstrapped_at")])
+        raw = json.dumps([_norm_question(text), user.id, user.team, kv, self.store.meta_get("bootstrapped_at"),
+                          self.settings.model])  # another model gives other answers: never mix them
         return hashlib.sha256(raw.encode()).hexdigest()
 
     def _cached_answer(self, user: User, conv_id: str, text: str, key: str) -> dict | None:

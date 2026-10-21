@@ -420,9 +420,15 @@ async def test_exact_answer_cache_hits_and_invalidates(app):
     assert len(seen) == 4
     hit = await app.ask(alice, "who is paused")
     assert len(seen) == 4 and route(hit) == "cache"
-    app.feedback(alice, hit["turn_id"], "wrong")                           # a wrong answer leaves the cache
+    app.settings.model = "lmstudio:other"                                   # another model: not its cache
     await app.ask(alice, "who is paused")
     assert len(seen) == 5
+    app.settings.model = "openrouter:anthropic/claude-sonnet-5.5"
+    hit = await app.ask(alice, "who is paused")
+    assert len(seen) == 5 and route(hit) == "cache"                       # the first model's entry is still there
+    app.feedback(alice, hit["turn_id"], "wrong")                           # a wrong answer leaves the cache
+    await app.ask(alice, "who is paused")
+    assert len(seen) == 6
 
 
 def test_turn_limits_put_the_cost_cap_in_list_prices(monkeypatch):
