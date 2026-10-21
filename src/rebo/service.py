@@ -27,7 +27,7 @@ from .agent import Clarify, Deps, Report, Reply, Trace, build_agent
 from .catalog import Catalog, bootstrap
 from .knowledge import Knowledge, User
 from .llm import build_model, cost, credentials_present, profile, turn_limits
-from .observability import ask_span, phoenix_url, setup_tracing
+from .observability import annotate_trace, ask_span, phoenix_url, setup_tracing
 from .retrieval import Index, fts_query, get_embedder
 from .safety import canonical_hash, drill_sql, fill_params, guard
 from .settings import Settings, get_settings, load_env_file
@@ -578,6 +578,9 @@ class App:
         payload = json.loads(t["payload"])
         if t["feedback"]:
             self.undo_feedback(user, turn_id)  # changing your mind replaces the earlier feedback
+        trace_id = json.loads(t["usage"] or "{}").get("trace_id")
+        annotate_trace(trace_id, "user feedback", label=verdict, score=1.0 if verdict == "correct" else 0.0,
+                       explanation=note.strip() or None, kind="HUMAN", identifier=f"feedback-{turn_id}")
         with self.store.tx() as db:
             db.execute("UPDATE turn SET feedback=?, feedback_note=? WHERE id=?", (verdict, note.strip() or None, turn_id))
             if verdict == "wrong":  # a cached copy of a wrong answer must not be served again
@@ -606,6 +609,8 @@ class App:
         t = self._turn(user, turn_id)
         if not t["feedback"]:
             raise ValueError("There is no feedback on this answer to undo.")
+        annotate_trace(json.loads(t["usage"] or "{}").get("trace_id"), "user feedback", label="withdrawn",
+                       kind="HUMAN", identifier=f"feedback-{turn_id}")
         touched = self.knowledge.undo_feedback(user, turn_id)
         with self.store.tx() as db:
             db.execute("UPDATE turn SET feedback=NULL, feedback_note=NULL WHERE id=?", (turn_id,))

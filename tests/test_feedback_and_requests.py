@@ -119,3 +119,30 @@ def test_no_webhook_without_notify_url(app):
     app.__dict__["notify_client"] = httpx2.Client(transport=httpx2.MockTransport(
         lambda request: pytest.fail("nothing may be sent without notify_url")))
     app.create_request(ALICE, kind="other", text="hello")
+
+
+def test_feedback_and_its_undo_are_annotated_on_the_trace_in_phoenix(app, monkeypatch):
+    import json
+
+    import httpx2
+    posted = []
+    monkeypatch.setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://phoenix.example.com:6006")
+    monkeypatch.setattr(httpx2, "post", lambda url, json=None, timeout=None: posted.append((url, json)) or
+                        httpx2.Response(200, request=httpx2.Request("POST", url)))
+    t = fake_turn(app, ALICE)
+    with app.store.tx() as db:
+        db.execute("UPDATE turn SET usage=? WHERE id=?", (json.dumps({"trace_id": "ab" * 16}), t))
+    app.feedback(ALICE, t, "wrong", "only active ones")
+    app.undo_feedback(ALICE, t)
+    assert [p[0] for p in posted] == ["http://phoenix.example.com:6006/v1/trace_annotations"] * 2
+    first, second = (p[1]["data"][0] for p in posted)
+    assert first["trace_id"] == "ab" * 16 and first["name"] == "user feedback" and first["annotator_kind"] == "HUMAN"
+    assert first["result"] == {"label": "wrong", "score": 0.0, "explanation": "only active ones"}
+    assert second["result"]["label"] == "withdrawn" and second["identifier"] == first["identifier"]
+
+
+def test_no_annotation_without_tracing(app, monkeypatch):
+    import httpx2
+    monkeypatch.delenv("OTEL_EXPORTER_OTLP_ENDPOINT", raising=False)
+    monkeypatch.setattr(httpx2, "post", lambda *a, **k: pytest.fail("nothing may be sent without tracing"))
+    app.feedback(ALICE, fake_turn(app, ALICE), "correct")

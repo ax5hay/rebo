@@ -95,3 +95,22 @@ def trace_link(trace_id: str) -> str | None:
     projects = httpx2.get(f"{api}/v1/projects", timeout=3).json()["data"]
     project = next((p for p in projects if p["name"] == name), None) or next(p for p in projects if p["name"] == "default")
     return f"{public}/projects/{project['id']}/traces/{trace_id}"
+
+
+def annotate_trace(trace_id: str | None, name: str, *, label: str, score: float | None = None,
+                   explanation: str | None = None, kind: str = "HUMAN", identifier: str = "") -> bool:
+    """Attach a verdict to a trace in Phoenix (POST /v1/trace_annotations), e.g. the asker's feedback or an
+    eval's gold match, so traces can be filtered by it. Best effort: returns False when tracing is off or
+    Phoenix does not answer; never raises. The same identifier updates an earlier annotation."""
+    api = (os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT") or "").rstrip("/")
+    if not trace_id or not api:
+        return False
+    body = {"data": [{"trace_id": trace_id, "name": name, "annotator_kind": kind, "identifier": identifier,
+                      "result": {"label": label, "score": score, "explanation": explanation}}]}
+    try:
+        import httpx2
+        httpx2.post(f"{api}/v1/trace_annotations", json=body, timeout=3).raise_for_status()
+        return True
+    except Exception as e:
+        log.info("trace annotation %s failed: %s", name, e)
+        return False

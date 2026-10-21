@@ -16,6 +16,7 @@ import time
 from pathlib import Path
 
 from rebo.evals import DRAFT_LABEL, cost, load_cases, record_run, run_eval
+from rebo.observability import annotate_trace
 from rebo.service import App
 
 
@@ -31,6 +32,11 @@ async def main(cases: str, out: str, limit: int = 0, use_drafts: bool = False) -
         t = by_q.get(qs[c["id"]]) or {}
         p = json.loads(t.get("payload") or "{}")
         u = json.loads(t.get("usage") or "{}")
+        match = c["scores"].get("ExecutionMatch")
+        if isinstance(match, bool):  # the verdict on the question's trace in Phoenix (filterable there)
+            annotate_trace(u.get("trace_id"), "gold match", label="match" if match else "miss",
+                           score=float(match), explanation=f"{cases} {c['id']}", kind="CODE",
+                           identifier=f"gold-{c['id']}")
         c.update(question=qs[c["id"]], usage=u, cost_usd=cost(u))
         if c["kind"] == "report":
             c.update(title=p.get("title"), sql=p.get("sql"), assumptions=p.get("assumptions"))
