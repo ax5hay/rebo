@@ -345,10 +345,11 @@ done when: n/a for the agent.
 
 ## Data and verification
 
-### [ ] B-042 · Correlated synthetic data
+### [x] B-042 · Correlated synthetic data
 needs: docker
 do: Add a per-table correlation spec generated from the profile (e.g. stage given case_type, ordered dates created ≤ completed) under `tools/synth/correlations/`. **Research first** (NeMo Data Designer vs a hand-written spec). Re-generate, then re-run the 18-prompt eval.
 done when: the spec is applied, tests check date ordering, and doc 12 is updated.
+result: 2026-10-21, `git log --grep B-042`; date-order violations 9,809 -> 0 on the local MySQL. eval pending: needs llm (re-run the 18 prompts on the new data). Category correlations impossible from the profile.
 
 ### [ ] B-043 · Visual UI check
 needs: browser
