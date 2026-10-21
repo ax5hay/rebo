@@ -13,6 +13,7 @@ MESSAGES: dict[str, str] = {
     "rows_none": "No rows matched. The assumptions below explain what was searched for.",
     "assumptions_header": "How I read your question",
     "review_concern": "Check: {concern}",
+    "drill_rows": "The rows behind “{title}” where {where}, from the main table of that report.",
     "ask_feedback": "Is this right?",
 
     # --- provenance badges (shown above the table) --------------------------------------

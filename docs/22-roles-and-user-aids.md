@@ -49,6 +49,7 @@ Rules behind the table:
 | Remembered clarification answers | Picking an option stores a personal note (title = the question, body = the answer) shown in My knowledge, withdrawable there; free text that is not an option is not stored | The same question is not asked twice (B-007) |
 | Favourites (pin a report) | **Pin** on a report; "Your pinned reports" heads the Ask page, each with an unpin ×; pinned questions also lead `GET /api/starter` | One click re-runs a favourite with no model call (route `direct`) (B-016) |
 | "What do you know about X?" | Search box on My knowledge (`GET /api/knowledge/about?q=`): learned items grouped as Verified / Yours / Not yet shared, matching tables and columns with descriptions, stored values. In chat, a `Reply` lists the items it relied on ("From: …") | People see what the bot already knows before asking or teaching; no model call for the lookup (B-017) |
+| Explain this number | On a summary report, clicking a row shows the records behind it (`POST /api/turns/{id}/drill {row, column}`): `safety.drill_sql` drops GROUP BY/HAVING/aggregates, filters on that row's group values and selects the main table's readable columns; guarded, no model | Checking a total no longer needs a new question (B-018) |
 | Re-run with today's data | Button on every report | Same SQL, fresh rows, no model call (B-008) |
 | Follow-up chips | Up to 3 drill-downs under each report | Drill down with one click |
 | Starter questions | "Others often ask: …" from the most-used trusted reports | First question lands on a known-good report |
@@ -66,7 +67,6 @@ Rules behind the table:
 |---|---|---|
 | **"Why did you ask me that?"** | everyone | Show the evidence behind a clarification: the competing readings and their row counts (needs the deterministic ask-gate, doc 18 P1.2) |
 | **Re-run with today's data** | everyone | Button on any past report; reuses the SQL, no model call |
-| **Explain this number** | everyone | Click a cell to see the rows behind it (drill-through: same SQL with a filter on that group) |
 | **Personal defaults** | everyone | "Always last 30 days unless I say otherwise", "only my region": saved as personal notes, shown as assumptions |
 | **See as user X** | admin | Preview what a user's answer would use (their personal + shared knowledge) before sharing or editing |
 | **Diff and approve imports** | admin | Show the changes an import would make before applying it |

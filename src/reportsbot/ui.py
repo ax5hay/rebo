@@ -168,6 +168,15 @@ def mount_ui(api: FastAPI, app: App) -> None:
             with feed:
                 render(result)
 
+        def drill(r: dict, row: int) -> None:
+            try:
+                result = app.drill(u, r["turn_id"], row)
+            except ValueError as e:
+                ui.notify(str(e))
+                return
+            with feed:
+                render(result)
+
         def rerun(r: dict) -> None:
             with feed:
                 render(app.rerun(u, r["turn_id"]))
@@ -181,7 +190,10 @@ def mount_ui(api: FastAPI, app: App) -> None:
                     cols = [{"name": f"c{i}", "label": c, "field": f"c{i}", "sortable": True, "align": "left"}
                             for i, c in enumerate(r["columns"])]
                     rows = [{f"c{i}": v for i, v in enumerate(row)} | {"_k": n} for n, row in enumerate(r["rows"])]
-                    ui.table(columns=cols, rows=rows, row_key="_k", pagination=15).classes("w-full")
+                    table = ui.table(columns=cols, rows=rows, row_key="_k", pagination=15).classes("w-full")
+                    if "group by" in r["sql"].lower():  # summary report: a row click shows the rows behind it
+                        table.on("rowClick", lambda e, r=r: drill(r, e.args[1]["_k"]))
+                        ui.label("Click a row to see the records behind it.").classes("text-xs opacity-60")
                     with ui.expansion(msg.say("assumptions_header"), value=True).classes("w-full"):
                         for a in r["assumptions"]:
                             ui.label(f"• {a}")

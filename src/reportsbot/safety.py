@@ -202,3 +202,48 @@ def fill_params(template: str, dialect: str, values: list[str | int | float]) ->
         ph.replace(exp.Literal.number(v) if isinstance(v, (int, float)) and not isinstance(v, bool)
                    else exp.Literal.string(str(v)))
     return tree.sql(dialect=dialect)
+
+
+def drill_sql(sql: str, dialect: str, columns: list[str], row: list, schema: dict[str, dict[str, str]],
+              sensitive: set[tuple[str, str]] | None = None) -> tuple[str, list[tuple[str, object]]]:
+    """Detail query behind one row of a grouped report: GROUP BY/HAVING/aggregates removed, each group
+    value added as a filter, and the readable (non-protected) columns of the first FROM table selected.
+    Returns (sql, [(group label, value)]). Raises ValueError when the report is not a simple grouped SELECT."""
+    tree = sqlglot.parse_one(sql, read=dialect)
+    group = tree.args.get("group") if isinstance(tree, exp.Select) else None
+    source = tree.args.get("from_").this if isinstance(tree, exp.Select) and tree.args.get("from_") else None
+    if not group or not isinstance(source, exp.Table):
+        raise ValueError("Only summary reports (grouped by something) can be drilled into.")
+    table = next((t for t in schema if t.lower() == source.name.lower()), None)
+    if table is None:
+        raise ValueError("The report's main table is not in the catalog.")
+    filters, labels = [], []
+    for g in group.expressions:
+        idx = None
+        for i, p in enumerate(tree.expressions):
+            inner = p.this if isinstance(p, exp.Alias) else p
+            if inner == g or (isinstance(g, exp.Column) and not g.table and p.alias_or_name == g.name):
+                idx = i
+                break
+        if idx is None and isinstance(g, exp.Literal) and not g.is_string and int(g.this) - 1 < len(tree.expressions):
+            idx = int(g.this) - 1  # GROUP BY 1
+        if idx is None or idx >= len(row):
+            raise ValueError("A grouping of this report is not among its columns, so the cell cannot be traced.")
+        expr = tree.expressions[idx]
+        expr = expr.this if isinstance(expr, exp.Alias) else expr
+        value = row[idx]
+        if value is None:
+            filters.append(exp.Is(this=expr.copy(), expression=exp.Null()))
+        else:
+            lit = (exp.Literal.number(value) if isinstance(value, (int, float)) and not isinstance(value, bool)
+                   else exp.Literal.string(str(value)))
+            filters.append(exp.EQ(this=expr.copy(), expression=lit))
+        labels.append((columns[idx] if idx < len(columns) else expr.sql(dialect=dialect), value))
+    alias = source.alias_or_name
+    cols = [exp.column(c, table=alias) for c in schema[table] if (table, c) not in (sensitive or set())]
+    detail = tree.copy()
+    detail.set("expressions", cols)
+    for key in ("group", "having", "order", "limit", "distinct"):
+        detail.set(key, None)
+    detail = detail.where(exp.and_(*filters), copy=False)
+    return detail.sql(dialect=dialect), labels

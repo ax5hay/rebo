@@ -26,7 +26,7 @@ from .knowledge import Knowledge, User
 from .llm import build_model, credentials_present, profile
 from .observability import setup_tracing
 from .retrieval import Index, fts_query, get_embedder
-from .safety import canonical_hash, fill_params, guard
+from .safety import canonical_hash, drill_sql, fill_params, guard
 from .settings import Settings, get_settings, load_env_file
 from .store import Store, new_id, now
 from .target import QueryResult, TargetDB
@@ -630,6 +630,26 @@ class App:
         usage_d = {"requests": 0, "input_tokens": 0, "output_tokens": 0, "cache_read_tokens": 0, "tool_calls": 0,
                    "model": None, "escalated": False, "route": "rerun"}
         deps = Deps(app=self, user=user, trace=[{"tool": "rerun", "turn": turn_id}])
+        return self._report_turn(new_id("turn"), t["conversation_id"], user, t["question"], out, res, deps, usage_d)
+
+    def drill(self, user: User, turn_id: str, row: int, column: str | None = None) -> dict[str, Any]:
+        """"Explain this number": the rows behind one row of a summary report of yours, built with
+        sqlglot from the report's SQL (no model call), guarded, and recorded as a new turn (route "drill")."""
+        t = self._turn(user, turn_id)
+        if t["kind"] != "report":
+            raise ValueError("Only reports can be drilled into.")
+        p = json.loads(t["payload"])
+        if not 0 <= row < len(p["rows"]) or (column is not None and column not in p["columns"]):
+            raise ValueError("No such cell in this report.")
+        sql, labels = drill_sql(t["sql"], self.target.dialect, p["columns"], p["rows"][row], self.catalog.schema,
+                                self.catalog.sensitive)
+        res = self._run_report_sql(sql)
+        where = ", ".join(f"{k} = {v}" for k, v in labels)
+        out = Report(title=f"{p['title']}: rows for {where}"[:120], sql=sql,
+                     assumptions=[msg.say("drill_rows", title=p["title"], where=where)])
+        usage_d = {"requests": 0, "input_tokens": 0, "output_tokens": 0, "cache_read_tokens": 0, "tool_calls": 0,
+                   "model": None, "escalated": False, "route": "drill"}
+        deps = Deps(app=self, user=user, trace=[{"tool": "drill", "turn": turn_id, "row": row}])
         return self._report_turn(new_id("turn"), t["conversation_id"], user, t["question"], out, res, deps, usage_d)
 
     def turn_csv(self, user: User, turn_id: str) -> str:

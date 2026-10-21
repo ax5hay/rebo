@@ -73,6 +73,7 @@ prefixed `"Correction to the previous report: "`.
 | `POST /api/requests/{id}/resolve` `{status: done / declined, resolution}` | admin (admin requests), owner (all) | the requester sees the note |
 | `GET /api/turns/{id}/csv` | the asker | the report as CSV |
 | `POST /api/turns/{id}/rerun` | the asker | "Re-run with today's data": same SQL, fresh rows, no model call; a new turn with `usage.route = "rerun"` |
+| `POST /api/turns/{id}/drill` `{row, column?}` | the asker | the records behind one row of a grouped report; new turn, `usage.route = "drill"`, no model |
 | `GET /api/knowledge/about?q=` | anyone | what the bot knows about a word: visible learned items by trust, tables/columns with descriptions, stored values |
 | `GET /api/starter` | anyone | starter questions: the user's pinned reports first, then the most-used trusted reports |
 | `POST /api/turns/{id}/pin` / `DELETE /api/knowledge/{id}/pin` | the asker / the owner | pin a report (flags your own example with the same SQL, or creates one) / unpin; both logged in the item's history |

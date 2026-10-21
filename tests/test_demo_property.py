@@ -31,3 +31,45 @@ def test_bot_learns_a_different_domain_from_the_database_alone(tmp_path):
     # maintenance.assigned_to -> staff has no declared key and no name hint: left for people to teach
     assert app.catalog.join_path("maintenance", "staff") is None or all(
         j["from_cols"] != "assigned_to" for j in app.catalog.join_path("maintenance", "staff"))
+
+
+def test_drill_through_from_a_summary_cell_to_its_rows(tmp_path):
+    import json
+    import sqlite3
+
+    import pytest
+
+    from reportsbot.knowledge import User
+    from reportsbot.store import new_id, now
+    db = _build(tmp_path)
+    app = App(Settings(database_url=f"sqlite:///{db}", state_dir=tmp_path / "state", embeddings=False))
+    app.bootstrap(progress=lambda *_: None)
+    sql = ("SELECT b.name AS building, COUNT(*) AS open_requests FROM maintenance m JOIN unit u ON u.unit_id = m.unit_id "
+           "JOIN building b ON b.building_id = u.building_id WHERE m.state <> 'closed' GROUP BY b.name ORDER BY 2 DESC")
+    res = app._run_report_sql(sql)
+    alice, tid = User("alice"), new_id("turn")
+    with app.store.tx() as s:
+        s.execute("INSERT INTO conversation(id, owner, created_at, updated_at) VALUES(?,?,?,?)", ("c1", "alice", now(), now()))
+        s.execute("INSERT INTO turn(id, conversation_id, owner, question, kind, payload, sql, created_at) "
+                  "VALUES(?,?,?,?,?,?,?,?)", (tid, "c1", "alice", "open maintenance per building", "report",
+                                              json.dumps({"title": "Open requests", "columns": res.columns,
+                                                          "rows": res.rows, "truncated": False}), sql, now()))
+    building, count = res.rows[0]
+    r = app.drill(alice, tid, row=0, column="open_requests")
+    assert r["kind"] == "report" and len(r["rows"]) == count and "request_id" in r["columns"]
+    con = sqlite3.connect(db)
+    expected = {x[0] for x in con.execute(
+        "SELECT m.request_id FROM maintenance m JOIN unit u ON u.unit_id = m.unit_id JOIN building b "
+        "ON b.building_id = u.building_id WHERE m.state <> 'closed' AND b.name = ?", (building,))}
+    assert {row[r["columns"].index("request_id")] for row in r["rows"]} == expected
+    usage = json.loads(app.store.one("SELECT usage FROM turn WHERE id=?", (r["turn_id"],))["usage"])
+    assert usage["route"] == "drill" and usage["requests"] == 0 and building in r["assumptions"][0]
+    with pytest.raises(ValueError):
+        app.drill(alice, tid, row=99, column="open_requests")
+    from fastapi.testclient import TestClient
+
+    from reportsbot.api import create_app
+    client = TestClient(create_app(app, with_ui=False))
+    ok = client.post(f"/api/turns/{tid}/drill", json={"row": 1}, headers={"X-User-Id": "alice"})
+    assert ok.status_code == 200 and len(ok.json()["rows"]) == res.rows[1][1]
+    assert client.post(f"/api/turns/{tid}/drill", json={"row": 1}, headers={"X-User-Id": "bob"}).status_code == 403

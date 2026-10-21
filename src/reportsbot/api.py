@@ -24,6 +24,11 @@ class FeedbackIn(BaseModel):
     note: str = ""
 
 
+class DrillIn(BaseModel):
+    row: int
+    column: str | None = None
+
+
 class RememberIn(BaseModel):
     accept: bool
 
@@ -141,6 +146,10 @@ def router(app: App) -> APIRouter:
     @r.post("/turns/{turn_id}/feedback")
     def feedback(turn_id: str, body: FeedbackIn, user: User = Depends(current_user)):
         return guard_errors(lambda: app.feedback(user, turn_id, body.verdict, body.note))
+
+    @r.post("/turns/{turn_id}/drill")
+    def drill(turn_id: str, body: DrillIn, user: User = Depends(current_user)):
+        return guard_errors(lambda: app.drill(user, turn_id, body.row, body.column))
 
     @r.post("/turns/{turn_id}/pin")
     def pin(turn_id: str, user: User = Depends(current_user)):
