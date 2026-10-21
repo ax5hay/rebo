@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="840" height="220" viewBox="0 0 840 220" role="img" aria-labelledby="t d">
+  <title id="t">ReBo</title>
+  <desc id="d">ReBo, a reports bot that learns from the people who use it. A small result table with one row marked as how the question was read.</desc>
+  <rect width="840" height="220" rx="18" fill="#142029"/>
+  <!-- wordmark -->
+  <g font-family="'Instrument Sans', 'Inter', 'Helvetica Neue', Arial, sans-serif">
+    <rect x="56" y="62" width="44" height="44" rx="12" ry="12" fill="#5fd0ad"/>
+    <path d="M100 94 v12 h-12 z" fill="#142029"/>
+    <text x="64" y="93" font-size="20" font-weight="700" fill="#142029" letter-spacing="-0.5">Rb</text>
+    <text x="116" y="100" font-size="44" font-weight="650" fill="#e6ebee" letter-spacing="-1.4">ReBo</text>
+    <text x="58" y="146" font-size="17" fill="#9fadb7">Reports in plain words, from any SQL database.</text>
+    <text x="58" y="172" font-size="17" fill="#9fadb7">It learns from the people who ask, never from config.</text>
+  </g>
+  <!-- a result sheet: header, rows, one row read and marked -->
+  <g transform="translate(520 40)">
+    <rect width="264" height="140" rx="10" fill="#1c2a35" stroke="#263642"/>
+    <rect x="0.5" y="0.5" width="263" height="26" rx="10" fill="#263642"/>
+    <rect x="0.5" y="16" width="263" height="11" fill="#263642"/>
+    <g fill="#9fadb7"><rect x="16" y="10" width="54" height="6" rx="3"/><rect x="120" y="10" width="40" height="6" rx="3"/><rect x="206" y="10" width="40" height="6" rx="3"/></g>
+    <g fill="#3a4c59">
+      <rect x="16" y="40" width="80" height="6" rx="3"/><rect x="120" y="40" width="52" height="6" rx="3"/><rect x="214" y="40" width="32" height="6" rx="3"/>
+      <rect x="16" y="88" width="70" height="6" rx="3"/><rect x="120" y="88" width="60" height="6" rx="3"/><rect x="220" y="88" width="26" height="6" rx="3"/>
+      <rect x="16" y="112" width="92" height="6" rx="3"/><rect x="120" y="112" width="44" height="6" rx="3"/><rect x="210" y="112" width="36" height="6" rx="3"/>
+    </g>
+    <rect x="8" y="56" width="248" height="22" rx="5" fill="#d9a536" fill-opacity="0.18"/>
+    <g fill="#d9a536"><rect x="16" y="64" width="86" height="6" rx="3"/><rect x="120" y="64" width="48" height="6" rx="3"/><rect x="212" y="64" width="34" height="6" rx="3"/></g>
+    <circle cx="250" cy="-6" r="13" fill="#5fd0ad"/>
+    <path d="M244 -6 l4 4 l8 -8" fill="none" stroke="#142029" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

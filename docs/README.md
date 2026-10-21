@@ -2,7 +2,8 @@
 
 Read in order the first time. Each document names the code it describes (`file.py`, function names).
 
-Start with **[AGENTS.md](../AGENTS.md)**: the direction and the rules that do not change.
+Start with **[AGENTS.md](../AGENTS.md)**: the direction and the rules that do not change. For running a
+server, [OPERATIONS.md](../OPERATIONS.md); for changing the code, [CONTRIBUTING.md](../CONTRIBUTING.md).
 
 | # | Document | Read it for |
 |---|---|---|
