@@ -17,8 +17,10 @@ also in git history; this file is the short version a new session reads first.
   page (`web/`). 144 offline tests (SQLite); 230+ with Postgres; 2 Playwright tests.
 - **Eval debt:** every item since B-005 that changes answers says `eval pending: needs llm` in
   BACKLOG.md. With a key, run those measurements first (each item names its results file).
-- **Next work:** `BACKLOG.md`, in order, starting at the first `[ ]` item the machine can do
-  (`tools/doctor.py` prints it). B-001 … B-045 cover every proposed item from docs 15, 18 and 22.
+- **Next work:** `BACKLOG.md`. Left after the second machine: B-043 (visual check), B-044 (LM Studio,
+  in progress), B-045 (needs a Gemini key), B-015 and B-041 (need a person), and every
+  `eval pending: needs llm` measurement (B-005, 006, 008–013, 019, 042; each names its results file).
+  `tools/doctor.py` prints the next doable item.
 - **Direction and rules:** `AGENTS.md`. Plan and gates: `docs/18-production-build.md`.
 
 ## 2. Measured facts (do not re-derive; re-measure only when a change could affect them)
@@ -32,6 +34,9 @@ also in git history; this file is the short version a new session reads first.
 | JMS gold (79 human reports) | **not usable yet**: 67 prompts are "Show me <title>"; drafts are B-014, PO validation B-015 | `fixtures/jms_staging/eval_results_gold25_sonnet.json` |
 | Learning loop | confirm → repeat question answered in 5 s with 0 tool calls; correction → remembered term reused in a new conversation | doc 17 §3 |
 | Schema drift | renamed column → item stale → restored automatically after the fix | doc 17 §4 |
+| Embedding models on the JMS catalogue (12 validated questions, recall@5 of gold tables, hybrid) | arctic-embed-s 0.621 (kept), embeddinggemma-300m 0.552, Qwen3-Embedding-0.6B 0.517 | `fixtures/jms_staging/embed_compare_2026-10-21.json`, doc 08 §4b |
+| Synthetic data date order | 9,809 violations → 0 with the derived spec | doc 12 §3 |
+| genai-prices vs OpenRouter list prices (2026-10-21) | Sonnet 5.5 equal; Haiku 5.5 5× high; Gemini 3.8 Flash 9% low (cost cap scaled) | doc 20 §2.2 |
 
 Run-to-run variance is real (one prompt gave 55 rows in one run and 5 in another). Compare changes
 on gold answers, not on row counts of unconfirmed answers.

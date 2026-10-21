@@ -67,5 +67,6 @@ def build(tmp: Path) -> App:
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=8765)
-    port = ap.parse_args().port
-    uvicorn.run(create_app(build(Path(tempfile.mkdtemp())), with_ui=False), host="127.0.0.1", port=port)
+    ap.add_argument("--ui", action="store_true", help="also mount the NiceGUI pages (screenshots, B-043)")
+    args = ap.parse_args()
+    uvicorn.run(create_app(build(Path(tempfile.mkdtemp())), with_ui=args.ui), host="127.0.0.1", port=args.port)
