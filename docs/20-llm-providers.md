@@ -57,6 +57,12 @@ Tested offline: `test_trusted_saved_example_routes_to_fast_model_new_questions_t
 `test_saved_report_with_new_values_is_filled_in_without_the_agent`. The cost saving of the direct
 and params routes has not been measured with a real model yet (needs an LLM key).
 
+**Measured 2026-10-21b (B-008), demo DB, Sonnet + Haiku via OpenRouter:** first question "List the
+open maintenance requests with priority urgent": 3 requests, $0.038. The same question after the
+person confirmed it (route `direct`): 0 requests, $0. The same report with another value ("priority
+high", route `params`): 1 Haiku request, $0.00013, with the right filter (`priority = 'high'`, 8
+rows instead of 4), about 290× cheaper than a new question.
+
 ### 2.1 Per-model profiles (`llm.PROFILES`, B-012)
 
 A profile says how one model family is driven; the first entry whose key is a substring of the

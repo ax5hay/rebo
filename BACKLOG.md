@@ -96,6 +96,7 @@ done when:
 - docs 05 and 20 updated.
 - `route: "direct"` appears in usage.
 result: 2026-10-21, 4 commits (`git log --grep B-008`); 106 passed. Exact repeat of own question: 0 requests (route direct); value-only change: 1 fast request, 0 agent (route params); rerun: 0 requests. eval pending: needs llm (cost per repeat question). UI button not browser-tested.
+eval 2026-10-21b: new $0.038 (3 requests); exact repeat after confirming $0 (0 requests, direct); new value $0.00013 (1 Haiku request, params) with the right filter.
 
 ### [x] B-009 · Question masking for example retrieval
 needs: offline
