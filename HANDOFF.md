@@ -6,12 +6,15 @@ also in git history; this file is the short version a new session reads first.
 
 ## 1. Where things stand
 
-- **Working product, slim build.** Bot, learning lifecycle, roles (user/admin/owner), editable memory,
-  undoable feedback, requests, owner config editing, JMS adapter + mock, demo domain, evals, export
-  bundle, doctor. Since 2026-10-21 (second machine): CI + pre-commit, domain-word guard, grain check,
-  ask-gate, remembered clarifications, no-model routes (direct/params/rerun), question masking,
-  cache-stable prefix, multi-turn eval, model profiles, second opinion, pins, JMS draft questions.
-  117 offline tests passing.
+- **Working product.** Bot, learning lifecycle, roles, editable memory, undoable feedback, requests,
+  owner config editing, JMS adapter + mock, demo domain, evals, export bundle, doctor. Added on the
+  second machine (2026-10-21, B-001…B-034 except B-015): CI + pre-commit, domain-word guard, grain
+  check, ask-gate, no-model routes (direct / cache / params / rerun / drill), question masking,
+  cache-stable prefix, multi-turn eval, model profiles, second opinion, user aids (pins, defaults,
+  lookup, preview, bulk review, import diff, usage stats, config preview, webhook), Postgres state
+  backend + Alembic, embeddings setting (model or TEI) with a measured comparison, AG-UI streaming,
+  durable jobs + schedules + mocked JMS push, cost cap + rate limit, production compose, React Ask
+  page (`web/`). 144 offline tests (SQLite); 230+ with Postgres; 2 Playwright tests.
 - **Eval debt:** every item since B-005 that changes answers says `eval pending: needs llm` in
   BACKLOG.md. With a key, run those measurements first (each item names its results file).
 - **Next work:** `BACKLOG.md`, in order, starting at the first `[ ]` item the machine can do
@@ -48,6 +51,10 @@ on gold answers, not on row counts of unconfirmed answers.
 - SQLite/Postgres `TEXT` is the normal string type: decide "free text" by average length, not by type.
 - On macOS the copied tree had CRLF line endings on some files: `git status` showed them modified with
   no content change (`git diff --ignore-cr-at-eol` empty). They were stashed, not committed.
+- Postgres tests: `docker compose up -d state-db` then
+  `REPORTSBOT_TEST_STATE_URL=postgresql://reportsbot:reportsbot@127.0.0.1:5433/reportsbot uv run pytest`.
+- Web tests: `cd web && npm ci && npm run build && npx playwright test` (starts `tests/web_server.py`).
+- In Chrome 156 `scrollIntoView` returns a Promise: never return it from a React effect.
 - The domain-word guard (`tests/test_no_domain_words.py`) flags plain words that are also JMS table
   names (template, family, ...). Add genuine English words to `PLAIN_WORDS`; never JMS identifiers.
 - When killing a process by command-line match, the pattern can match your own shell. Kill by port
@@ -79,4 +86,4 @@ on gold answers, not on row counts of unconfirmed answers.
 | Date | Session | Done | Next |
 |---|---|---|---|
 | 2026-10-21 | original machine | everything up to the "continue" protocol; a fresh-machine simulation (unzip → `uv sync` → doctor) found and fixed two bugs: the demo config was never shipped, and keys in `.env` were invisible to the bot. Verified: history restored, 81 tests pass, NEXT = B-001 | B-001 |
-| 2026-10-21 | second machine (macOS) | installed uv (brew); CRLF noise stashed; B-001…B-014 and B-016 done in small commits; all LLM measurements pending (no key) | B-017 |
+| 2026-10-21 | second machine (macOS) | installed uv (brew); CRLF noise stashed; B-001…B-034 (not B-015) done in small commits; all LLM measurements pending (no key); embedding comparison measured (keep arctic); production stack started and verified; fixed: conversations could be read by another user | B-035 |
