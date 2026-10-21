@@ -11,7 +11,9 @@ test("a report with feedback, undo, a follow-up chip and a remember card", async
   await ask(page, "customers on hold, i.e. paused");
   const card = page.getByTestId("report").first();
   await expect(card.locator("tbody tr")).toHaveCount(10);
-  await expect(card).toContainText("Paused means the stored status 'paused'.");
+  await expect(card).toContainText("Paused means the stored status paused.");
+  // Markdown is rendered, not shown raw: the backticks became a code element
+  await expect(card.locator(".assumptions code")).toHaveText("paused");
   await card.getByRole("button", { name: "Yes, this is right" }).click();
   await expect(page.locator("[data-sonner-toast]").first()).toContainText("only tunes the bot for you");
   await expect(card).toContainText("You confirmed this");

@@ -5,6 +5,7 @@ import { Button } from "react-aria-components";
 import { call, get, when } from "../api";
 import { Sheet } from "../answer";
 import { useMe, useToast } from "../shell";
+import { Md } from "../md";
 
 const KIND: Record<string, string> = { example: "Saved report", term: "Meaning of a word", note: "Rule or fact", join: "How tables connect" };
 
@@ -54,7 +55,7 @@ export default function KnowledgePage() {
               </div>
               <div className="title" style={{ marginTop: 6 }}>{i.title}</div>
               {i.question && <div className="sub">Asked as “{i.question}”</div>}
-              {i.body && <div className="sub">{i.body}</div>}
+              {i.body && <Md className="sub">{i.body}</Md>}
               {i.sql && <details className="query"><summary>Query</summary><pre className="code">{i.sql}</pre></details>}
               <div className="sub small">Confirmed {i.confirmations}×, used {i.uses}×, reported wrong {i.rejections}×</div>
             </div>
@@ -88,7 +89,7 @@ export default function KnowledgePage() {
           <li key={i.id}>
             <div>
               <div className="row" style={{ gap: 6 }}><span className="pill">{KIND[i.kind]}</span><span className="pill verified">{i.label}</span></div>
-              <div className="title" style={{ marginTop: 6 }}>{i.title}</div>{i.body && <div className="sub">{i.body}</div>}
+              <div className="title" style={{ marginTop: 6 }}>{i.title}</div>{i.body && <Md className="sub">{i.body}</Md>}
             </div>
             <div className="acts">{me?.is_admin && <button className="btn ghost" onClick={() => setEditing(i)}>Edit</button>}</div>
           </li>
@@ -100,7 +101,7 @@ export default function KnowledgePage() {
         {(requests.data ?? []).length === 0 && <li className="empty">No requests. When a shared answer is wrong and you cannot change it, ask an admin from the report's menu.</li>}
         {(requests.data ?? []).map((r: any) => (
           <li key={r.id}>
-            <div><div className="title" style={{ fontWeight: 500 }}>{r.text}</div>{r.resolution && <div className="sub">Answer: {r.resolution}</div>}<div className="sub small">{when(r.created_at)}</div></div>
+            <div><Md className="title" >{r.text}</Md>{r.resolution && <div className="sub">Answer: <Md inline>{r.resolution}</Md></div>}<div className="sub small">{when(r.created_at)}</div></div>
             <span className={`pill ${r.status === "done" ? "verified" : r.status === "open" ? "yours" : "warn"}`}>{r.status === "open" ? "Waiting" : r.status === "done" ? "Done" : "Declined"}</span>
           </li>
         ))}
@@ -112,7 +113,7 @@ export default function KnowledgePage() {
           <ul className="list">
             {history.events.map((e: any) => (
               <li key={e.id}>
-                <div><div className="title">{e.action.replace("status:", "now ")}</div><div className="sub">{e.actor}{e.note ? `: ${e.note}` : ""}</div></div>
+                <div><div className="title">{e.action.replace("status:", "now ")}</div><div className="sub">{e.actor}{e.note ? <>: <Md inline>{e.note}</Md></> : ""}</div></div>
                 <span className="small muted">{when(e.at)}</span>
               </li>
             ))}
@@ -135,7 +136,7 @@ function Lookup() {
       {res && (
         <ul className="list panel" style={{ marginTop: 12 }}>
           {[...res.knowledge.verified, ...res.knowledge.yours, ...res.knowledge.pending].map((i: any) => (
-            <li key={i.id}><div><div className="title">{i.title}</div><div className="sub">{i.body}</div></div><span className={`pill ${i.trust === "verified" ? "verified" : "yours"}`}>{KIND[i.kind]}</span></li>
+            <li key={i.id}><div><div className="title">{i.title}</div><Md className="sub">{i.body}</Md></div><span className={`pill ${i.trust === "verified" ? "verified" : "yours"}`}>{KIND[i.kind]}</span></li>
           ))}
           {res.schema.map((t: any) => (
             <li key={`${t.table}.${t.column}`}><div><div className="title">{t.table}{t.column ? `.${t.column}` : ""}</div><div className="sub">{t.column_about || t.about}</div></div><span className="pill">{t.protected ? "Protected data" : "Data"}</span></li>

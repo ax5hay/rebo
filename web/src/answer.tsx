@@ -11,6 +11,7 @@ import {
 } from "react-aria-components";
 import { call, csvUrl, plural } from "./api";
 import { useMe, useToast } from "./shell";
+import { Md } from "./md";
 
 export type Turn = { key: string; question: string; r: any };
 
@@ -39,7 +40,7 @@ export function TurnView({ t, ask, onTurn, onFix, initial }: {
       {r.kind === "answer" && (
         <section className="panel answer">
           <div className="answer-body" style={{ paddingTop: 14 }}>
-            <p style={{ margin: 0, fontSize: 15 }}>{r.text}</p>
+            <Md className="reply">{r.text}</Md>
             {r.cites?.length > 0 && <p className="small muted" style={{ marginBottom: 0 }}>Based on: {r.cites.map((c: any) => c.title).join(", ")}</p>}
           </div>
           <Suggestions items={r.suggestions} />
@@ -48,7 +49,7 @@ export function TurnView({ t, ask, onTurn, onFix, initial }: {
       {r.kind === "error" && (
         <section className="panel answer">
           <div className="answer-head"><span className="pill danger"><span className="dot" />Not answered</span></div>
-          <div className="answer-body">{r.message}</div>
+          <div className="answer-body"><Md>{r.message}</Md></div>
         </section>
       )}
     </article>
@@ -118,7 +119,7 @@ function Report({ r, ask, onTurn, onFix }: { r: any; ask: (q: string) => void; o
                    if (res?.kind) onTurn(`The records behind row ${i + 1} of “${r.title}”`, res);
                  } : undefined} />
       <div className="table-foot">
-        <span>{r.provenance?.text}</span>
+        <span><Md inline>{r.provenance?.text}</Md></span>
         {grouped && <span>Select a row to see the records behind it.</span>}
       </div>
       <Reading steps={r.steps} assumptions={r.assumptions} sql={r.sql} />
@@ -140,14 +141,14 @@ export function Reading({ steps, assumptions, sql }: { steps?: string[]; assumpt
       {steps && steps.length > 0 && (
         <div>
           <h3>What the query does</h3>
-          <ol className="steps">{steps.map((s, i) => <li key={i}>{s}</li>)}</ol>
+          <ol className="steps">{steps.map((s, i) => <li key={i}><Md inline>{s}</Md></li>)}</ol>
         </div>
       )}
       {assumptions?.length > 0 && (
         <div>
           <h3>How I read your question</h3>
           <ul className="assumptions">
-            {assumptions.map((a) => <li key={a} className={a.startsWith("Check:") ? "check" : ""}><mark>{a}</mark></li>)}
+            {assumptions.map((a) => <li key={a} className={a.startsWith("Check:") ? "check" : ""}><mark><Md inline>{a}</Md></mark></li>)}
           </ul>
         </div>
       )}
@@ -204,11 +205,11 @@ function Clarify({ r, ask }: { r: any; ask: (q: string) => void }) {
     : r.questions.map((q: any) => `${q.question} → ${picked[q.question]}`).join("; "));
   return (
     <section className="panel answer" data-testid="clarify">
-      <header className="answer-head"><span className="pill yours"><span className="dot" />One question first</span><span className="title">{r.why}</span></header>
+      <header className="answer-head"><span className="pill yours"><span className="dot" />One question first</span><span className="title"><Md inline>{r.why}</Md></span></header>
       <div className="answer-body">
         {r.questions.map((q: any) => (
           <div key={q.question} style={{ marginBottom: 14 }}>
-            <p style={{ fontWeight: 600, margin: "0 0 8px" }}>{q.question}</p>
+            <p style={{ fontWeight: 600, margin: "0 0 8px" }}><Md inline>{q.question}</Md></p>
             <ToggleButtonGroup aria-label={q.question} selectionMode="single" className="row"
                                selectedKeys={picked[q.question] ? [picked[q.question]] : []}
                                onSelectionChange={(keys) => { const k = [...keys][0]; if (k) setPicked({ ...picked, [q.question]: String(k) }); }}>
@@ -229,7 +230,7 @@ export function Suggestions({ items }: { items?: any[] }) {
     <>
       {items.map((s) => (
         <div key={s.id} className="callout" data-testid="remember">
-          <div className="grow"><b>Remember this for next time?</b> “{s.title}”: {s.body}</div>
+          <div className="grow"><b>Remember this for next time?</b> “{s.title}”: <Md inline>{s.body}</Md></div>
           {done[s.id] ? <span className="small">{done[s.id]}</span> : (
             <div className="row">
               <button className="btn" onClick={async () => setDone({ ...done, [s.id]: (await call("POST", `/suggestions/${s.id}`, { accept: true })).message })}>Remember, only for me</button>

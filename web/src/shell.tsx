@@ -10,12 +10,13 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
 import { toast, Toaster } from "sonner";
 import { get, identity, setIdentity, type Identity } from "./api";
+import { Md } from "./md";
 
 export type Me = { id: string; role: "user" | "admin" | "owner"; team: string | null; is_admin: boolean; is_owner: boolean };
 
 const MeContext = createContext<Me | null>(null);
 export const useMe = () => useContext(MeContext);
-export const useToast = () => (text: string) => toast(text);
+export const useToast = () => (text: string) => toast(<Md inline>{text}</Md>);
 const PaletteContext = createContext<(open: boolean) => void>(() => {});
 export const usePalette = () => useContext(PaletteContext);
 

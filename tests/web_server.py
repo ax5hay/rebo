@@ -28,7 +28,7 @@ from rebo.settings import Settings  # noqa: E402
 
 def report(status: str, **extra) -> ModelResponse:
     return ModelResponse(parts=[ToolCallPart("present_report", {
-        "title": f"{status.title()} customers", "assumptions": [f"{status.title()} means the stored status '{status}'."],
+        "title": f"{status.title()} customers", "assumptions": [f"{status.title()} means the stored status `{status}`."],
         "sql": f"SELECT full_name AS customer, status FROM customer WHERE status = '{status}'", **extra})])
 
 

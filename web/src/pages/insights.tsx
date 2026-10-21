@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ExternalLink, RefreshCcw } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { get, plural, when } from "../api";
+import { Md } from "../md";
 
 const pct = (frac?: string) => {
   if (!frac || !frac.includes("/")) return null;
@@ -38,7 +39,7 @@ export default function InsightsPage() {
 
       {d && (
         <div className="panel kpis" style={{ marginTop: 16 }}>
-          <div><div className={`value ${attention.length ? "bad" : "ok"}`}>{attention.length ? `${attention.length} to look at` : "All healthy"}</div><div className="label">{d.checks.length} checks just now</div></div>
+          <div><div className={`value ${attention.some((c: any) => c.state === "fail") ? "bad" : attention.length ? "warn" : "ok"}`}>{attention.length ? `${attention.length} to look at` : "All healthy"}</div><div className="label">{d.checks.length} checks just now</div></div>
           <div><div className="value">{latestAccuracy(d.accuracy)}</div><div className="label">Latest measured accuracy</div></div>
           <div><div className="value">{reports ? `${Math.round((confirmed / reports) * 100)}%` : "–"}</div><div className="label">Answers confirmed by the asker</div></div>
           <div><div className="value">{u.turns}</div><div className="label">Questions asked</div></div>
@@ -52,7 +53,7 @@ export default function InsightsPage() {
           <li key={c.name} className={c.state}>
             <span className={`state ${c.state}`} aria-label={c.state} />
             <span className="title">{c.name}</span>
-            <span className="sub" style={{ margin: 0 }}>{c.detail}</span>
+            <span className="sub" style={{ margin: 0 }}><Md inline>{c.detail}</Md></span>
             <span className="ms">{c.ms} ms</span>
           </li>
         ))}

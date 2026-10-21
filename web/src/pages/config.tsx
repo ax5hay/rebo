@@ -3,6 +3,7 @@ import { ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { call, get, when } from "../api";
 import { useToast } from "../shell";
+import { Md } from "../md";
 
 export default function ConfigPage() {
   const qc = useQueryClient();
@@ -30,8 +31,8 @@ export default function ConfigPage() {
         </div>
         {check && (
           <div className={`callout ${check.ok ? "" : "warn"}`} style={{ margin: "12px 0 0", display: "block" }}>
-            <b>{check.message}</b>
-            {check.errors.map((e: string) => <div key={e} className="small" style={{ marginTop: 4 }}>{e}</div>)}
+            <b><Md inline>{check.message}</Md></b>
+            {check.errors.map((e: string) => <div key={e} className="small" style={{ marginTop: 4 }}><Md inline>{e}</Md></div>)}
             {check.changes.map((c: any) => <div key={c.setting} className="small" style={{ marginTop: 2 }}>{c.setting}: {c.from} → {c.to}</div>)}
           </div>
         )}
@@ -41,7 +42,7 @@ export default function ConfigPage() {
         {(cfg.data?.history ?? []).length === 0 && <li className="empty">No changes made here yet.</li>}
         {(cfg.data?.history ?? []).map((e: any) => (
           <li key={e.id}>
-            <div><div className="title">{e.note || "No reason given"}</div><div className="sub">{e.actor}, {when(e.at)}</div></div>
+            <div><div className="title">{e.note ? <Md inline>{e.note}</Md> : "No reason given"}</div><div className="sub">{e.actor}, {when(e.at)}</div></div>
             <div className="acts"><button className="btn ghost" onClick={async () => { try { toast((await call("POST", `/admin/config/rollback/${e.id}`)).message); reload(); } catch (err) { toast((err as Error).message); } }}>Restore the version before this</button></div>
           </li>
         ))}

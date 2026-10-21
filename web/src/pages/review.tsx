@@ -5,6 +5,7 @@ import { Checkbox } from "react-aria-components";
 import { call, get, when } from "../api";
 import { useToast } from "../shell";
 import { EditItem } from "./knowledge";
+import { Md } from "../md";
 
 export default function ReviewPage() {
   const qc = useQueryClient();
@@ -47,7 +48,7 @@ export default function ReviewPage() {
               <div className="row" style={{ gap: 6 }}><span className="pill">{i.kind}</span><span className="small muted">from {i.owner}, confirmed by {i.confirmers?.length ?? 0}, reported wrong {i.rejections}×</span></div>
               <div className="title" style={{ marginTop: 6 }}>{i.title}</div>
               {i.question && <div className="sub">Asked as “{i.question}”</div>}
-              {i.body && <div className="sub">{i.body}</div>}
+              {i.body && <Md className="sub">{i.body}</Md>}
               {i.sql && <details className="query"><summary>Query</summary><pre className="code">{i.sql}</pre></details>}
             </div>
             <div className="acts">
@@ -67,7 +68,7 @@ export default function ReviewPage() {
           <li key={r.id}>
             <div>
               <div className="row" style={{ gap: 6 }}><span className="pill yours">{r.kind.replace("_", " ")}</span><span className="small muted">{r.requester}, {when(r.created_at)}</span></div>
-              <div className="title" style={{ fontWeight: 500, marginTop: 6 }}>{r.text}</div>
+              <Md className="title req">{r.text}</Md>
               <input className="input" style={{ marginTop: 10 }} aria-label="Answer to the requester" placeholder="Your answer, shown to the requester" value={answers[r.id] ?? ""} onChange={(e) => setAnswers({ ...answers, [r.id]: e.target.value })} />
             </div>
             <div className="acts">

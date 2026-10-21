@@ -184,5 +184,20 @@ assistant-ui 0.15 / CopilotKit 1.79 bring thread primitives the report cards wou
 the `/api/agui` stream with a 25-line SSE reader. Identity: the login proxy in production; locally,
 the "Signed in as" picker (or `?user=…&role=…`), remembered in the browser.
 
+Palette v3 "ledger" (2026-10-21): an ink rail (`#142029`) frames the work so the sidebar and the
+answer never compete; porcelain paper (`#f3f3ef`) and white surfaces; deep viridian (`#0a6b55`) for
+trust, learning and the primary action; brass (`#d9a536`) only as the highlighter on "How I read your
+question"; indigo (`#3a4bc4`) for what is yours. Dark mode keeps the same roles. All tokens are on
+`:root` in `web/src/styles.css`.
+
+Markdown everywhere text is written by the bot, the model or a person (replies, errors, "How I read
+your question", query steps, clarifications, remember-cards, knowledge bodies, requests and answers,
+history notes, health details, configuration checks, toasts): `web/src/md.tsx`, react-markdown 10.1
+(MIT) + remark-gfm 4.0 (MIT) for GFM tables, lists, code and links. Raw HTML is never rendered
+(react-markdown's default), so no sanitizer is needed; links open in a new tab. Chosen over
+Streamdown 2.7 (Apache-2.0; built for token-by-token streaming, which ReBo does not do, and ships
+Shiki/KaTeX/Mermaid weight) and markdown-to-jsx 9 (renders raw HTML unless configured). The model's
+context preview on Admin stays verbatim on purpose: it is what the model reads.
+
 Tests: `npx playwright test` (Playwright 1.64, headless Chromium) against `tests/web_server.py`
 (shop DB, scripted model); CI runs them.
