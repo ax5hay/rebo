@@ -119,6 +119,9 @@ revision files; there is no downgrade (restore a backup instead).
 - `knowledge.sql_template`, `knowledge.params`: an example's SQL with literals as `:p1…` and the literals (B-008).
 - `knowledge.pinned`: the owner's favourite (B-016).
 - `cat_column.pos`: column order (was SQLite's `rowid`; filled from it on upgrade).
+- `job`, `schedule` (revision 0003, B-030): background work with a lease, and report schedules (doc 13 §7).
+- `answer_cache(key, owner, sql, report, hits, created_at)` (revision 0004, B-031): exact answer cache;
+  `report` holds title, assumptions, follow-ups and used knowledge, never rows.
 - `request(id, kind, target, requester, item_id, turn_id, text, status, resolver, resolution, created_at, updated_at)`:
   fix/access/config requests. `kind` is `fix_knowledge`, `fix_report`, `access`, `config` or `other`;
   `target` is `admin` or `owner`; `status` is `open`, `done` or `declined`.

@@ -32,6 +32,11 @@ return 400 for non-default sampling parameters, and Pydantic AI also strips them
 **Routing (`App.ask`):**
 1. **Direct, no model.** The user's own confirmed example whose question is the same text (case,
    spacing and end punctuation ignored) is re-run through the guard (`_direct_answer`).
+   **Cache, no model.** Otherwise, on the first turn of a conversation, an exact answer cache
+   (B-031) keyed by the normalised question, the user and team, the knowledge version (latest
+   history event) and the catalog version returns the earlier SQL re-run fresh (route `cache`).
+   Never semantic; follow-ups inside a conversation are never cached; a "wrong" verdict removes
+   the entry; any knowledge change or re-bootstrap invalidates every entry.
 2. Retrieve visible knowledge.
 3. If the top results contain an `example` that is **verified or the user's own** and its question
    shares ≥ 60% of content words with this one (`_reuse_match`):
@@ -43,7 +48,7 @@ return 400 for non-default sampling parameters, and Pydantic AI also strips them
 4. Anything else runs the agent on `models.agent`.
 5. If the run raises (validator retries exhausted, `UsageLimitExceeded`, API error) and
    `models.escalate` is set, re-run once on the escalation model from a clean slate.
-6. `turn.usage` records `model`, `route` (`direct`/`params`/`reuse`/`new`, and `rerun` for
+6. `turn.usage` records `model`, `route` (`direct`/`cache`/`params`/`reuse`/`new`, and `rerun` for
    "Re-run with today's data") and `escalated`.
 
 Tested offline: `test_trusted_saved_example_routes_to_fast_model_new_questions_to_agent_model`,

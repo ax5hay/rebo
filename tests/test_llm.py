@@ -399,3 +399,27 @@ def test_agui_stream_reports_tool_steps_then_the_result(app):
     assert result["kind"] == "report" and len(result["rows"]) == 10 and result["conversation_id"] == "conv-1"
     other = client.post("/api/agui", json=body, headers={"X-User-Id": "bob"})
     assert other.status_code == 403
+
+
+async def test_exact_answer_cache_hits_and_invalidates(app):
+    sql = "SELECT full_name AS customer FROM customer WHERE status = 'paused'"
+    seen = _scripted(app, [_completion("present_report", {"title": "Paused", "sql": sql,
+                                                          "assumptions": ["Paused is the stored status."]})])
+    alice = User("alice")
+    first = await app.ask(alice, "Who is paused?")
+    again = await app.ask(alice, "who is  paused")                         # same question: no model request
+    assert len(seen) == 1 and again["rows"] == first["rows"] and again["assumptions"] == first["assumptions"]
+    route = lambda r: json.loads(app.store.one("SELECT usage FROM turn WHERE id=?", (r["turn_id"],))["usage"])["route"]
+    assert route(again) == "cache"
+    await app.ask(User("bob"), "who is paused")                            # another user: not shared
+    assert len(seen) == 2
+    await app.ask(alice, "who is paused", again["conversation_id"])        # inside a conversation: not cached
+    assert len(seen) == 3
+    app.knowledge.add(User("ada", role="admin"), kind="note", title="fiscal year", body="starts in April")
+    await app.ask(alice, "who is paused")                                  # knowledge changed: asked again
+    assert len(seen) == 4
+    hit = await app.ask(alice, "who is paused")
+    assert len(seen) == 4 and route(hit) == "cache"
+    app.feedback(alice, hit["turn_id"], "wrong")                           # a wrong answer leaves the cache
+    await app.ask(alice, "who is paused")
+    assert len(seen) == 5

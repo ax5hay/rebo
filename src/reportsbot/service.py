@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import datetime as dt
+import hashlib
 import json
 import logging
 from collections import Counter
@@ -286,6 +287,9 @@ class App:
         self._remember_clarification(user, conv_id, text)
         if direct := self._direct_answer(user, conv_id, text, history):
             return direct
+        cache_key = None if history else self._cache_key(user, text)  # follow-ups depend on history: never cached
+        if cache_key and (cached := self._cached_answer(user, conv_id, text, cache_key)):
+            return cached
         deps = Deps(app=self, user=user, trace=Trace(on_append=progress))
         turn_id = new_id("turn")
         items = self.knowledge.search(user, text, top=6)
@@ -333,6 +337,12 @@ class App:
                    "route": "reuse" if reuse and not escalated else "new"}
         if isinstance(out, Report) and deps.final is not None:
             await self._second_opinion(user, text, out, deps.final, usage_d)
+            if cache_key:
+                with self.store.tx() as db:
+                    db.execute("INSERT INTO answer_cache(key, owner, sql, report, created_at) VALUES(?,?,?,?,?) "
+                               "ON CONFLICT(key) DO NOTHING", (cache_key, user.id, out.sql, json.dumps(
+                                   out.model_dump(include={"title", "assumptions", "follow_ups", "used_knowledge"})),
+                                   now()))
             return self._report_turn(turn_id, conv_id, user, text, out, deps.final, deps, usage_d)
         if isinstance(out, Clarify):
             gated = self._ask_gate(out, text)
@@ -405,6 +415,36 @@ class App:
         g = guard(sql, dialect=self.target.dialect, schema=self.catalog.schema, sensitive=self.catalog.sensitive,
                   allowed_tables=self.allowed_tables, row_cap=self.settings.row_limit + 1)
         return self.target.run(g.sql, max_rows=self.settings.row_limit)
+
+    def _cache_key(self, user: User, text: str) -> str:
+        """Exact answer cache key (never semantic): the normalised question, who asks (personal and team
+        knowledge differ), the knowledge version (the latest history event: any change to anything
+        learned moves it) and the catalog version (last bootstrap)."""
+        kv = (self.store.one("SELECT MAX(id) AS v FROM knowledge_event") or {}).get("v")
+        raw = json.dumps([_norm_question(text), user.id, user.team, kv, self.store.meta_get("bootstrapped_at")])
+        return hashlib.sha256(raw.encode()).hexdigest()
+
+    def _cached_answer(self, user: User, conv_id: str, text: str, key: str) -> dict | None:
+        hit = self.store.one("SELECT * FROM answer_cache WHERE key=? AND owner=?", (key, user.id))
+        if not hit:
+            return None
+        try:
+            res = self._run_report_sql(hit["sql"])
+        except Exception:
+            log.info("cached answer no longer runs; asking the agent", exc_info=True)
+            return None
+        with self.store.tx() as db:
+            db.execute("UPDATE answer_cache SET hits=hits+1 WHERE key=?", (key,))
+        out = Report(sql=hit["sql"], **json.loads(hit["report"]))
+        usage_d = {"requests": 0, "input_tokens": 0, "output_tokens": 0, "cache_read_tokens": 0, "tool_calls": 0,
+                   "model": None, "escalated": False, "route": "cache"}
+        note = f"(Answered from the exact answer cache, no model call.) {out.title}: {out.sql}"
+        msgs = [ModelRequest(parts=[UserPromptPart(text)]), ModelResponse(parts=[TextPart(note)])]
+        with self.store.tx() as db:
+            db.execute("UPDATE conversation SET messages=?, updated_at=? WHERE id=?",
+                       (ModelMessagesTypeAdapter.dump_json(msgs).decode(), now(), conv_id))
+        deps = Deps(app=self, user=user, trace=[{"tool": "cache"}])
+        return self._report_turn(new_id("turn"), conv_id, user, text, out, res, deps, usage_d)
 
     def _direct_answer(self, user: User, conv_id: str, text: str, history: list[ModelMessage]) -> dict | None:
         """The user's own confirmed example asked with exactly the same words (case, spacing and end
@@ -501,6 +541,8 @@ class App:
             self.undo_feedback(user, turn_id)  # changing your mind replaces the earlier feedback
         with self.store.tx() as db:
             db.execute("UPDATE turn SET feedback=?, feedback_note=? WHERE id=?", (verdict, note.strip() or None, turn_id))
+            if verdict == "wrong":  # a cached copy of a wrong answer must not be served again
+                db.execute("DELETE FROM answer_cache WHERE owner=? AND sql=?", (user.id, t["sql"]))
         if verdict == "correct":
             o = self.knowledge.confirm_report(
                 user, question=t["question"], title=payload["title"], sql=t["sql"], turn_id=turn_id,
