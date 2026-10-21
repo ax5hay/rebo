@@ -160,6 +160,15 @@ def entity_key(sql: str, dialect: str, pks: dict[str, list[str]]) -> tuple[int, 
     sources = [sel.args["from_"].this, *(j.this for j in sel.args["joins"])] if sel.args.get("from_") else []
     tables = {(t.alias_or_name).lower(): t.name for t in sources if isinstance(t, exp.Table)}
     pk = {t.lower(): cols[0] for t, cols in pks.items() if len(cols) == 1}
+    # A joined table looked up through its own primary key is a parent (each unit has one building): its
+    # id repeating once per row is expected, not a fan-out.
+    parents = set()
+    for j in sel.args["joins"]:
+        t, on = j.this, j.args.get("on")
+        if isinstance(t, exp.Table) and on is not None:
+            alias, key = t.alias_or_name.lower(), pk.get(t.name.lower(), "").lower()
+            if any(c.table.lower() == alias and c.name.lower() == key for c in on.find_all(exp.Column) if c.table):
+                parents.add(t.name.lower())
     for i, p in enumerate(sel.expressions):
         col = p.this if isinstance(p, exp.Alias) else p
         if isinstance(col, exp.Star) or isinstance(col, exp.Column) and isinstance(col.this, exp.Star):
@@ -170,7 +179,8 @@ def entity_key(sql: str, dialect: str, pks: dict[str, list[str]]) -> tuple[int, 
             owners = [tables[col.table.lower()]] if col.table.lower() in tables else []
         else:
             owners = [t for t in tables.values() if pk.get(t.lower(), "").lower() == col.name.lower()]
-        if len(owners) == 1 and pk.get(owners[0].lower(), "").lower() == col.name.lower():
+        if len(owners) == 1 and pk.get(owners[0].lower(), "").lower() == col.name.lower() \
+                and owners[0].lower() not in parents:
             return i, owners[0]
     return None
 

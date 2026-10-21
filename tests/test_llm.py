@@ -165,6 +165,7 @@ async def test_no_grain_retry_when_the_entity_key_is_unique(app):
     ("SELECT full_name, customer_id FROM customer JOIN orders USING (customer_id)", (1, "customer")),
     ("SELECT o.amount, order_id FROM customer c JOIN orders o ON o.customer_id = c.customer_id", (1, "orders")),
     ("SELECT customer_id FROM customer", None),                                             # no join
+    ("SELECT c.customer_id, o.amount FROM orders o JOIN customer c ON c.customer_id = o.customer_id", None),  # parent id
     ("SELECT c.* FROM customer c JOIN orders o ON o.customer_id = c.customer_id", None),    # star
     ("SELECT c.customer_id, COUNT(*) FROM customer c JOIN orders o ON o.customer_id = c.customer_id "
      "GROUP BY c.customer_id", None),

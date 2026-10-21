@@ -433,7 +433,7 @@ deferred 2026-10-21: it depends on B-048's disagreement signal, which is off (no
 ### [x] B-057 · Metamorphic proofs on the synthetic shadow database
 do: mutate gold SQL into known-wrong variants; measure detection and false-alarm rates of grain/NULL/date invariants on tools/synth data.
 result: 2026-10-21. Fan-out probe (join vs EXISTS) in the validator. Mutation test: demo 2/10 → 7/10 caught, 0/12 false alarms on gold; JMS 50 % → 58 % of 3,191, 1/77. Demo answers 9/12 (variance and an older grain-check false alarm, not the probe). doc 04.
-follow-up: the grain check fires when an id of a parent table repeats per child row (gp-01); consider skipping it when the repeated key is not the report's first table.
+follow-up done: the grain check skips ids of parent tables joined through their own primary key (gp-01's building id per unit). Mutation detection unchanged (demo 7/10, JMS 1,836/3,191); answers not re-run (budget).
 
 ### [!] B-058 · EXPLAIN gate and row-level security passthrough
 do: dialect-aware EXPLAIN (never ANALYZE) rejects cartesian or huge plans with a hint to the agent; optional run-as-user database role. Offline tests on known bad plans.
