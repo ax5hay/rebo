@@ -1,0 +1,709 @@
+{
+ "run": "2026-10-21",
+ "questions": "draft questions (agent-written, not PO-validated)",
+ "model": "openrouter:anthropic/claude-sonnet-5.5",
+ "escalate": "",
+ "database": "mysql+pymysql://reports_ro:***@127.0.0.1:3307/jms",
+ "summary": {
+  "reports": 19,
+  "clarify": 1,
+  "clarify_rate": 0.05,
+  "gate_answered": 0,
+  "errors": 0,
+  "escalated": 0,
+  "median_seconds": 14.3,
+  "total_cost_usd": 2.0703,
+  "execution_match": "3/17"
+ },
+ "cases": [
+  {
+   "id": "cr-4",
+   "kind": "report",
+   "rows": 41,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 11.7,
+   "question": "List the non-platform users attached to surrogate and egg donor cases: case file name, their party type, first name, last name and email, one row per user on each case.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 32412,
+    "output_tokens": 804,
+    "cache_read_tokens": 9954,
+    "tool_calls": 3,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "trace_id": "cfdfc992d2535ff852c90ce76171154b"
+   },
+   "cost_usd": 0.05395,
+   "title": "Non-platform users on surrogate and egg donor cases",
+   "sql": "SELECT gc_case.case_file_name AS `Case File Name`, gc_case.case_type AS `Case Type`, case_party.party_type AS `Party Type`, user_np.first_name AS `First Name`, user_np.last_name AS `Last Name`, user_np.email AS `Email` FROM gc_case INNER JOIN case_party ON case_party.gc_case_id = gc_case.case_id INNER JOIN user_np ON case_party.np_user_id = user_np.np_user_id WHERE gc_case.case_type IN ('surrogate', 'donor') ORDER BY gc_case.case_file_name, user_np.last_name, user_np.first_name",
+   "assumptions": [
+    "Non-platform users means the separate list of non-party users linked to cases, not regular platform users or admins.",
+    "Egg donor cases are the cases typed as donor; sperm donor cases are excluded.",
+    "Party type is the role recorded for that person on the case.",
+    "One row per non-platform user per case; includes inactive users and cases with no file name."
+   ]
+  },
+  {
+   "id": "cr-5",
+   "kind": "report",
+   "rows": 2,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 22.6,
+   "question": "I need every HelloSign request on intended parent cases, one row per signer: whether the case is active, case file name, the task it belongs to, date sent, date signed, signer user type and signing status.",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 107251,
+    "output_tokens": 2103,
+    "cache_read_tokens": 16590,
+    "tool_calls": 9,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "trace_id": "e2b460fb2acb59d75b2473302bec8076"
+   },
+   "cost_usd": 0.20401,
+   "title": "HelloSign requests on intended parent cases, by signer",
+   "sql": "SELECT CASE WHEN i.active=1 THEN 'Active' ELSE 'Inactive' END AS case_active, i.case_file_name AS case_file_name, tt.title AS task, h.created AS date_sent, h.completed AS date_signed, cr.user_type AS signer_user_type, cr.status AS signing_status FROM hellosign h INNER JOIN custom_task ct ON ct.contract_parent_id=h.hellosign_id INNER JOIN custom_sub_stage s ON s.sub_stage_id=ct.custom_substage_id INNER JOIN ip_case i ON i.case_id=s.ip_case_id INNER JOIN template_task tt ON tt.task_id=ct.base_task_id INNER JOIN contract_rel cr ON cr.parent_id=h.hellosign_id ORDER BY h.created",
+   "assumptions": [
+    "A HelloSign request counts as being on an intended parent case when it is attached to a task inside that case's workflow. Only 2 requests are linked that way, so the report has 2 rows.",
+    "One row per signer on each request.",
+    "Date signed is the date the whole request was completed. The data has no per-signer signing date, so a signer marked 'signed' can still show a blank date if the request isn't fully complete.",
+    "Date sent is the date the request was created.",
+    "The task is the name of the workflow task the request is attached to.",
+    "Case active shows 'Active' or 'Inactive' from the case's active flag.",
+    "Signer user type and signing status are the stored values for each signer: user, np_user or admin for type, and sent, signed or undelivered for status."
+   ]
+  },
+  {
+   "id": "cr-6",
+   "kind": "report",
+   "rows": 5,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 25.3,
+   "question": "I need every HelloSign request on surrogate and egg donor cases, one row per signer: whether the case is active, case file name, the task it belongs to, date sent, date signed, signer user type and signing status.",
+   "usage": {
+    "requests": 6,
+    "input_tokens": 138608,
+    "output_tokens": 2246,
+    "cache_read_tokens": 19908,
+    "tool_calls": 9,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "trace_id": "7085882545dbfbab3fe25441114c1d74"
+   },
+   "cost_usd": 0.26185,
+   "title": "HelloSign requests on surrogate and egg donor cases (one row per signer)",
+   "sql": "SELECT gc_case.active AS case_active, gc_case.case_file_name AS case_file_name, gc_case.case_type AS case_type, template_task.title AS task, hellosign.created AS date_sent, hellosign.completed AS date_signed, contract_rel.user_type AS signer_user_type, contract_rel.status AS signing_status FROM hellosign INNER JOIN custom_task ON custom_task.contract_parent_id = hellosign.hellosign_id INNER JOIN custom_sub_stage ON custom_task.custom_substage_id = custom_sub_stage.sub_stage_id INNER JOIN gc_case ON custom_sub_stage.gc_case_id = gc_case.case_id INNER JOIN template_task ON COALESCE(custom_task.current_task_version_id, custom_task.base_task_id) = template_task.task_id INNER JOIN contract_rel ON contract_rel.parent_id = hellosign.hellosign_id WHERE gc_case.case_type IN ('surrogate','donor') ORDER BY hellosign.created",
+   "assumptions": [
+    "Surrogate and egg donor cases are cases of type 'surrogate' and 'donor'; sperm donor cases are excluded.",
+    "Each signer on a HelloSign request is one row, so a request with several signers appears several times.",
+    "The date signed is when the whole request was completed (all signers signed). It is not stored per signer, so it can be empty even where a signer's status is 'signed'.",
+    "The task is the template task name behind the case task the HelloSign request is attached to.",
+    "Case active is shown as 1 for active and 0 for inactive.",
+    "Only HelloSign requests that are attached to a case task are included."
+   ]
+  },
+  {
+   "id": "cr-7",
+   "kind": "report",
+   "rows": 23,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 10.2,
+   "question": "Which campaign is each intended parent case on? Give the case file name, campaign stage, campaign internal title, start trigger, flow date, next flow, flow status, end trigger value and whether it's completed.",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 27615,
+    "output_tokens": 937,
+    "cache_read_tokens": 6636,
+    "tool_calls": 2,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "trace_id": "c99d068a334ee0e06267c4ddf140e274"
+   },
+   "cost_usd": 0.05199,
+   "title": "Campaign enrollments for intended parent cases",
+   "sql": "SELECT ip_case.case_file_name AS `Case File Name`, case_campaign.stage AS `Campaign Stage`, campaign.internal_title AS `Campaign Internal Title`, case_campaign.start_trigger AS `Start Trigger`, case_campaign.flow_date AS `Flow Date`, case_campaign.flow_next AS `Next Flow`, case_campaign.flow_status AS `Flow Status`, case_campaign.end_trigger_val AS `End Trigger Value`, case_campaign.completed AS `Completed` FROM campaign INNER JOIN case_campaign ON case_campaign.campaign_id = campaign.campaign_id INNER JOIN ip_case ON case_campaign.assigned_ip_case = ip_case.case_id ORDER BY ip_case.case_file_name",
+   "assumptions": [
+    "Intended parent cases are linked to a campaign through the campaign enrollment's assigned IP case, mirroring the saved GC/ED campaigns report. Only enrollments tied to an IP case appear (about 8% of enrollments).",
+    "Campaign internal title is taken from the campaign definition, not from the enrollment's own label.",
+    "'Next flow' is shown as the identifier of the next flow step, since that is what is stored.",
+    "'Completed' is shown as the completion timestamp; blank means not yet completed.",
+    "Campaign stage is the stage stored on the enrollment."
+   ]
+  },
+  {
+   "id": "cr-8",
+   "kind": "report",
+   "rows": 210,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 17.8,
+   "question": "List the campaigns assigned to surrogate and egg donor cases: case file name, campaign stage, internal title, start trigger, flow date, next flow, flow status, end trigger value and completed, one row per case campaign.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 38872,
+    "output_tokens": 1255,
+    "cache_read_tokens": 9954,
+    "tool_calls": 4,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "concern",
+    "review_restated": "This SQL returns one row for each campaign assignment linked to a case whose case type is 'surrogate' or 'donor', showing the case file name, case type, campaign stage, internal title, start trigger, flow date, next flow title, flow status, end trigger value and completed, sorted by case file name a",
+    "trace_id": "286fa837353df142734d512b67d560a2"
+   },
+   "cost_usd": 0.07138,
+   "title": "Campaigns assigned to surrogate and egg donor cases",
+   "sql": "SELECT gc_case.case_file_name AS `Case File Name`, gc_case.case_type AS `Case Type`, case_campaign.stage AS `Campaign Stage`, case_campaign.internal_title AS `Internal Title`, case_campaign.start_trigger AS `Start Trigger`, case_campaign.flow_date AS `Flow Date`, next_flow.title AS `Next Flow`, case_campaign.flow_status AS `Flow Status`, case_campaign.end_trigger_val AS `End Trigger Value`, case_campaign.completed AS `Completed` FROM case_campaign INNER JOIN gc_case ON case_campaign.assigned_gc_case = gc_case.case_id LEFT JOIN case_campaign_flow next_flow ON case_campaign.flow_next = next_flow.case_campaign_flow_id WHERE gc_case.case_type IN ('surrogate', 'donor') ORDER BY gc_case.case_file_name, case_campaign.case_campaign_id",
+   "assumptions": [
+    "Surrogate cases and egg donor cases are taken from the case's own type: 'surrogate' for surrogates and 'donor' for egg donors. Sperm donor cases are excluded.",
+    "Only campaigns assigned to a surrogate or egg donor case are listed, one row per case campaign. Campaigns assigned only to intended-parent cases are not included.",
+    "Campaign stage, internal title, start trigger, flow status, end trigger value and completed all come from the case's campaign assignment.",
+    "'Next flow' shows the title of the next scheduled message step, such as 'Email 2'. It is blank when no step is pending.",
+    "'Flow date' is the date stored for the next step and is blank for most rows.",
+    "Check: The filter only checks the case type 'donor', which may include sperm donors as well as egg donors: the first rows already show a donor case on an \"SD Campaign\" (likely sperm donor), so check whether sperm donor cases are being listed and need to be removed."
+   ]
+  },
+  {
+   "id": "cr-9",
+   "kind": "report",
+   "rows": 344,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 17.2,
+   "question": "For every surrogate and egg donor case, give the case file name, the person's first and last name, email, whether they confirmed their email, and their last login.",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 77589,
+    "output_tokens": 1588,
+    "cache_read_tokens": 13272,
+    "tool_calls": 6,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "trace_id": "61018cac1d7572154d9dde2a16d05a87"
+   },
+   "cost_usd": 0.14584,
+   "title": "Surrogate and egg donor cases: email confirmation and last login",
+   "sql": "SELECT g.case_id AS `Case ID`, g.case_type AS `Case Type`, g.case_file_name AS `Case File Name`, c.first_name AS `First Name`, c.last_name AS `Last Name`, c.email AS `Email`, CASE WHEN COALESCE(u.confirmed, 0) = 1 THEN 'Confirmed' ELSE 'Not Confirmed' END AS `Email Confirmed`, u.last_login AS `Last Login` FROM gc_case g INNER JOIN contact c ON c.contact_id = g.gc_id LEFT JOIN (SELECT contact_id, MAX(confirmed_email) AS confirmed, MAX(last_login) AS last_login FROM user WHERE user_type IN ('donor','surrogate') GROUP BY contact_id) u ON u.contact_id = c.contact_id WHERE g.case_type IN ('surrogate','donor') ORDER BY g.case_type, g.case_file_name",
+   "assumptions": [
+    "Surrogate cases and egg donor cases are the cases typed 'surrogate' and 'donor'. Sperm donor cases are excluded.",
+    "The person is the contact linked to the case.",
+    "Email confirmation and last login come from the person's portal account. If a person has several accounts, I used the confirmed status if any account is confirmed and the most recent login.",
+    "People with no portal account are kept in the list. They show as 'Not Confirmed' with a blank last login.",
+    "Inactive or archived cases are included."
+   ]
+  },
+  {
+   "id": "cr-11",
+   "kind": "report",
+   "rows": 69,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 8.2,
+   "question": "List the non-platform users added to cases, with the date they were added, whether the user is active, first name, last name and user type.",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 21450,
+    "output_tokens": 736,
+    "cache_read_tokens": 6636,
+    "tool_calls": 3,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "trace_id": "20af2d4237f4f789b9c96f0ae6590285"
+   },
+   "cost_usd": 0.03765,
+   "title": "Non-platform users added to cases",
+   "sql": "SELECT `case_party`.`created` AS `Date Added to Case`, CASE WHEN `user_np`.`active` = 1 THEN 'Yes' ELSE 'No' END AS `Active`, `user_np`.`first_name` AS `First Name`, `user_np`.`last_name` AS `Last Name`, `user_np`.`user_type` AS `User Type` FROM `case_party` INNER JOIN `user_np` ON `case_party`.`np_user_id` = `user_np`.`np_user_id` ORDER BY `case_party`.`created`",
+   "assumptions": [
+    "Non-platform users means the separate non-platform (NP) user accounts, not the main system users or admins.",
+    "A user counts as added to a case when they are linked to a case as a party; the date added is when that link was created.",
+    "A user linked to several cases appears once per link, each with its own date.",
+    "Active shows Yes when the account is flagged active, otherwise No; inactive users are not filtered out."
+   ]
+  },
+  {
+   "id": "cr-12",
+   "kind": "report",
+   "rows": 70,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 4.8,
+   "question": "For each intended parent case, show whether it's active, when it was created, the title of the workflow template it uses, the case file name and that template's snippet.",
+   "usage": {
+    "requests": 1,
+    "input_tokens": 8423,
+    "output_tokens": 524,
+    "cache_read_tokens": 3318,
+    "tool_calls": 0,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "trace_id": "fc8a4961b28ab7e819f6be4d27977d5d"
+   },
+   "cost_usd": 0.01578,
+   "title": "Intended parent cases with workflow template and snippet",
+   "sql": "SELECT `ip_case`.`case_id` AS `Case ID`, `ip_case`.`case_file_name` AS `Case File Name`, `ip_case`.`active` AS `Active`, `ip_case`.`created` AS `Created`, `template`.`template_title` AS `Workflow Template Title`, `template`.`snippet` AS `Template Snippet` FROM `ip_case` INNER JOIN `template` ON `ip_case`.`template_id` = `template`.`template_id`",
+   "assumptions": [
+    "Shows every intended parent case that has a workflow template assigned; cases without a template are left out.",
+    "'Active' is shown as the stored active flag (1 = active, 0 = not active).",
+    "Created is the date the case record was created."
+   ]
+  },
+  {
+   "id": "cr-13",
+   "kind": "report",
+   "rows": 81,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 6.7,
+   "question": "List every workflow template with its title and snippet, together with the intended parent cases using it (case file name); include templates that no IP case uses.",
+   "usage": {
+    "requests": 1,
+    "input_tokens": 8514,
+    "output_tokens": 529,
+    "cache_read_tokens": 3318,
+    "tool_calls": 0,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "trace_id": "95846a7f6a0538f5ccad1c64f817830e"
+   },
+   "cost_usd": 0.01601,
+   "title": "Workflow templates with the intended parent cases using them",
+   "sql": "SELECT `template`.`template_title` AS `Template Title`, `template`.`snippet` AS `Snippet`, `ip_case`.`case_file_name` AS `IP Case File Name` FROM `template` LEFT OUTER JOIN `ip_case` ON `ip_case`.`template_id` = `template`.`template_id` ORDER BY `template`.`template_title`, `ip_case`.`case_file_name`",
+   "assumptions": [
+    "Every workflow template is listed, including those no intended parent case uses (the case file name is blank for those).",
+    "A template used by several cases appears once per case.",
+    "Based on the saved 'IP Snippet.Workflow' report."
+   ]
+  },
+  {
+   "id": "cr-14",
+   "kind": "report",
+   "rows": 500,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 4.8,
+   "question": "Give me all general form submissions with the form data, browser, submission date, user ID and form ID.",
+   "usage": {
+    "requests": 1,
+    "input_tokens": 8049,
+    "output_tokens": 411,
+    "cache_read_tokens": 3318,
+    "tool_calls": 0,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "trace_id": "caa893c75633d72ea6a035aacf6c7296"
+   },
+   "cost_usd": 0.0139,
+   "title": "General Form Submissions",
+   "sql": "SELECT `general_form_submission`.`form_data` AS `Form Data`, `general_form_submission`.`browser` AS `Browser`, `general_form_submission`.`created` AS `Submission Date`, `general_form_submission`.`user_id` AS `User ID`, `general_form_submission`.`form_id` AS `Form ID` FROM `general_form_submission`",
+   "assumptions": [
+    "Showing every general form submission with no filters.",
+    "Submission date is taken as the time the submission record was created."
+   ]
+  },
+  {
+   "id": "cr-15",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false,
+    "ExecutionMatch": false
+   },
+   "seconds": 16.2,
+   "question": "Show the pregnancy details for surrogate case 26: when the record was created, the surrogate's first and last name, embryo transfer date, heartbeat confirmation date, expected delivery date and expected delivery type.",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 67126,
+    "output_tokens": 1360,
+    "cache_read_tokens": 13272,
+    "tool_calls": 5,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "gate": "asked",
+    "trace_id": "435f0870d10ee18c9c6948885bb89589"
+   },
+   "cost_usd": 0.12264,
+   "questions": [
+    {
+     "question": "Case 26 is a sperm donor case and has no pregnancy records, so I can't show it as a surrogate case. Which did you mean?",
+     "options": [
+      "Pregnancy record number 26 (it belongs to surrogate case 151)",
+      "Case 26 exactly as it is (sperm donor, expect no pregnancy rows)"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "cr-16",
+   "kind": "report",
+   "rows": 74,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 14.3,
+   "question": "For every intended parent case, list whether it's active, the case file name, and the first name and Social Security number of intended parent 1 and of intended parent 2 (if there is one).",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 37217,
+    "output_tokens": 959,
+    "cache_read_tokens": 6636,
+    "tool_calls": 3,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "concern",
+    "review_restated": "The SQL returns one row per intended parent case, with the case number, an Active or Not Active label from the case's active flag, the case file name, and the first names of the two intended parents linked through the case's family, with no filter on stage or status.",
+    "trace_id": "ca5d4b9e30e41a498ea5e54b8b3e5896"
+   },
+   "cost_usd": 0.07142,
+   "title": "Intended parent cases: active status, case file name and intended parents' first names",
+   "sql": "SELECT\n  ip_case.case_id AS case_id,\n  CASE WHEN ip_case.active = 1 THEN 'Active' ELSE 'Not Active' END AS case_active,\n  ip_case.case_file_name AS case_file_name,\n  c1.first_name AS intended_parent_1_first_name,\n  c2.first_name AS intended_parent_2_first_name\nFROM ip_case\nINNER JOIN family ON ip_case.family_id = family.family_id\nLEFT JOIN contact c1 ON family.ip_1_id = c1.contact_id\nLEFT JOIN contact c2 ON family.ip_2_id = c2.contact_id\nORDER BY ip_case.case_id",
+   "assumptions": [
+    "Social Security numbers are protected, sensitive data, so I left them out of this report. Only the first names are shown for intended parent 1 and intended parent 2.",
+    "'Active' means the case's own active flag is set. Cases that aren't active show as 'Not Active'.",
+    "Intended parent 1 and intended parent 2 come from the family linked to each case. Intended parent 2 is blank when the family has only one intended parent.",
+    "Every intended parent case is included, with no filter on stage or status.",
+    "Check: The question asks for each intended parent's Social Security number, but the report leaves those out on purpose, so the request is not fully answered; check whether the user is allowed to see SSNs before sending this as is."
+   ]
+  },
+  {
+   "id": "cr-17",
+   "kind": "report",
+   "rows": 344,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 14.2,
+   "question": "For each surrogate and egg donor case, give the case file name and the person's first name, email, height in inches and Social Security number.",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 28018,
+    "output_tokens": 800,
+    "cache_read_tokens": 6636,
+    "tool_calls": 3,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "concern",
+    "review_restated": "For every case whose type is surrogate or donor, the query returns the case ID, case file name, a label of Surrogate or Egg Donor, the linked contact's first name, email and height in inches, sorted by case type and then file name, with no Social Security number column.",
+    "trace_id": "5560ecc07dacfd73eee2ae7bebb1baf7"
+   },
+   "cost_usd": 0.05143,
+   "title": "Surrogate and egg donor cases with contact details and height",
+   "sql": "SELECT gc_case.case_id AS `Case ID`, gc_case.case_file_name AS `Case File Name`, CASE gc_case.case_type WHEN 'surrogate' THEN 'Surrogate' WHEN 'donor' THEN 'Egg Donor' END AS `Case Type`, contact.first_name AS `First Name`, contact.email AS `Email`, contact.height_inches AS `Height (inches)` FROM gc_case INNER JOIN contact ON contact.contact_id = gc_case.gc_id WHERE gc_case.case_type IN ('surrogate', 'donor') ORDER BY gc_case.case_type, gc_case.case_file_name",
+   "assumptions": [
+    "Surrogate cases and egg donor cases are the two case types 'surrogate' and 'donor'. Sperm donor cases are left out.",
+    "The person's first name, email and height come from the contact linked to each case.",
+    "All cases are included, active or not.",
+    "Social Security number is left out. It is a protected field, so I can't include it in reports. Ask an administrator if you need it.",
+    "Some heights in the data look implausible, for example under 1 inch or over 170 inches. They are shown as stored.",
+    "Check: The question asked for the Social Security number, but the report leaves it out on purpose, so it does not answer the question as asked; someone with authorised access must decide whether to add it or confirm that it should stay out."
+   ]
+  },
+  {
+   "id": "cr-18",
+   "kind": "report",
+   "rows": 25,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 12.1,
+   "question": "List the calculator custom responses set up for each agency: custom display text 1 and 2, custom image 1, parameter 1 and 2, response ID, agency ID and calculator type.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 34178,
+    "output_tokens": 605,
+    "cache_read_tokens": 9954,
+    "tool_calls": 2,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "This SQL lists every row in the calculator custom response table, with no filter, showing response ID, agency ID, agency name (looked up by a left join on agency ID), calculator type, parameters 1 and 2, custom display texts 1 and 2, and custom image 1, sorted by agency ID and then response ID.",
+    "trace_id": "88554893cf41a865bb8207a4fc860fb5"
+   },
+   "cost_usd": 0.05549,
+   "title": "Calculator custom responses by agency",
+   "sql": "SELECT c.custom_response_id AS `Response ID`, c.agency_id AS `Agency ID`, a.agency_name AS `Agency`, c.calculator_type AS `Calculator Type`, c.param_1 AS `Parameter 1`, c.param_2 AS `Parameter 2`, c.custom_display_text_1 AS `Custom Display Text 1`, c.custom_display_text_2 AS `Custom Display Text 2`, c.custom_image_1 AS `Custom Image 1` FROM calculator_custom_response c LEFT JOIN agency a ON a.agency_id = c.agency_id ORDER BY c.agency_id, c.custom_response_id",
+   "assumptions": [
+    "Listed every custom response record, with no filters, sorted by agency and then response ID.",
+    "Added the agency name next to the agency ID for readability.",
+    "Shown the image as the stored image reference (path or link), not the image itself."
+   ]
+  },
+  {
+   "id": "cr-19",
+   "kind": "report",
+   "rows": 150,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 25.0,
+   "question": "For intended parent cases with matches, show the IP case file name, the match status, the pregnancy tracker details and the matched surrogate or donor case file name, one row per match.",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 78457,
+    "output_tokens": 2430,
+    "cache_read_tokens": 13272,
+    "tool_calls": 6,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "concern",
+    "review_restated": "The SQL returns one row for every entry in the matching queue, whatever its status, paired with its intended parent case file name and its surrogate or donor case file name. Each row also carries the most recent pregnancy record of that intended parent case, so the same pregnancy details repeat on e",
+    "trace_id": "661bc66453cf2f92e85d457fab8fa0b3"
+   },
+   "cost_usd": 0.156,
+   "title": "Intended parent matches with pregnancy tracker details",
+   "sql": "SELECT ip.case_file_name AS ip_case_file_name,\n  mq.status AS match_status,\n  mq.matching_type AS match_type,\n  gc.case_file_name AS matched_case_file_name,\n  p.embryo_transfer_date AS embryo_transfer_date,\n  p.heartbeat_confirmation_date AS heartbeat_confirmation_date,\n  p.heartbeat_count AS heartbeat_count,\n  p.ten_weeks AS ten_week_date,\n  p.twelve_weeks AS twelve_week_date,\n  p.twenty_weeks AS twenty_week_date,\n  p.thirty_weeks AS thirty_week_date,\n  p.expected_delivery_date AS expected_delivery_date,\n  p.expected_delivery_type AS expected_delivery_type,\n  p.pregnancy_loss_type AS pregnancy_loss_type,\n  p.pregnancy_loss_date AS pregnancy_loss_date,\n  p.notes AS pregnancy_notes\nFROM matching_queue mq\nJOIN ip_case ip ON ip.case_id = mq.case_id\nJOIN gc_case gc ON gc.case_id = mq.gc_case_id\nLEFT JOIN pregnancy p ON p.pregnancy_id = (\n  SELECT p2.pregnancy_id FROM pregnancy p2\n  WHERE p2.case_id = mq.case_id\n  ORDER BY p2.created DESC, p2.pregnancy_id DESC LIMIT 1)\nORDER BY ip.case_file_name, mq.created",
+   "assumptions": [
+    "Every entry in the matching queue counts as a match, whatever its status (matched, broken, queued, denied and so on). The status column shows which.",
+    "The matched surrogate or donor is the case paired with the IP case in the matching queue. The match type column shows whether it is a surrogate, donor or sperm donor.",
+    "Pregnancy records are linked to the IP case only. None of the existing pregnancy records line up with a specific matched surrogate or donor.",
+    "If an IP case has several pregnancy records, only the most recently created one is shown, so each match stays on one row.",
+    "The same pregnancy details therefore repeat on every match row for an IP case.",
+    "IP cases with no pregnancy record are still listed, with blank pregnancy fields.",
+    "Pregnancy tracker details include embryo transfer, heartbeat confirmation, the 10, 12, 20 and 30 week dates, expected delivery, any pregnancy loss and notes.",
+    "Check: The question asks only for actual matches, but the report also includes queue entries that are denied, broken, archived or merely queued, so those rows count as matches; filter to the genuinely matched status (or confirm with the user which statuses count) before using it, since the pregnancy details shown on those non-matched rows could be misleading."
+   ]
+  },
+  {
+   "id": "cr-20",
+   "kind": "report",
+   "rows": 7,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 19.1,
+   "question": "For each surrogate case, list the surrogate's first and last name with her FDA, HCG and other lab results, each showing date drawn, clinic name, result and notes.",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 66648,
+    "output_tokens": 1175,
+    "cache_read_tokens": 13272,
+    "tool_calls": 4,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For every gestational carrier case of type 'surrogate' that has at least one lab record, the query returns one row per lab record, showing the case ID, the linked contact's first and last name, the event name as the lab type, the date drawn, the free-text clinic name, the result and the notes, order",
+    "trace_id": "0fdee15d73adc2f397a61838be9a2370"
+   },
+   "cost_usd": 0.11983,
+   "title": "Surrogate lab results (FDA, HCG and other labs)",
+   "sql": "SELECT gc_case.case_id AS case_id, contact.first_name AS first_name, contact.last_name AS last_name, event.event_name AS lab_type, lab.date_labs_drawn AS date_drawn, lab.clinic_name AS clinic_name, lab.result AS result, lab.notes AS notes\nFROM gc_case\nINNER JOIN contact ON contact.contact_id = gc_case.gc_id\nINNER JOIN lab ON lab.gc_case_id = gc_case.case_id\nINNER JOIN event ON event.event_id = lab.event_id\nWHERE gc_case.case_type = 'surrogate'\nORDER BY gc_case.case_id, lab.date_labs_drawn",
+   "assumptions": [
+    "Surrogate cases are cases of type 'surrogate'; the surrogate is the contact linked to the case.",
+    "The lab type (FDA, HCG, Beta, etc.) comes from the event linked to each lab record, so all lab types are listed together with a lab type column.",
+    "Only surrogate cases with at least one lab record are shown.",
+    "Clinic name is the free-text name typed on the lab record. It is often blank and some entries look like test data.",
+    "Labs are matched to the surrogate case through the gestational carrier case link, not the egg donor link."
+   ]
+  },
+  {
+   "id": "cr-22",
+   "kind": "report",
+   "rows": 10,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 11.3,
+   "question": "List intended parent cases matched or sent to sperm donors: IP case file name, match status, send type and the sperm donor's case file name, one row per match.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 35278,
+    "output_tokens": 1090,
+    "cache_read_tokens": 9954,
+    "tool_calls": 3,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "trace_id": "3b71e84a18a1330b744ba4de0b2ec05c"
+   },
+   "cost_usd": 0.06254,
+   "title": "IP cases matched or sent to sperm donors",
+   "sql": "SELECT ip_case.case_file_name AS ip_case_file_name, matching_queue.status AS match_status, matching_queue.send_type AS send_type, gc_case.case_file_name AS sperm_donor_case_file_name FROM matching_queue INNER JOIN ip_case ON matching_queue.case_id = ip_case.case_id INNER JOIN gc_case ON matching_queue.gc_case_id = gc_case.case_id WHERE gc_case.case_type = 'sperm_donor' AND matching_queue.status IN ('MATCHED', 'SENT') ORDER BY ip_case.case_file_name, gc_case.case_file_name",
+   "assumptions": [
+    "Sperm donor matches are the match entries whose paired donor case is a sperm donor case, as in the saved Sperm Donor Matches report.",
+    "'Matched or sent' means the match status is MATCHED or SENT; other statuses (queued, approved, broken, etc.) are excluded.",
+    "One row per match entry, so an IP case with several sperm donor matches appears several times.",
+    "Send type is blank where none was recorded."
+   ]
+  },
+  {
+   "id": "cr-23",
+   "kind": "report",
+   "rows": 20,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 39.4,
+   "question": "For surrogate cases that have moved past intake, show journey ID, whether active, stage, journey name, the date moved to screening, the date moved to matching and total days spent in screening.",
+   "usage": {
+    "requests": 7,
+    "input_tokens": 171691,
+    "output_tokens": 3086,
+    "cache_read_tokens": 23226,
+    "tool_calls": 12,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For every surrogate case whose stage is not intake, the query returns the case number, an Yes/No flag from the active field, the stage, the case file name, the latest completion date of its intake sub-stage steps, the latest completion date of its screening sub-stage steps, and the number of days be",
+    "trace_id": "1e92238f95c03435f071e2945e50396f"
+   },
+   "cost_usd": 0.33011,
+   "title": "Surrogate journeys past intake: screening and matching dates",
+   "sql": "SELECT g.case_id AS journey_id, CASE WHEN g.active=1 THEN 'Yes' ELSE 'No' END AS is_active, g.stage AS stage, g.case_file_name AS journey_name, ss.moved_to_screening AS date_moved_to_screening, ss.moved_to_matching AS date_moved_to_matching,\n CASE WHEN ss.moved_to_screening IS NULL THEN NULL WHEN ss.moved_to_matching IS NOT NULL THEN DATEDIFF(ss.moved_to_matching, ss.moved_to_screening) WHEN g.stage='screening' THEN DATEDIFF('2026-10-21', ss.moved_to_screening) END AS total_days_in_screening\nFROM gc_case g\nLEFT JOIN (SELECT gc_case_id, MAX(CASE WHEN stage='intake' THEN completed END) AS moved_to_screening, MAX(CASE WHEN stage='screening' THEN completed END) AS moved_to_matching FROM custom_sub_stage WHERE gc_case_id IS NOT NULL GROUP BY gc_case_id) ss ON ss.gc_case_id=g.case_id\nWHERE g.case_type='surrogate' AND g.stage<>'intake'\nORDER BY g.case_id",
+   "assumptions": [
+    "Surrogate cases 'past intake' means surrogate journeys whose current stage is screening, matching or case management.",
+    "The data has no record of the exact day a journey changed stage, so I used a proxy. 'Date moved to screening' is the latest completion date of that journey's intake steps. 'Date moved to matching' is the latest completion date of its screening steps.",
+    "Most of these journeys have no completed steps recorded, so many date and day-count cells are blank. These are gaps in the data, not zero days.",
+    "Total days in screening is the number of days between the two dates. For a journey still in screening that has a screening date, it counts up to today (2026-10-21).",
+    "Journey ID is the case number. Journey name is the case file name.",
+    "'Whether active' is shown as Yes or No, based on the case's active flag. Inactive journeys are included."
+   ]
+  },
+  {
+   "id": "cr-24",
+   "kind": "report",
+   "rows": 26,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 21.5,
+   "question": "For intended parent cases past intake and screening, show journey ID, whether active, case file name, stage, the date moved to matching, the date moved to case management and total days spent in matching.",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 90470,
+    "output_tokens": 1819,
+    "cache_read_tokens": 16590,
+    "tool_calls": 8,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "trace_id": "f83fbd8a6e33ebc14b0fca563ede1e12"
+   },
+   "cost_usd": 0.16761,
+   "title": "Intended parent cases past intake and screening: matching timeline",
+   "sql": "SELECT ip_case.case_id AS journey_id,\n  CASE WHEN ip_case.active = 1 THEN 'Yes' ELSE 'No' END AS is_active,\n  ip_case.case_file_name AS case_file_name,\n  ip_case.stage AS stage,\n  MIN(matching_days_report.move_to_matching) AS date_moved_to_matching,\n  MAX(matching_days_report.match_fully_approved) AS date_moved_to_case_management,\n  DATEDIFF(MAX(matching_days_report.match_fully_approved), MIN(matching_days_report.move_to_matching)) AS total_days_in_matching\nFROM ip_case\nLEFT JOIN matching_days_report ON matching_days_report.ip_case_id = ip_case.case_id\nWHERE ip_case.stage NOT IN ('intake', 'screening')\nGROUP BY ip_case.case_id, ip_case.active, ip_case.case_file_name, ip_case.stage\nORDER BY ip_case.case_id",
+   "assumptions": [
+    "Cases past intake and screening means cases whose current stage is neither intake nor screening (i.e. matching or case management).",
+    "Journey ID is the intended parent case number.",
+    "The system has no separate record of when a case entered case management, so the date the match was fully approved is used as the date moved to case management (the end of matching).",
+    "Where a case has several matching timeline records, the earliest move-to-matching date and the latest approval date are used.",
+    "Total days in matching is the number of days between moving to matching and the match being fully approved; it is blank when either date is missing (e.g. still in matching).",
+    "Cases with no matching timeline record are still listed, with blank dates.",
+    "The source dates in some cases are inconsistent (approval before moving to matching), which can produce negative day counts."
+   ]
+  },
+  {
+   "id": "cr-25",
+   "kind": "report",
+   "rows": 32,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 12.4,
+   "question": "List intended parent cases matched or sent to egg donors: IP case file name, match status, send type and the donor's case file name, one row per match.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 34527,
+    "output_tokens": 1075,
+    "cache_read_tokens": 9954,
+    "tool_calls": 3,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "trace_id": "6dd4430fb5c6ec685f9e46df8a6399c5"
+   },
+   "cost_usd": 0.06089,
+   "title": "IP cases matched or sent to egg donors",
+   "sql": "SELECT ip_case.case_file_name AS `IP Case File Name`, matching_queue.status AS `Match Status`, matching_queue.send_type AS `Send Type`, gc_case.case_file_name AS `Egg Donor Case File Name` FROM ip_case INNER JOIN matching_queue ON matching_queue.case_id = ip_case.case_id INNER JOIN gc_case ON matching_queue.gc_case_id = gc_case.case_id WHERE gc_case.case_type = 'donor' AND matching_queue.status IN ('MATCHED', 'SENT') ORDER BY ip_case.case_file_name, gc_case.case_file_name",
+   "assumptions": [
+    "Egg donors are cases whose type is 'donor' (sperm donors and surrogates are excluded).",
+    "'Matched or sent' means the match status is MATCHED or SENT; other statuses (queued, approved, broken, archived, etc.) are excluded.",
+    "One row per match entry between an IP case and a donor case; send type is blank where none was recorded."
+   ]
+  }
+ ]
+}

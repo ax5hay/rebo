@@ -60,6 +60,7 @@ test("every page opens without script errors, and the glass bar is there", async
     await page.goto(path);
     await expect(page.locator("header.bar .island").first()).toBeVisible();
     await expect(page.locator("main.content h1, main.content .hello h1").first()).toBeVisible();
+    await page.waitForLoadState("networkidle");  // leaving mid-load aborts lazy page modules (not an app error)
   }
   expect(errors).toEqual([]);
 });

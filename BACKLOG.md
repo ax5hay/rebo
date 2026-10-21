@@ -397,8 +397,9 @@ needs: llm
 do: The reviewer restates the SQL in plain words before comparing with the question (`_second_opinion`, review output type). Measure concern precision/recall on gold against 1/4 precision, 1/1 recall (2026-10-21b).
 result: 2026-10-21. Two runs: precision 1/1 and 1/2 (was 1/4), recall 1/1 and 1/3 (was 1/1); content 10/12 and 9/12; cost unchanged. doc 04.
 
-### [ ] B-050 · SQL-skeleton similarity for confirmed examples
+### [x] B-050 · SQL-skeleton similarity for confirmed examples
 do: After a draft SQL exists, re-rank confirmed examples by skeleton similarity (sqlglot, literals stripped; Jaccard over node types and tables). Offline test first; then B-009-style eval with saved examples.
+result: 2026-10-21, 9764522 + this commit. Retrieval 13/17 vs 1/17 (skeleton vs text); answers 3/17 off vs 3/18 on, +22 % cost; `checks.shape` kept off. doc 04.
 
 ### [x] B-051 · Optional cross-encoder rerank
 do: fastembed `TextCrossEncoder` (ms-marco-MiniLM-L-6-v2, Apache, 80 MB) over the RRF top 30 in `search_knowledge` and `search_schema`, behind one setting, default off. Measure recall@5 with `tools/embed_compare.py` first; adopt only if recall moves.

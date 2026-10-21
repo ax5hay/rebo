@@ -255,3 +255,19 @@ report the check noted had already drawn a reviewer concern, so the check added 
 second opinion. Cost: about $0.0007 per checked turn (~2.5 % of the turn), +2 to 4 s median.
 **Verdict: kept behind the flag, default off.** Two runs per arm on a 12-case set cannot show a gain; the
 item asked for 3 runs each (not run: the third pair).
+
+### Shape check: saved reports with the same query skeleton (2026-10-21, B-050, off by default)
+
+`safety.skeleton` reduces a query to tables, columns, clauses and predicate shapes without values;
+`skeleton_similarity` is a weighted Jaccard (tables 3, predicates 2, columns and clauses 1). With
+`checks.shape` (`REBO_SHAPE_CHECK`), after a new report that used no saved knowledge, the validator
+offers the agent, once, the two visible saved reports ≥ 45 % alike that were not in its context.
+
+| Measurement | Result | File |
+|---|---|---|
+| Retrieval: the right saved report first, 77 JMS reports as the bank, 17 paraphrased questions with real agent drafts | skeleton of the draft **13/17** (MRR 0.863); question text 1/17 (0.173); fused 7/17 | `fixtures/jms_staging/skeleton_compare_2026-10-21.json` |
+| Answers: 20 paraphrased JMS questions, bank of 77 saved, Sonnet, off vs on | off 3/17 $2.07; on 3/18 $2.53; fired 4×: adapted 1 (correct), kept 3 | `eval_results_shape_{off,on}_drafts20.json` |
+
+The retrieval signal is strong but did not become better answers on this set (one run per arm, draft
+questions are agent-written, not PO-validated), and it costs about 22 % more. Kept off. Where it could
+pay: as a retrieval signal for a second pass that does not need an extra model turn (doc 16 §5).
