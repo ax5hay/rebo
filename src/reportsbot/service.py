@@ -16,7 +16,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, ModelMessage, ModelMessagesTypeAdapter, ModelRetry, UsageLimitExceeded, UsageLimits
-from pydantic_ai.messages import ModelRequest, UserPromptPart
+from pydantic_ai.messages import ModelRequest, ModelResponse, TextPart, UserPromptPart
 
 from . import messages as msg
 from .agent import Clarify, Deps, Report, Reply, build_agent
@@ -32,6 +32,10 @@ from .target import QueryResult, TargetDB
 
 log = logging.getLogger(__name__)
 _KEEP_RUNS = 4  # earlier user turns kept in the model's message history
+
+
+def _norm_question(text: str) -> str:
+    return " ".join(text.lower().split()).rstrip(" ?.!")
 
 
 class ColumnDoc(BaseModel):
@@ -211,6 +215,8 @@ class App:
                            (conv_id, user.id, now(), now()))
         history = self._load_history(conv_id)
         self._remember_clarification(user, conv_id, text)
+        if direct := self._direct_answer(user, conv_id, text, history):
+            return direct
         deps = Deps(app=self, user=user)
         turn_id = new_id("turn")
         limits = UsageLimits(request_limit=40, tool_calls_limit=self.settings.max_tool_calls)
@@ -294,6 +300,37 @@ class App:
         return self._record(turn_id, conv_id, user, text, "report", payload, deps, sql=out.sql, prov=prov,
                             usage=usage_d)
 
+    def _run_report_sql(self, sql: str) -> QueryResult:
+        g = guard(sql, dialect=self.target.dialect, schema=self.catalog.schema, sensitive=self.catalog.sensitive,
+                  allowed_tables=self.allowed_tables, row_cap=self.settings.row_limit + 1)
+        return self.target.run(g.sql, max_rows=self.settings.row_limit)
+
+    def _direct_answer(self, user: User, conv_id: str, text: str, history: list[ModelMessage]) -> dict | None:
+        """The user's own confirmed example asked with exactly the same words (case, spacing and end
+        punctuation ignored) is answered by re-running its SQL: no model call, route "direct"."""
+        key = _norm_question(text)
+        item = next((i for i in self.knowledge.visible(user, "example")
+                     if i["owner"] == user.id and i.get("question") and _norm_question(i["question"]) == key), None)
+        if not item:
+            return None
+        try:
+            res = self._run_report_sql(item["sql"])
+        except Exception:
+            log.info("direct answer failed for %s; using the agent", item["id"], exc_info=True)
+            return None
+        src = self.store.one("SELECT payload FROM turn WHERE id=?", (item["source_turn"],)) if item["source_turn"] else None
+        out = Report(title=item["title"], sql=item["sql"], used_knowledge=[item["id"]],
+                     assumptions=json.loads(src["payload"]).get("assumptions") or [] if src else [])
+        note = f"(Answered by re-running saved report {item['id']}, no model call.) {out.title}: {out.sql}"
+        msgs = [*history, ModelRequest(parts=[UserPromptPart(text)]), ModelResponse(parts=[TextPart(note)])]
+        with self.store.tx() as db:
+            db.execute("UPDATE conversation SET messages=?, updated_at=? WHERE id=?",
+                       (ModelMessagesTypeAdapter.dump_json(msgs).decode(), now(), conv_id))
+        usage_d = {"requests": 0, "input_tokens": 0, "output_tokens": 0, "cache_read_tokens": 0, "tool_calls": 0,
+                   "model": None, "escalated": False, "route": "direct"}
+        deps = Deps(app=self, user=user, trace=[{"tool": "direct", "item": item["id"]}])
+        return self._report_turn(new_id("turn"), conv_id, user, text, out, res, deps, usage_d)
+
     def _ask_gate(self, out: Clarify, text: str) -> tuple[Report, QueryResult] | None:
         """Deterministic ask-gate: when every question's first two readings return the same rows,
         asking is pointless; answer with question 1's first reading and say so (docs/04 §5)."""
@@ -306,9 +343,7 @@ class App:
             except Exception:  # unrunnable or rejected SQL: cannot prove the readings agree
                 return None
         sql = out.questions[0].option_sql[0]
-        g = guard(sql, dialect=self.target.dialect, schema=self.catalog.schema, sensitive=self.catalog.sensitive,
-                  allowed_tables=self.allowed_tables, row_cap=self.settings.row_limit + 1)
-        res = self.target.run(g.sql, max_rows=self.settings.row_limit)
+        res = self._run_report_sql(sql)
         notes = [msg.say("gate_same", q=q.question, options=" / ".join(f"“{o}”" for o in q.options[:2]))
                  for q in out.questions]
         return Report(title=text.strip()[:80], sql=sql, assumptions=notes), res

@@ -234,3 +234,23 @@ async def test_free_text_that_is_not_an_option_is_not_remembered(app):
     first = await app.ask(User("alice"), "customers on hold")
     await app.ask(User("alice"), "never mind, show me orders", first["conversation_id"])
     assert app.knowledge.visible(User("alice"), "note") == []
+
+
+async def test_exact_repeat_of_own_confirmed_question_makes_no_model_request(app):
+    sql = "SELECT full_name AS customer FROM customer WHERE status = 'paused'"
+    seen = _scripted(app, [_completion("present_report", {"title": "Paused", "sql": sql,
+                                                          "assumptions": ["Paused is the stored status."]})])
+    alice = User("alice")
+    first = await app.ask(alice, "Show the paused customers")
+    app.feedback(alice, first["turn_id"], "correct")
+    calls = len(seen)
+    again = await app.ask(alice, "show the paused customers?")
+    assert len(seen) == calls and again["kind"] == "report" and again["rows"] == first["rows"]
+    assert again["assumptions"] == ["Paused is the stored status."] and again["provenance"]["label"] == "yours"
+    usage = json.loads(app.store.one("SELECT usage FROM turn WHERE id=?", (again["turn_id"],))["usage"])
+    assert usage["route"] == "direct" and usage["requests"] == 0
+    follow = await app.ask(alice, "and the closed ones", again["conversation_id"])   # history stays usable
+    assert follow["kind"] == "report" and "re-running saved report" in seen[-1]
+    calls = len(seen)
+    await app.ask(User("bob"), "show the paused customers")     # someone else's example: the model is asked
+    assert len(seen) == calls + 1
