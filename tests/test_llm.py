@@ -313,6 +313,7 @@ def test_model_profiles_are_applied(app, monkeypatch):
     claude = build_model("openrouter:anthropic/claude-sonnet-5.5", app.settings)
     assert gem.settings["thinking"] == "low" and gem.settings["parallel_tool_calls"] is True
     assert "thinking" not in claude.settings and claude.settings["openrouter_cache_instructions"] is True
+    assert claude.settings["openrouter_cache_messages"] is True and "openrouter_cache_messages" not in gem.settings
     base = app.settings.max_tool_calls
     assert app._limits("openrouter:google/gemini-3.8-flash").tool_calls_limit == round(base * 1.6)
     assert app._limits("openrouter:anthropic/claude-sonnet-5.5").tool_calls_limit == base

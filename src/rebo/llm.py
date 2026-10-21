@@ -148,14 +148,19 @@ def build_one(spec: str, settings: Settings, *, http_client: Any = None) -> Mode
         return OpenRouterModel(name, provider=OpenRouterProvider(api_key=key, app_title="rebo"),
                                settings=OpenRouterModelSettings(**_tuned(spec),
                                                                 openrouter_cache_instructions=True,
-                                                                openrouter_cache_tool_definitions=True))
+                                                                openrouter_cache_tool_definitions=True,
+                                                                # the growing turn (tool results) too: each of a turn's
+                                                                # 4-5 requests then re-reads it at the cached price. Claude
+                                                                # only: for Gemini OpenRouter keeps just the last breakpoint.
+                                                                **({"openrouter_cache_messages": True} if "anthropic/" in name else {})))
     if provider == "anthropic":
         from pydantic_ai.models.anthropic import AnthropicModel, AnthropicModelSettings
         from pydantic_ai.providers.anthropic import AnthropicProvider
         return AnthropicModel(name, provider=AnthropicProvider(api_key=_env("ANTHROPIC_API_KEY")),
                               settings=AnthropicModelSettings(**_tuned(spec),
                                                               anthropic_cache_instructions="1h",
-                                                              anthropic_cache_tool_definitions="1h"))
+                                                              anthropic_cache_tool_definitions="1h",
+                                                              anthropic_cache_messages="5m"))
     if provider == "google":
         from pydantic_ai.models.google import GoogleModel, GoogleModelSettings
         from pydantic_ai.providers.google import GoogleProvider

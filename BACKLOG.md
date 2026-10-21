@@ -407,8 +407,9 @@ result: 2026-10-21, rejected. `tools/rerank_compare.py`: all four rerankers lowe
 
 ## Production cost and the next leap (doc 26, 2026-10-21)
 
-### [~] B-052 · Cache the growing turn
+### [x] B-052 · Cache the growing turn
 do: `openrouter_cache_messages` / `anthropic_cache_messages` for Claude models (llm.build_one). Measure the cache-read ratio and cost on demo gold and JMS 18 against 0.53–0.64 and 0.17.
+result: 2026-10-21. JMS 18: cache reads 17 % → 72 %, $2.68 → $1.22, answers unchanged (13 reports). Demo: 62 %, $0.254, 10/12. doc 20.
 
 ### [ ] B-053 · Verifier-gated cascade
 needs: llm

@@ -239,3 +239,19 @@ What this shows:
 | Cost first | Haiku 5.5 | Haiku 5.5 | Sonnet 5.5 | — |
 | Offline | `lmstudio:<Qwen3.8-27B>` | same | — | — |
 | Gemini experiment | `google:gemini-3.8-flash` (after P1.10) | `google:gemini-3.5-flash-lite` | Sonnet 5.5 | — |
+
+## Caching the growing turn (2026-10-21, B-052)
+
+Before, only the instructions and tool definitions were cached; each of a turn's 4–5 requests re-sent
+the tool results so far at full price. `llm.build_one` now also caches the latest message for Claude
+models (`openrouter_cache_messages`, `anthropic_cache_messages="5m"`; not for Gemini, where OpenRouter
+keeps only the last breakpoint).
+
+| Set, Sonnet 5.5 | Cache-read share of input | Cost | Answers |
+|---|---|---|---|
+| JMS 18 prompts, before (2026-10-21b) | 17 % | $2.68 | 13 reports, 5 clarifications |
+| JMS 18 prompts, after | **72 %** | **$1.22** (2.2× less) | 13 reports, 4 clarifications |
+| Demo gold, before (two runs) | 53 %, 64 % | $0.269, $0.225 | 10/12, 9/12 |
+| Demo gold, after | 62 % | $0.254 | 10/12 |
+
+Files: `fixtures/jms_staging/eval_results_sonnet_cachemsgs.json`, `fixtures/demo_property/eval_results_sonnet_cachemsgs.json`.
