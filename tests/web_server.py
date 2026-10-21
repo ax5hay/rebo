@@ -35,6 +35,11 @@ def report(status: str, **extra) -> ModelResponse:
 def model(messages, info) -> ModelResponse:
     prompt = [p.content for m in messages for p in m.parts if isinstance(p, UserPromptPart)][-1]
     request = (re.search(r"<request>(.*)</request>", prompt, re.S) or re.search("(.*)", prompt)).group(1).strip().lower()
+    if "per month" in request:
+        return ModelResponse(parts=[ToolCallPart("present_report", {
+            "title": "Order value per month", "assumptions": ["Month of `placed_at`."],
+            "sql": "SELECT substr(placed_at, 1, 7) AS month, SUM(amount) AS order_value, COUNT(*) AS orders "
+                   "FROM orders GROUP BY month ORDER BY month"})])
     if request.startswith("correction to the previous report"):
         return report("active")
     if request in ("paused", "closed"):
@@ -57,6 +62,9 @@ def build(tmp: Path) -> App:
     for i in range(1, 41):
         con.execute("INSERT INTO customer VALUES (?,?,?,?,?,?)", (i, f"Person {i}", f"p{i}@example.com",
                                                                  statuses[i % 4], "x", "2026-01-01"))
+    for i in range(1, 121):  # nine months of orders, for the chart test
+        con.execute("INSERT INTO orders VALUES (?,?,?,?,?)",
+                    (i, 1 + i % 40, 10.0 * i, "shipped", f"2026-0{1 + i % 9}-15"))
     con.commit()
     con.close()
     app = App(Settings(database_url=f"sqlite:///{db}", state_dir=tmp / "state", embeddings=False))

@@ -207,5 +207,10 @@ built for an IDE) and Shiki (grammar/WASM weight for read-only colour only). All
 now loaded on first open (main bundle 913 → 697 kB). Toasts sit top-centre, over the empty middle of
 the title bar, so they never cover the composer or an answer's buttons.
 
+Table or chart (2026-10-21): an answer whose rows are a label or date column plus numbers (2–60 rows)
+gets a Table / Chart toggle; dates draw a line, labels draw bars in the table's order, one measure at
+a time with a picker (measures on different scales flatten each other on a shared axis). Observable
+Plot, loaded when the chart is first opened (`web/src/chart.tsx`); the table stays the default.
+
 Tests: `npx playwright test` (Playwright 1.64, headless Chromium) against `tests/web_server.py`
 (shop DB, scripted model); CI runs them.

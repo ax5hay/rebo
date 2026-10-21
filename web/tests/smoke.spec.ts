@@ -40,3 +40,14 @@ test("a clarification answered with a chip, then a correction in words", async (
   await page.getByRole("button", { name: "Fix it", exact: true }).click();
   await expect(page.getByTestId("report").nth(1)).toContainText("Active customers");
 });
+
+test("a grouped answer can be shown as a chart and back as a table", async ({ page }) => {
+  await page.goto("/app/?user=carol");
+  await ask(page, "order value per month");
+  const card = page.getByTestId("report");
+  await expect(card.locator("tbody tr")).toHaveCount(9);
+  await card.getByRole("radio", { name: "Chart" }).click();
+  await expect(card.locator(".result-chart svg").first()).toBeVisible();
+  await card.getByRole("radio", { name: "Table" }).click();
+  await expect(card.locator("tbody tr")).toHaveCount(9);
+});

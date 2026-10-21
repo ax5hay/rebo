@@ -347,3 +347,13 @@ details.query[open] > summary { margin-bottom: 6px; }
 .tok-typeName, .tok-propertyName, .tok-definition { color: var(--yours); }
 .tok-operator, .tok-punctuation { color: var(--text-2); }
 .tok-meta { color: var(--text-3); }
+
+/* table / chart toggle on an answer */
+.viewtoggle { padding: 0 16px 10px; }
+.viewtoggle [role="radiogroup"] { display: inline-flex; background: var(--subtle); border: 1px solid var(--border); border-radius: 999px; padding: 2px; gap: 2px; }
+.viewtoggle button { display: inline-flex; align-items: center; gap: 6px; font: 500 12.5px/1 var(--font); color: var(--text-2); background: none; border: 0; border-radius: 999px; padding: 6px 12px; cursor: pointer; }
+.viewtoggle button[data-selected] { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+.result-chart { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 14px 16px 6px; }
+.result-chart .chart { padding: 0; }
+.result-chart .measures { margin-bottom: 4px; }
+.chip[aria-pressed="true"] { background: var(--text); color: var(--surface); border-color: var(--text); }

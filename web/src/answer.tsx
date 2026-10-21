@@ -2,9 +2,9 @@
 // the first thing on the panel; the data follows; then how the question was read, as plain steps
 // generated from the query itself plus the assumptions the model made.
 import {
-  Check, ChevronRight, Code2, Download, ExternalLink, Flag, MoreHorizontal, Pencil, Pin, RotateCcw, Timer, Undo2,
+  BarChart3, Check, ChevronRight, Code2, Download, ExternalLink, Flag, MoreHorizontal, Pencil, Pin, RotateCcw, Table as TableIcon, Timer, Undo2,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import {
   Button, Cell, Column, Dialog, Heading, Menu, MenuItem, MenuTrigger, Modal, ModalOverlay, Popover, Row, Separator,
   Table, TableBody, TableHeader, ToggleButton, ToggleButtonGroup, type SortDescriptor,
@@ -13,6 +13,8 @@ import { call, csvUrl, plural } from "./api";
 import { useMe, useToast } from "./shell";
 import { Md } from "./md";
 import { SqlCode } from "./code";
+import { chartShape } from "./chart";
+const ResultChart = lazy(() => import("./chart"));
 
 export type Turn = { key: string; question: string; r: any };
 
@@ -63,6 +65,8 @@ function Report({ r, ask, onTurn, onFix }: { r: any; ask: (q: string) => void; o
   const [feedback, setFeedback] = useState<string | null>(r.feedback ?? null);
   const [dialog, setDialog] = useState<null | "fix" | "schedule">(null);
   const grouped = /\bgroup\s+by\b/i.test(r.sql);
+  const chartable = useMemo(() => chartShape(r.columns, r.rows) !== null, [r.columns, r.rows]);
+  const [view, setView] = useState<"table" | "chart">("table");
   const label = r.provenance?.label ?? "new";
   const act = async (fn: () => Promise<any>) => {
     try { const res = await fn(); if (res?.message) toast(res.message); return res; }
@@ -114,14 +118,24 @@ function Report({ r, ask, onTurn, onFix }: { r: any; ask: (q: string) => void; o
         </MenuTrigger>
       </header>
       {r.route && ROUTE_NOTE[r.route] && <p className="answer-note">{ROUTE_NOTE[r.route]}</p>}
+      {chartable && (
+        <div className="viewtoggle">
+          <ToggleButtonGroup aria-label="Show as" selectionMode="single" disallowEmptySelection selectedKeys={[view]}
+                             onSelectionChange={(k) => setView([...k][0] as "table" | "chart")}>
+            <ToggleButton id="table"><TableIcon size={14} />Table</ToggleButton>
+            <ToggleButton id="chart"><BarChart3 size={14} />Chart</ToggleButton>
+          </ToggleButtonGroup>
+        </div>
+      )}
+      {view === "chart" && chartable ? <Suspense fallback={<div className="empty">Drawing…</div>}><ResultChart columns={r.columns} rows={r.rows} /></Suspense> :
       <DataSheet columns={r.columns} rows={r.rows} label={r.title}
                  onRowAction={grouped ? async (i) => {
                    const res = await act(() => call("POST", `/turns/${r.turn_id}/drill`, { row: i }));
                    if (res?.kind) onTurn(`The records behind row ${i + 1} of “${r.title}”`, res);
-                 } : undefined} />
+                 } : undefined} />}
       <div className="table-foot">
         <span><Md inline>{r.provenance?.text}</Md></span>
-        {grouped && <span>Select a row to see the records behind it.</span>}
+        {grouped && view === "table" && <span>Select a row to see the records behind it.</span>}
       </div>
       <Reading steps={r.steps} assumptions={r.assumptions} sql={r.sql} />
       {r.follow_ups?.length > 0 && (
