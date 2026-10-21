@@ -12,7 +12,7 @@ import json
 import logging
 from collections import Counter
 from functools import cached_property
-from typing import Any
+from typing import Any, Callable
 
 import httpx2 as httpx
 from pydantic import BaseModel, Field
@@ -21,7 +21,7 @@ from pydantic_ai import (Agent, ModelMessage, ModelMessagesTypeAdapter, ModelRet
 from pydantic_ai.messages import ModelRequest, ModelResponse, TextPart, UserPromptPart
 
 from . import messages as msg
-from .agent import Clarify, Deps, Report, Reply, build_agent
+from .agent import Clarify, Deps, Report, Reply, Trace, build_agent
 from .catalog import Catalog, bootstrap
 from .knowledge import Knowledge, User
 from .llm import build_model, cost, credentials_present, profile
@@ -264,9 +264,14 @@ class App:
                 out.append({"id": sid, **payload})
         return out
 
-    async def ask(self, user: User, text: str, conversation_id: str | None = None) -> dict[str, Any]:
+    async def ask(self, user: User, text: str, conversation_id: str | None = None,
+                  progress: Callable[[dict[str, Any]], None] | None = None) -> dict[str, Any]:
+        """Answer one message. `progress` (optional) is called with each tool step as it happens."""
         conv_id = conversation_id or new_id("conv")
-        if not self.store.one("SELECT id FROM conversation WHERE id=?", (conv_id,)):
+        conv = self.store.one("SELECT owner FROM conversation WHERE id=?", (conv_id,))
+        if conv and conv["owner"] != user.id:  # never continue (or read the history of) someone else's
+            raise PermissionError("That conversation belongs to someone else.")
+        if not conv:
             with self.store.tx() as db:
                 db.execute("INSERT INTO conversation(id, owner, created_at, updated_at) VALUES(?,?,?,?)",
                            (conv_id, user.id, now(), now()))
@@ -274,7 +279,7 @@ class App:
         self._remember_clarification(user, conv_id, text)
         if direct := self._direct_answer(user, conv_id, text, history):
             return direct
-        deps = Deps(app=self, user=user)
+        deps = Deps(app=self, user=user, trace=Trace(on_append=progress))
         turn_id = new_id("turn")
         items = self.knowledge.search(user, text, top=6)
         prompt = self._context_block(user, text, items)
@@ -297,7 +302,8 @@ class App:
                 if not self.escalation_model:
                     raise
                 log.info("escalating after %s: %s", type(first).__name__, str(first)[:200])
-                deps = Deps(app=self, user=user, trace=[*deps.trace, {"tool": "escalate", "after": type(first).__name__}])
+                deps = Deps(app=self, user=user, trace=Trace(deps.trace, on_append=progress))
+                deps.trace.append({"tool": "escalate", "after": type(first).__name__})
                 escalated = True
                 result = await self.agent.run(prompt, deps=deps, message_history=history,
                                               usage_limits=self._limits(self.settings.escalate_model),

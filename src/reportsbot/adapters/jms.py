@@ -121,6 +121,9 @@ def router(app: App) -> APIRouter:
                 text = f"Correction to the previous report: {text}"
         if not text.strip():
             raise HTTPException(400, "Empty message")
-        return to_jms(contact_id, await app.ask(user, text, conv))
+        try:
+            return to_jms(contact_id, await app.ask(user, text, conv))
+        except PermissionError as e:
+            raise HTTPException(403, str(e)) from e
 
     return r

@@ -362,3 +362,17 @@ async def test_no_second_opinion_with_two_assumptions_or_fewer(app):
         transport=httpx.MockTransport(lambda req: pytest.fail("the reviewer must not be called"))))
     r = await app.ask(User("alice"), "paused customers")
     assert "review" not in json.loads(app.store.one("SELECT usage FROM turn WHERE id=?", (r["turn_id"],))["usage"])
+
+
+async def test_a_conversation_cannot_be_continued_by_someone_else(app):
+    from fastapi.testclient import TestClient
+
+    from reportsbot.api import create_app
+    _scripted(app, [_completion("reply", {"text": "secret plans"})])
+    first = await app.ask(User("alice"), "hello")
+    with pytest.raises(PermissionError):
+        await app.ask(User("bob"), "what did alice ask?", first["conversation_id"])
+    client = TestClient(create_app(app, with_ui=False))
+    r = client.post("/api/ask", json={"text": "hi", "conversation_id": first["conversation_id"]},
+                    headers={"X-User-Id": "bob"})
+    assert r.status_code == 403

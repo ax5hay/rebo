@@ -152,7 +152,10 @@ def router(app: App) -> APIRouter:
 
     @r.post("/ask")
     async def ask(body: AskIn, user: User = Depends(current_user)):
-        return await app.ask(user, body.text, body.conversation_id)
+        try:
+            return await app.ask(user, body.text, body.conversation_id)
+        except PermissionError as e:
+            raise HTTPException(403, str(e)) from e
 
     @r.post("/turns/{turn_id}/feedback")
     def feedback(turn_id: str, body: FeedbackIn, user: User = Depends(current_user)):
