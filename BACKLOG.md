@@ -378,3 +378,25 @@ done when: a results file exists and doc 20 is updated.
 blocked: 2026-10-21. The GEMINI_API_KEY in .env is on Google's free tier: gemini-3.8-flash allows 5 requests/minute, and all 10 demo questions failed with 429 RESOURCE_EXHAUSTED in under a second (one turn needs ~10 requests). Question for the user: provide a paid-tier key, or accept a throttled run (about 2 questions per minute at best, and the free tier's daily cap may still stop it)? Current id re-checked: gemini-3.8-flash; Google direct price added to llm.PRICES.
 
 update 2026-10-21b: staggered free-tier runs as the user asked: gemini-3.8-flash exhausted its 20/day quota; gemini-3.5-flash-lite completed the demo gold set: 7/10, 0 errors, $0 (doc 20 §4.2). Paid-tier 3.8-flash still unmeasured directly.
+## Accuracy layers from the 2026-10-21 research pass (doc 16 §5)
+
+### [x] B-046 · Deterministic SQL-trap checks
+result: 2026-10-21, 82b8ea9. `agent.sql_trap`: = NULL, NOT IN (subquery), LEFT JOIN undone by WHERE, SUM/AVG over a one-to-many join; one retry. Demo gold Sonnet 8/10 → 8/10, $0.236 → $0.242, no trap fired.
+
+### [x] B-047 · Spelling fallback for stored values
+result: 2026-10-21, 61c2992. RapidFuzz fallback in `search_values`. Two misspelled gold cases added (gp-11, gp-12); A/B in docs/08.
+
+### [ ] B-048 · Low-confidence candidates with execution agreement
+needs: llm
+do: Behind a setting (default off), for turns that `_second_opinion` would review: 2 extra SQLs from the fast model, executed through `_run_report_sql`, compared with `same_result`. Agreement keeps the answer; disagreement goes to a judge given the retrieved knowledge (MaP-SQL style) or becomes a Clarify naming both readings ("Two Surfaces of Ambiguity", VLDB'26 AIDB).
+done when: gold with the flag on and off, 3 runs each; content match, clarifications and cost recorded in doc 16 §5.
+
+### [ ] B-049 · Back-translation in the second opinion
+needs: llm
+do: The reviewer restates the SQL in plain words before comparing with the question (`_second_opinion`, review output type). Measure concern precision/recall on gold against 1/4 precision, 1/1 recall (2026-10-21b).
+
+### [ ] B-050 · SQL-skeleton similarity for confirmed examples
+do: After a draft SQL exists, re-rank confirmed examples by skeleton similarity (sqlglot, literals stripped; Jaccard over node types and tables). Offline test first; then B-009-style eval with saved examples.
+
+### [ ] B-051 · Optional cross-encoder rerank
+do: fastembed `TextCrossEncoder` (ms-marco-MiniLM-L-6-v2, Apache, 80 MB) over the RRF top 30 in `search_knowledge` and `search_schema`, behind one setting, default off. Measure recall@5 with `tools/embed_compare.py` first; adopt only if recall moves.

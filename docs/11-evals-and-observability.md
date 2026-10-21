@@ -24,7 +24,8 @@ uv run rebo eval fixtures/jms_staging/eval.jsonl --limit 3
 | `UsesTables` | every table in `tables` appears in the SQL (`tables_in` via sqlglot) |
 | `ExecutionMatch` | with `gold_sql`: same multiset of rows, ignoring column order and names (BIRD-style execution accuracy) |
 
-Each case runs as user `eval` through the real `App.ask`, so retrieval, knowledge visibility,
+Each run asks as a new person (`eval-<8 hex>`, so the per-person answer cache cannot replay an earlier
+run) through the real `App.ask`, so retrieval, knowledge visibility,
 guard and validator are all exercised. Output is pydantic-evals' table plus JSON
 `{cases: [{id, kind, rows, scores, seconds}], failures}`.
 
