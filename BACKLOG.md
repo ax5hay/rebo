@@ -356,10 +356,11 @@ needs: browser
 do: Use browser automation to open each page for each role, perform a feedback / undo / request / edit flow, and save screenshots to `docs/screenshots/`.
 done when: screenshots are committed and issues found are fixed.
 
-### [~] B-044 · Real LM Studio run
+### [x] B-044 · Real LM Studio run
 needs: lmstudio
 do: Load a tool-calling model in LM Studio. Run the demo gold set with `models.agent: lmstudio:<id>`, then tune via B-012 profiles.
 done when: `fixtures/demo_property/eval_results_lmstudio.json` exists and doc 20 §4 is updated with real numbers.
+result: 2026-10-21, `git log --grep B-044`; gemma-4-e2b 1/10 content match, 2 errors -> 0 with output_retries 4 (accuracy unchanged); doc 20 §4.1.
 
 ### [ ] B-045 · Gemini direct (Google API) run
 needs: gemini
