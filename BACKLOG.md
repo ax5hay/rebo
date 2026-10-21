@@ -196,10 +196,11 @@ do: `admin.import_knowledge(dry_run=True)` returns the list of changes without a
 done when: offline test showing dry-run changes nothing.
 result: 2026-10-21, `git log --grep B-021`; 123 passed. Dialog not browser-tested.
 
-### [ ] B-022 · Bulk review (admin)
+### [x] B-022 · Bulk review (admin)
 needs: offline
 do: Select several queue items, then Share or Reject them with one note. Add `POST /api/review/bulk`.
 done when: offline test.
+result: 2026-10-21, `git log --grep B-022`; 124 passed. UI not browser-tested.
 
 ### [ ] B-023 · Usage dashboard (admin/owner)
 needs: offline
