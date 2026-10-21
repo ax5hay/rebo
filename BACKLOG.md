@@ -326,10 +326,11 @@ do: Add `adapters.jms` option `builder_compatible: true` (inside the adapter's o
 done when: offline tests: the 8 grammar cases, and an agent retry when the grammar is violated.
 result: 2026-10-21, `git log --grep B-038`; 148 passed. Grouped/aggregate reports are impossible in this mode (doc 10 §5).
 
-### [ ] B-039 · Save to Report Builder
+### [x] B-039 · Save to Report Builder
 needs: offline
 do: The adapter offers a "Save to JMS" option, which calls a configurable host URL (the mock in tests) with the `custom_report` fields from fixtures/jms_contract README §4.
 done when: offline test against the mock; editable or view-only is reported back to the user.
+result: 2026-10-21, `git log --grep B-039`; 150 passed; tested against the mock only.
 
 ### [ ] B-040 · Contract replay tests
 needs: offline
