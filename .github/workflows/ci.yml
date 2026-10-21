@@ -51,8 +51,10 @@ jobs:
         working-directory: .
       - run: npm ci
       - run: npm run build
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium webkit firefox
       - run: npx playwright test
+        env:
+          BROWSERS: all          # Chromium, WebKit (Safari's engine) and Firefox
 
   audit:
     runs-on: ubuntu-latest

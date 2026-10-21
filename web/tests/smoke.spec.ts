@@ -7,7 +7,7 @@ const ask = async (page, text: string) => {
 
 test("a report with feedback, undo, a follow-up chip and a remember card", async ({ page }) => {
   page.on("dialog", (d) => d.accept());
-  await page.goto("/app/?user=alice");
+  await page.goto(`/app/?user=alice-${test.info().project.name}`);
   await ask(page, "customers on hold, i.e. paused");
   const card = page.getByTestId("report").first();
   await expect(card.locator("tbody tr")).toHaveCount(10);
@@ -27,7 +27,7 @@ test("a report with feedback, undo, a follow-up chip and a remember card", async
 });
 
 test("a clarification answered with a chip, then a correction in words", async ({ page }) => {
-  await page.goto("/app/?user=bob");
+  await page.goto(`/app/?user=bob-${test.info().project.name}`);
   await ask(page, "show me customers");
   const clarify = page.getByTestId("clarify");
   await expect(clarify).toContainText("Which customers?");
@@ -42,7 +42,7 @@ test("a clarification answered with a chip, then a correction in words", async (
 });
 
 test("a grouped answer can be shown as a chart and back as a table", async ({ page }) => {
-  await page.goto("/app/?user=carol");
+  await page.goto(`/app/?user=carol-${test.info().project.name}`);
   await ask(page, "order value per month");
   const card = page.getByTestId("report");
   await expect(card.locator("tbody tr")).toHaveCount(9);
@@ -50,4 +50,16 @@ test("a grouped answer can be shown as a chart and back as a table", async ({ pa
   await expect(card.locator(".result-chart svg").first()).toBeVisible();
   await card.getByRole("radio", { name: "Table" }).click();
   await expect(card.locator("tbody tr")).toHaveCount(9);
+});
+
+test("every page opens without script errors, and the glass bar is there", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.goto(`/app/?user=olga-${test.info().project.name}&role=owner`);
+  for (const path of ["/app/", "/app/knowledge", "/app/review", "/app/admin", "/app/insights", "/app/config", "/app/me", "/app/help"]) {
+    await page.goto(path);
+    await expect(page.locator("header.bar .island").first()).toBeVisible();
+    await expect(page.locator("main.content h1, main.content .hello h1").first()).toBeVisible();
+  }
+  expect(errors).toEqual([]);
 });
