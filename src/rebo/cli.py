@@ -26,8 +26,10 @@ def main(argv: list[str] | None = None) -> int:
     a.add_argument("--role", default="user", choices=["user", "admin", "owner"])
     sub.add_parser("revalidate", help="re-check saved knowledge after schema changes")
     e = sub.add_parser("eval", help="run an eval set (JSONL of {id, question, ...})")
-    e.add_argument("path")
+    e.add_argument("path", nargs="?", help="cases file (omit with --confirmed)")
     e.add_argument("--limit", type=int, default=0)
+    e.add_argument("--confirmed", action="store_true",
+                   help="replay every shared confirmed report as a regression test and record it (nightly)")
     sub.add_parser("mcp", help="serve the read-only tools over MCP (stdio)")
     k = sub.add_parser("knowledge", help="export / import what the bot has learned (editable YAML)")
     k.add_argument("action", choices=["export", "import"])
@@ -84,8 +86,13 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print(json.dumps(admin.import_knowledge(app, owner, Path(args.path).read_text(encoding="utf-8")), indent=2))
     elif args.cmd == "eval":
-        from .evals import run_eval
-        print(json.dumps(asyncio.run(run_eval(app, args.path, limit=args.limit)), indent=2, default=str))
+        from .evals import run_eval, run_regression
+        if args.confirmed:
+            print(json.dumps(asyncio.run(run_regression(app, limit=args.limit))["summary"], indent=2))
+        elif not args.path:
+            ap.error("eval needs a cases file, or --confirmed")
+        else:
+            print(json.dumps(asyncio.run(run_eval(app, args.path, limit=args.limit)), indent=2, default=str))
     return 0
 
 

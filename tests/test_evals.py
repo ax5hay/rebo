@@ -70,3 +70,20 @@ def test_each_eval_run_asks_as_a_new_person():
     from rebo.evals import fresh_eval_user
     a, b = fresh_eval_user(), fresh_eval_user()
     assert a != b and a.startswith("eval-")    # so run 2 cannot replay run 1 from the answer cache
+
+
+async def test_regression_replays_shared_confirmed_reports_and_records_the_run(app):
+    from pydantic_ai.messages import ModelResponse, ToolCallPart
+    from pydantic_ai.models.function import FunctionModel
+
+    from rebo.agent import build_agent
+    from rebo.evals import run_regression
+    from rebo.knowledge import User
+    sql = "SELECT full_name AS customer FROM customer WHERE status = 'paused'"
+    app.add_knowledge(User("ada", role="admin"), kind="example", title="Paused", question="paused customers", sql=sql)
+    app.__dict__["agent"] = build_agent(FunctionModel(lambda m, i: ModelResponse(parts=[ToolCallPart(
+        "present_report", {"title": "Paused", "sql": sql, "assumptions": []})])))
+    res = await run_regression(app)
+    assert res["summary"] == {"reports": 1, "errors": 0, "execution_match": "1/1"}
+    run = app.store.one("SELECT kind, summary FROM eval_run ORDER BY at DESC LIMIT 1")
+    assert run["kind"] == "regression"

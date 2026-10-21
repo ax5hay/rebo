@@ -437,6 +437,7 @@ do: dialect-aware EXPLAIN (never ANALYZE) rejects cartesian or huge plans with a
 result: 2026-10-21. Cartesian joins (no join condition; bare JOIN or comma join without WHERE) are now a SQL trap with one retry, portable across dialects, no EXPLAIN needed; timeouts already bound runaway queries. EXPLAIN row-estimate gate not built (dialect-specific, estimates unreliable; timeouts cover it).
 question for a human: row-level security passthrough needs a deployment decision: how people map to database roles or session variables in your database (e.g. Postgres SET ROLE per user, or a session variable your RLS policies read). Tell me which, and I will add it as one setting.
 
-### [ ] B-059 · Nightly regression from confirmed reports
+### [x] B-059 · Nightly regression from confirmed reports
 needs: llm
 do: replay shared confirmed reports through the agent nightly (batch pricing), compare with columns_match, record an eval_run.
+result: 2026-10-21. `rebo eval --confirmed` (evals.run_regression), recorded as kind regression; offline test with a scripted model 1/1. Not run on real data (no shared confirmed reports in this state). doc 11.

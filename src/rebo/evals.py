@@ -249,3 +249,22 @@ def export_confirmed(app: App, path: str) -> int:
         for r in rows:
             f.write(json.dumps({"id": r["id"], "question": r["question"], "gold_sql": r["sql"], "min_rows": 0}) + "\n")
     return len(rows)
+
+
+async def run_regression(app: App, *, limit: int = 0) -> dict[str, Any]:
+    """Replay every shared confirmed report as a test (B-059): its question is asked again, as a new
+    person, and the answer's rows are compared by content with what its saved query returns today. The
+    run is recorded (kind "regression") so Insights shows it over time. Run it nightly, e.g. from cron:
+    `rebo eval --confirmed`. Costs one agent turn per report."""
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        path = f"{tmp}/confirmed.jsonl"
+        n = export_confirmed(app, path)
+        if not n:
+            return {"cases": [], "summary": {"reports": 0, "execution_match": "0/0"}, "note": "no shared confirmed reports yet"}
+        res = await run_eval(app, path, limit=limit)
+    scored = [c["scores"]["ExecutionMatch"] for c in res["cases"] if "ExecutionMatch" in c["scores"]]
+    summary = {"reports": sum(c["kind"] == "report" for c in res["cases"]), "errors": sum(c["kind"] == "error" for c in res["cases"]),
+               "execution_match": f"{sum(bool(x) for x in scored)}/{len(scored)}"}
+    record_run(app, kind="regression", cases="confirmed reports", model=app.settings.model, summary=summary, results_file=None)
+    return {**res, "summary": summary}

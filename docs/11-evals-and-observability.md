@@ -141,3 +141,13 @@ containerised bot with a real model was not produced (no LLM key).
 | Share of `verified`/`yours` badges | rising | curators are not reviewing the queue |
 | `stale` items | near zero | run `rebo revalidate` after migrations; fix and re-confirm |
 | Median tool calls per report | ≤ 8 | the schema search is missing tables; add descriptions (`--describe`) |
+
+## Nightly regression from confirmed reports (2026-10-21, B-059)
+
+`rebo eval --confirmed [--limit N]` exports every shared confirmed report as a case (its question;
+its saved query, run today, is the gold), asks each question again as a new person, compares by
+content (`columns_match`) and records the run as kind `regression`, shown on Insights over time. It
+grows with use: every report people confirm and an admin shares becomes a test. Schedule it outside
+the bot (cron, a CI job). It costs one agent turn per shared report; with message caching (doc 20)
+about $0.07 per JMS-sized question on Sonnet. Not run here on real data: no shared confirmed reports
+exist yet in this repository's state.
