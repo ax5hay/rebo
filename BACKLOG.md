@@ -119,7 +119,7 @@ do: `fixtures/*/conversations.jsonl`: scripted conversations of user turns, each
 done when: offline test with a FunctionModel; with `llm`, a results file for 5 demo conversations.
 result: 2026-10-21, `git log --grep B-011`; 110 passed; 5 demo conversations written. eval pending: needs llm (results file for the 5 demo conversations).
 
-### [ ] B-012 · Per-model profiles; re-measure Gemini
+### [x] B-012 · Per-model profiles; re-measure Gemini
 needs: offline
 why: Gemini 3.8 Flash gave 10/18 errors, mostly from running out of tool budget (doc 20 §5).
 do: In `llm.py`, add a profile per model family:
@@ -133,6 +133,7 @@ done when:
 - Offline tests check that profiles are applied.
 - With `llm` (OpenRouter is enough): `eval_results_gemini_profile.json` on the 18 prompts.
 - doc 20 §5 updated with the numbers.
+result: 2026-10-21, `git log --grep B-012`; 112 passed; research recorded in doc 20 §2.1. eval pending: needs llm (eval_results_gemini_profile.json on the 18 prompts, then doc 20 §5).
 
 ### [ ] B-013 · Low-confidence second opinion
 needs: offline
