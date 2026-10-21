@@ -1,4 +1,4 @@
-"""Model registry: turn "<provider>:<model>" strings from reportsbot.yaml into Pydantic AI models.
+"""Model registry: turn "<provider>:<model>" strings from rebo.yaml into Pydantic AI models.
 
   openrouter:anthropic/claude-sonnet-5.5   any OpenRouter model (Claude, Gemini, ...)  OPENROUTER_API_KEY
   anthropic:claude-sonnet-5-5              Anthropic API directly                       ANTHROPIC_API_KEY
@@ -139,7 +139,7 @@ def build_one(spec: str, settings: Settings, *, http_client: Any = None) -> Mode
         from pydantic_ai.models.openrouter import OpenRouterModel, OpenRouterModelSettings
         from pydantic_ai.providers.openrouter import OpenRouterProvider
         key = settings.openrouter_api_key or _env("OPENROUTER_API_KEY")
-        return OpenRouterModel(name, provider=OpenRouterProvider(api_key=key, app_title="reportsbot"),
+        return OpenRouterModel(name, provider=OpenRouterProvider(api_key=key, app_title="rebo"),
                                settings=OpenRouterModelSettings(**_tuned(spec),
                                                                 openrouter_cache_instructions=True,
                                                                 openrouter_cache_tool_definitions=True))

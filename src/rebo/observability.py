@@ -26,11 +26,11 @@ def setup_tracing() -> bool:
     except ImportError:
         log.warning("OTEL_EXPORTER_OTLP_ENDPOINT is set but the 'otel' extra is not installed")
         return False
-    provider = TracerProvider(resource=Resource.create({"service.name": os.environ.get("OTEL_SERVICE_NAME", "reportsbot")}))
+    provider = TracerProvider(resource=Resource.create({"service.name": os.environ.get("OTEL_SERVICE_NAME", "rebo")}))
     provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
     trace.set_tracer_provider(provider)
     # Prompts and results contain business data: keep content out of traces unless asked for.
-    include = os.environ.get("REPORTSBOT_TRACE_CONTENT", "false").lower() == "true"
+    include = os.environ.get("REBO_TRACE_CONTENT", "false").lower() == "true"
     Agent.instrument_all(InstrumentationSettings(tracer_provider=provider, include_content=include,
                                                  include_binary_content=False))
     _done = True

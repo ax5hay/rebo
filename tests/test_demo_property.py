@@ -2,8 +2,8 @@
 import importlib.util
 from pathlib import Path
 
-from reportsbot.service import App
-from reportsbot.settings import Settings, validate_yaml
+from rebo.service import App
+from rebo.settings import Settings, validate_yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -16,7 +16,7 @@ def _build(tmp_path):
 
 
 def test_demo_config_is_valid():
-    validate_yaml((ROOT / "fixtures" / "demo_property" / "reportsbot.yaml").read_text(encoding="utf-8"))
+    validate_yaml((ROOT / "fixtures" / "demo_property" / "rebo.yaml").read_text(encoding="utf-8"))
 
 
 def test_bot_learns_a_different_domain_from_the_database_alone(tmp_path):
@@ -39,8 +39,8 @@ def test_drill_through_from_a_summary_cell_to_its_rows(tmp_path):
 
     import pytest
 
-    from reportsbot.knowledge import User
-    from reportsbot.store import new_id, now
+    from rebo.knowledge import User
+    from rebo.store import new_id, now
     db = _build(tmp_path)
     app = App(Settings(database_url=f"sqlite:///{db}", state_dir=tmp_path / "state", embeddings=False))
     app.bootstrap(progress=lambda *_: None)
@@ -68,7 +68,7 @@ def test_drill_through_from_a_summary_cell_to_its_rows(tmp_path):
         app.drill(alice, tid, row=99, column="open_requests")
     from fastapi.testclient import TestClient
 
-    from reportsbot.api import create_app
+    from rebo.api import create_app
     client = TestClient(create_app(app, with_ui=False))
     ok = client.post(f"/api/turns/{tid}/drill", json={"row": 1}, headers={"X-User-Id": "alice"})
     assert ok.status_code == 200 and len(ok.json()["rows"]) == res.rows[1][1]

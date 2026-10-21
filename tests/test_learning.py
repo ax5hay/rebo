@@ -3,8 +3,8 @@ import json
 
 import pytest
 
-from reportsbot.knowledge import User
-from reportsbot.store import new_id, now
+from rebo.knowledge import User
+from rebo.store import new_id, now
 
 ALICE, BOB, CAROL, DAN = User("alice"), User("bob"), User("carol"), User("dan")
 ADMIN = User("cora", role="admin")

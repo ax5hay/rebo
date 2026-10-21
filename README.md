@@ -1,6 +1,8 @@
-# reportsbot
+# rebo
 
-A self-contained, self-learning natural-language reports bot for any SQL database.
+**ReBo** is a self-contained, self-learning reports bot for any SQL database: ask in plain words,
+get one read-only query, the rows, and how your question was read. It learns from the people who
+use it, not from configuration.
 
 - **No domain config.** It learns the database by reading it (structure, statistics, stored
   values, joins), and learns the business from people in the chat.
@@ -28,10 +30,10 @@ keeping `HANDOFF.md` up to date. Add API keys to `.env` to unlock LLM measuremen
 uv sync --all-extras
 docker compose up -d db                                  # MySQL 8.0.44 with the JMS staging structure
 uv run --extra synth python tools/synth/synth.py         # synthetic rows (≈88k, ≈5 min)
-cp reportsbot.example.yaml reportsbot.yaml               # the whole config (~10 values)
+cp rebo.example.yaml rebo.yaml               # the whole config (~10 values)
 cp .env.example .env                                     # API keys only
-uv run reportsbot bootstrap --describe                   # learn the database
-uv run reportsbot serve                                  # http://127.0.0.1:8080/?user=alice
+uv run rebo bootstrap --describe                   # learn the database
+uv run rebo serve                                  # http://127.0.0.1:8080/?user=alice
 uv run pytest                                            # offline tests (no network, no LLM)
 ```
 
@@ -40,7 +42,7 @@ Curator view: `http://127.0.0.1:8080/review?user=cora&role=curator`.
 ## Layout
 
 ```
-src/reportsbot/      the bot (settings, store, target, safety, catalog, retrieval, knowledge,
+src/rebo/      the bot (settings, store, target, safety, catalog, retrieval, knowledge,
                      agent, service, messages, api, ui, mcp_server, evals, observability, cli)
 tests/               offline tests on a SQLite "shop" database
 tools/snapshot/      capture any MySQL database's structure + statistics (no rows)

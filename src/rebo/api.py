@@ -104,7 +104,7 @@ class KnowledgeEdit(BaseModel):
 
 
 # Behind the login proxy (deploy/auth, compose.prod.yml) roles come from IdP groups with these names.
-OWNER_GROUP, ADMIN_GROUP = "reportsbot-owners", "reportsbot-admins"
+OWNER_GROUP, ADMIN_GROUP = "rebo-owners", "rebo-admins"
 
 
 def role_from_groups(groups: str | None) -> str:
@@ -119,7 +119,7 @@ def user_from_headers(x_user_id: str | None = Header(None), x_user_role: str = H
     """auth.mode=headers: identity comes from a trusted gateway. Never expose the bot without one.
 
     Behind oauth2-proxy (X-Forwarded-Email / -User present): the user is the proxy's, the role comes
-    only from X-Forwarded-Groups (reportsbot-owners / reportsbot-admins), and any X-User-* header is
+    only from X-Forwarded-Groups (rebo-owners / rebo-admins), and any X-User-* header is
     ignored, because the proxy forwards headers it does not set and a client could forge them.
     Otherwise (a host application's gateway, e.g. JMS): X-User-Id / -Role / -Team."""
     if x_forwarded_email or x_forwarded_user:
@@ -132,11 +132,11 @@ def user_from_headers(x_user_id: str | None = Header(None), x_user_role: str = H
 
 
 def decode_jwt(token: str, settings) -> dict:
-    """HS256 bearer token signed by the host with REPORTSBOT_JWT_SECRET and issued by auth.issuer."""
+    """HS256 bearer token signed by the host with REBO_JWT_SECRET and issued by auth.issuer."""
     import jwt
 
     if not settings.jwt_secret:
-        raise HTTPException(500, "REPORTSBOT_JWT_SECRET is not set")
+        raise HTTPException(500, "REBO_JWT_SECRET is not set")
     try:
         claims = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"], options={"verify_aud": False})
     except jwt.PyJWTError as e:
@@ -217,7 +217,7 @@ def router(app: App) -> APIRouter:
     @r.post("/agui")
     async def agui(request: Request, user: User = Depends(current_user)):
         """AG-UI stream of one turn (B-029): RUN_STARTED, a STEP_STARTED/STEP_FINISHED pair per tool step
-        as it happens, the answer as a text message, CUSTOM "reportsbot.result" with the same payload
+        as it happens, the answer as a text message, CUSTOM "rebo.result" with the same payload
         /api/ask returns, RUN_FINISHED (or RUN_ERROR). threadId is the conversation id."""
         from ag_ui.core import (CustomEvent, RunAgentInput, RunErrorEvent, RunFinishedEvent, RunStartedEvent,
                                 StepFinishedEvent, StepStartedEvent, TextMessageContentEvent, TextMessageEndEvent,
@@ -237,7 +237,7 @@ def router(app: App) -> APIRouter:
 
         def step(s: dict) -> None:
             queue.put_nowait(StepStartedEvent(step_name=s.get("tool", "step")))
-            queue.put_nowait(CustomEvent(name="reportsbot.progress", value={**s, "say": msg.progress(s.get("tool", ""))}))
+            queue.put_nowait(CustomEvent(name="rebo.progress", value={**s, "say": msg.progress(s.get("tool", ""))}))
             queue.put_nowait(StepFinishedEvent(step_name=s.get("tool", "step")))
 
         async def work() -> None:
@@ -248,7 +248,7 @@ def router(app: App) -> APIRouter:
                 for ev in (TextMessageStartEvent(message_id=mid, role="assistant"),
                            TextMessageContentEvent(message_id=mid, delta=say or res["kind"]),
                            TextMessageEndEvent(message_id=mid),
-                           CustomEvent(name="reportsbot.result", value=json.loads(json.dumps(res, default=str))),
+                           CustomEvent(name="rebo.result", value=json.loads(json.dumps(res, default=str))),
                            RunFinishedEvent(thread_id=run.thread_id, run_id=run.run_id)):
                     queue.put_nowait(ev)
             except Exception as e:  # the stream must end with an event the client understands
@@ -417,9 +417,9 @@ def create_app(app: App, *, with_ui: bool = True, with_worker: bool = False) -> 
         if task:
             task.cancel()
 
-    api = FastAPI(title="reportsbot", lifespan=lifespan)
+    api = FastAPI(title="rebo", lifespan=lifespan)
     api.include_router(router(app))
-    for name in app.settings.adapters:  # optional host contracts (src/reportsbot/adapters/<name>.py)
+    for name in app.settings.adapters:  # optional host contracts (src/rebo/adapters/<name>.py)
         import importlib
         api.include_router(importlib.import_module(f".adapters.{name}", __package__).router(app))
     web = Path(__file__).resolve().parents[2] / "web" / "dist"  # the React Ask page, when built (web/)

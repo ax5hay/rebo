@@ -1,5 +1,5 @@
 """Run an eval set with the current settings and save a results file (per-case outcome, turns'
-token usage, escalations, estimated cost). Model choice comes from reportsbot.yaml / REPORTSBOT_* env.
+token usage, escalations, estimated cost). Model choice comes from rebo.yaml / REBO_* env.
 
     uv run python tools/eval_run.py fixtures/jms_staging/eval.jsonl fixtures/jms_staging/eval_results_<name>.json [limit]
     uv run python tools/eval_run.py fixtures/jms_staging/gold_custom_reports.jsonl <out.json> --use-drafts
@@ -15,8 +15,8 @@ import sys
 import time
 from pathlib import Path
 
-from reportsbot.evals import DRAFT_LABEL, cost, load_cases, run_eval
-from reportsbot.service import App
+from rebo.evals import DRAFT_LABEL, cost, load_cases, run_eval
+from rebo.service import App
 
 
 async def main(cases: str, out: str, limit: int = 0, use_drafts: bool = False) -> None:

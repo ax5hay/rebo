@@ -1,6 +1,6 @@
 # 09 · Data model (`state.db`)
 
-One SQLite file at `$REPORTSBOT_STATE_DIR/state.db`, WAL mode, foreign keys on, or a Postgres database
+One SQLite file at `$REBO_STATE_DIR/state.db`, WAL mode, foreign keys on, or a Postgres database
 when `state_url` is set (B-026). DDL: `store.SCHEMA` (created idempotently at start-up; for Postgres
 `store._pg_schema()` derives it: `REAL` → `DOUBLE PRECISION`, `BLOB` → `BYTEA`, autoincrement →
 identity, and each FTS5 table becomes a plain table with the same columns plus a generated `tsv
@@ -108,7 +108,7 @@ knowledge items keep only SQL, titles and definitions, never rows.
 ## Schema changes: Alembic (B-027)
 
 `Store.__init__` runs `store.migrate()`: Alembic upgrades the state store to the latest revision in
-`src/reportsbot/migrations/versions/` on SQLite and Postgres alike (in-process; no command to run).
+`src/rebo/migrations/versions/` on SQLite and Postgres alike (in-process; no command to run).
 `0001` is the baseline (every table, `IF NOT EXISTS`); `0002` adds the columns below only where they
 are missing. So a `state.db` from before Alembic upgrades in place and is stamped
 (`tests/test_store.py`, with the schema of commit 9b81192^ as fixture). New schema changes are new

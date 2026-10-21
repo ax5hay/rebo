@@ -8,8 +8,8 @@ each request. For a standalone install that gateway is **oauth2-proxy** (already
 
 | IdP group | Role in the bot |
 |---|---|
-| `reportsbot-owners` | owner (configuration) |
-| `reportsbot-admins` | admin (shared knowledge, review, requests) |
+| `rebo-owners` | owner (configuration) |
+| `rebo-admins` | admin (shared knowledge, review, requests) |
 | anyone else who can sign in | user |
 
 The names are fixed (no configuration). Behind the proxy the bot takes the user from
@@ -38,7 +38,7 @@ In `.env`, set the oauth2-proxy variables for your provider (see the oauth2-prox
 3. Open `<POCKET_ID_URL>/setup`, register the first admin passkey.
 4. In Pocket ID: add an OIDC client with callback `<BOT_URL>/oauth2/callback`; copy its id and
    secret into `.env` as `OAUTH2_PROXY_CLIENT_ID` / `_CLIENT_SECRET`; set `OAUTH2_PROXY_COOKIE_SECRET`.
-5. Create the groups `reportsbot-admins` and `reportsbot-owners`, add people, restart `auth`.
+5. Create the groups `rebo-admins` and `rebo-owners`, add people, restart `auth`.
 
 Not run end to end here: passkey sign-in needs a browser, HTTPS and a real domain. The compose file
 validates; the header behaviour above was tested with oauth2-proxy and a header-echo upstream.

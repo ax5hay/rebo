@@ -13,7 +13,7 @@ from .service import App
 def serve_mcp(app: App) -> None:
     from fastmcp import FastMCP
 
-    mcp = FastMCP("reportsbot")
+    mcp = FastMCP("rebo")
 
     @mcp.tool
     def search_schema(query: str) -> list[dict[str, Any]]:

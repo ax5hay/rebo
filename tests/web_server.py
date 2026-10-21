@@ -20,10 +20,10 @@ from pydantic_ai.models.function import FunctionModel
 sys.path.insert(0, str(Path(__file__).parent))
 from conftest import SHOP  # noqa: E402
 
-from reportsbot.agent import build_agent  # noqa: E402
-from reportsbot.api import create_app  # noqa: E402
-from reportsbot.service import App  # noqa: E402
-from reportsbot.settings import Settings  # noqa: E402
+from rebo.agent import build_agent  # noqa: E402
+from rebo.api import create_app  # noqa: E402
+from rebo.service import App  # noqa: E402
+from rebo.settings import Settings  # noqa: E402
 
 
 def report(status: str, **extra) -> ModelResponse:
@@ -72,6 +72,6 @@ if __name__ == "__main__":
     args = ap.parse_args()
     tmp = Path(tempfile.mkdtemp())
     if args.ui:  # the owner's configuration page shows a throw-away copy of the example, not a real file
-        (tmp / "reportsbot.yaml").write_text((Path(__file__).parents[1] / "reportsbot.example.yaml").read_text())
-        os.environ["REPORTSBOT_CONFIG"] = str(tmp / "reportsbot.yaml")
+        (tmp / "rebo.yaml").write_text((Path(__file__).parents[1] / "rebo.example.yaml").read_text())
+        os.environ["REBO_CONFIG"] = str(tmp / "rebo.yaml")
     uvicorn.run(create_app(build(Path(tempfile.mkdtemp())), with_ui=args.ui), host="127.0.0.1", port=args.port)

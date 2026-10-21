@@ -1,4 +1,4 @@
-from reportsbot.evals import columns_match
+from rebo.evals import columns_match
 
 
 def test_extra_readable_columns_are_allowed_but_values_must_match():
@@ -23,8 +23,8 @@ async def test_conversation_eval_counts_turns_to_the_first_correct_report(app, t
     from pydantic_ai.messages import ModelResponse, ToolCallPart, UserPromptPart
     from pydantic_ai.models.function import FunctionModel
 
-    from reportsbot.agent import build_agent
-    from reportsbot.evals import run_conversations
+    from rebo.agent import build_agent
+    from rebo.evals import run_conversations
 
     def model(messages, info):
         prompt = [p.content for m in messages for p in m.parts if isinstance(p, UserPromptPart)][-1]
@@ -57,7 +57,7 @@ async def test_conversation_eval_counts_turns_to_the_first_correct_report(app, t
 def test_use_drafts_asks_only_drafted_cases_with_the_draft(tmp_path):
     import json
 
-    from reportsbot.evals import load_cases
+    from rebo.evals import load_cases
     path = tmp_path / "gold.jsonl"
     path.write_text("\n".join(json.dumps(c) for c in [
         {"id": "a", "question": "Show me A.", "draft_question": "Which a's are open?", "gold_sql": "SELECT 1"},

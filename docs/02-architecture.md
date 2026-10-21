@@ -9,7 +9,7 @@ flowchart LR
     HOST[Host app e.g. JMS<br/>HTTP + headers]
     MCPC[MCP clients<br/>Claude Code / Desktop]
   end
-  subgraph reportsbot
+  subgraph rebo
     API[FastAPI routes<br/>api.py]
     MCP[FastMCP adapter<br/>mcp_server.py]
     SVC[App service<br/>service.py]
@@ -52,7 +52,7 @@ flowchart LR
 | `ui.py` | Chat / knowledge / review pages | `mount_ui()` |
 | `mcp_server.py` | Optional MCP exposure of read-only tools | `serve_mcp()` |
 | `evals.py` | pydantic-evals runner and evaluators | `run_eval()`, `export_confirmed()` |
-| `cli.py` | `reportsbot bootstrap / serve / ask / revalidate / eval / mcp / knowledge / config` | `main()` |
+| `cli.py` | `rebo bootstrap / serve / ask / revalidate / eval / mcp / knowledge / config` | `main()` |
 | `llm.py` | Model registry: openrouter / anthropic / google / lmstudio / openai, fallback | `build_model()`, `parse()` |
 | `admin.py` | Owner configuration editing (audit, rollback); admin knowledge export/import | `save_config()`, `export_knowledge()`, `import_knowledge()` |
 | `adapters/jms.py` | Optional JMS chat contract (`adapters: [jms]`) | `router()`, `to_jms()` |

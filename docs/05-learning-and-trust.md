@@ -1,6 +1,6 @@
 # 05 · Learning and trust
 
-This is the part that replaces every YAML file the previous bots had. Code: `src/reportsbot/knowledge.py`
+This is the part that replaces every YAML file the previous bots had. Code: `src/rebo/knowledge.py`
 (state machine), `service.py` (`feedback`, `remember`, `share`, `promote`, `retire`, `restore`,
 `_provenance`), and the `knowledge`, `knowledge_event` and `suggestion` tables (doc 09).
 
@@ -163,7 +163,7 @@ Computed after every report, with no LLM involved:
   (`catalog.fingerprint`).
 - When an item is created, `knowledge.fingerprints` stores `{table: fingerprint}` for every table
   its SQL touches (`tables_in(sql)` via sqlglot).
-- `App.revalidate()` (CLI `reportsbot revalidate`, `POST /api/admin/revalidate`, and automatically
+- `App.revalidate()` (CLI `rebo revalidate`, `POST /api/admin/revalidate`, and automatically
   at the end of every bootstrap) does this for every SQL-bearing item whose fingerprints changed,
   or which is already `stale`:
   1. `example`: run the guard and a 1-row execution. `term`/`note`: nothing to run. `join`: check

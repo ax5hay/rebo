@@ -1,6 +1,6 @@
 # 06 · What the user sees and reads
 
-Every sentence lives in `src/reportsbot/messages.py` (`MESSAGES`, `say()`). Front ends must use these
+Every sentence lives in `src/rebo/messages.py` (`MESSAGES`, `say()`). Front ends must use these
 keys rather than writing their own text, so behaviour and wording change together.
 
 ## 1. Writing rules
@@ -40,7 +40,7 @@ keys rather than writing their own text, so behaviour and wording change togethe
 | Element | Key / source | Rule |
 |---|---|---|
 | Badge | `prov_verified`, `prov_yours`, `prov_adapted`, `prov_new` | Colour: verified=green, yours=blue, adapted=light blue, new=grey (`ui._BADGE`) |
-| Headline | `report_ready` + `rows_all` / `rows_truncated` / `rows_none` | Truncated wording appears when more than `REPORTSBOT_ROW_LIMIT` rows exist |
+| Headline | `report_ready` + `rows_all` / `rows_truncated` / `rows_none` | Truncated wording appears when more than `REBO_ROW_LIMIT` rows exist |
 | Assumptions | `Report.assumptions` (from the model) | Always expanded. The prompt forbids table/column names here |
 | Show SQL | `Report.sql` | Collapsed. The executed SQL may also carry the row cap |
 | Feedback row | `ask_feedback` | Replaced by the outcome sentence after a click |

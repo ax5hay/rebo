@@ -2,8 +2,8 @@
 
 Shows the same bot on a different domain with only a config change:
     uv run python fixtures/demo_property/build.py                    # -> fixtures/demo_property/greenleaf.db
-    REPORTSBOT_CONFIG=fixtures/demo_property/reportsbot.yaml uv run reportsbot bootstrap --describe
-    REPORTSBOT_CONFIG=fixtures/demo_property/reportsbot.yaml uv run reportsbot serve
+    REBO_CONFIG=fixtures/demo_property/rebo.yaml uv run rebo bootstrap --describe
+    REBO_CONFIG=fixtures/demo_property/rebo.yaml uv run rebo serve
 
 Deliberately realistic quirks for the bot to learn from people rather than config:
   * lease status is a lookup table with agency-style labels ("Active - Month to Month", ...)

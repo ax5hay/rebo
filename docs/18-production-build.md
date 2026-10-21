@@ -1,6 +1,6 @@
 # 18 · Continuing to a production build (separate repo, small commits)
 
-This is the plan to take `reports-bot/` from the working slim build to a product: a separate,
+This is the plan to take `rebo/` from the working slim build to a product: a separate,
 self-contained repository, no JMS RDS, JMS APIs mocked, configured by ~10 values, accurate, cheap
 and asking as few questions as possible. Every step is a **small commit** with its own test and
 doc change, so every behaviour change is traceable in `git log`.
@@ -18,7 +18,7 @@ The direction and the non-negotiables are in `AGENTS.md`. Tools and models named
 | `uv run pytest` green before committing (offline, no network) | The suite runs on a SQLite fixture and mocked LLM/JMS, so it is fast and deterministic |
 | Behaviour that changes answers: run `tools/eval_run.py` and commit the results file | Accuracy and cost are tracked like code |
 | No domain words in `src/` (CI check, commit P0.4; `tests/test_no_domain_words.py`) | Keeps the product generic; JMS lives in fixtures, mocks and adapters only |
-| Secrets never in files; config only in `reportsbot.yaml` | One place to look; nothing leaks into git |
+| Secrets never in files; config only in `rebo.yaml` | One place to look; nothing leaks into git |
 
 Type prefixes: `feat` (behaviour), `fix`, `perf` (cost/latency), `eval` (eval sets/results), `docs`,
 `test`, `build` (packaging/CI), `chore`.
@@ -26,11 +26,11 @@ Type prefixes: `feat` (behaviour), `fix`, `perf` (cost/latency), `eval` (eval se
 ## 1. Create the separate repository (commit P0.1)
 
 ```bash
-# from this repo: export the folder with its history (every commit on feat/reports-bot-standalone)
-git subtree split --prefix=reports-bot -b reports-bot-export
-mkdir ../reportsbot && cd ../reportsbot && git init -b main
-git pull ../orchid-ai-intake-bot reports-bot-export
-# or, without history: copy the folder (excluding .venv/ data/ .env reportsbot.yaml) and `git init`
+# from this repo: export the folder with its history (every commit on feat/rebo-standalone)
+git subtree split --prefix=rebo -b rebo-export
+mkdir ../rebo && cd ../rebo && git init -b main
+git pull ../orchid-ai-intake-bot rebo-export
+# or, without history: copy the folder (excluding .venv/ data/ .env rebo.yaml) and `git init`
 uv sync --all-extras && uv run pytest
 ```
 
@@ -42,12 +42,12 @@ The folder needs nothing from the parent repo. JMS appears only as:
 | `docker-compose.yml` `db` service | MySQL 8.0.44 loaded with that structure | No |
 | `tools/synth/` | synthetic rows | No |
 | `mocks/jms/server.py` | mock JMS host: token, admin directory, custom-report save + Builder-grammar check, re-run | No |
-| `src/reportsbot/adapters/jms.py` | optional: speaks the JMS chat contract (`adapters: [jms]`) | No (tested against the mock) |
+| `src/rebo/adapters/jms.py` | optional: speaks the JMS chat contract (`adapters: [jms]`) | No (tested against the mock) |
 | `tools/snapshot/` | refresh the snapshot from a real MySQL | Only when refreshing (aws-vault + VPN) |
 
 ## 2. The configuration contract (≈10 values, final)
 
-`reportsbot.yaml` (template: `reportsbot.example.yaml`; loader: `settings.py`, unknown keys are errors):
+`rebo.yaml` (template: `rebo.example.yaml`; loader: `settings.py`, unknown keys are errors):
 
 | # | Key | Example | What it controls |
 |---|---|---|---|
@@ -61,9 +61,9 @@ The folder needs nothing from the parent repo. JMS appears only as:
 | 8 | `sharing.threshold` | `3` | people agreeing before something is proposed to everyone |
 | 9 | `embeddings` | `true` | local vectors on/off |
 | 10 | `auth` (mode, issuer) + `adapters` | `jwt`, `orchid`, `[jms]` | identity source and host contracts |
-| 11 | `notify_url` | `https://hooks.example.com/reportsbot` | optional webhook: request created/resolved, item shared/stale (B-025; empty = off) |
+| 11 | `notify_url` | `https://hooks.example.com/rebo` | optional webhook: request created/resolved, item shared/stale (B-025; empty = off) |
 
-Secrets: `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`/`GOOGLE_API_KEY`, `REPORTSBOT_JWT_SECRET`.
+Secrets: `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`/`GOOGLE_API_KEY`, `REBO_JWT_SECRET`.
 **Nothing about the meaning of the data is configured.** Adding a semantic YAML is out of scope by
 design: meaning is learned (doc 05).
 
@@ -71,16 +71,16 @@ Production commits may add at most these keys (each in its own commit, with a de
 behaviour unchanged): `state_url` (Postgres instead of SQLite, P2.1), `embeddings_url` (TEI, P2.3),
 `tracing_url` (P3.2). `notify_url` (B-025) was added on 2026-10-21 as the backlog item specified,
 so with all three the groups total 14; the binding limit is **≤ 20 settings** in
-`reportsbot.example.yaml`, enforced by `tests/test_settings.py::test_example_config_stays_small`
+`rebo.example.yaml`, enforced by `tests/test_settings.py::test_example_config_stays_small`
 (20 today). To fit B-032's two limits, `lmstudio_url` and `auth.issuer` are shown as comments in
 the example (both still valid keys, with the defaults shown); every setting remains documented there.
 
-## 3. Where the build stands (done, on branch `feat/reports-bot-standalone`)
+## 3. Where the build stands (done, on branch `feat/rebo-standalone`)
 
 | Commit | What |
 |---|---|
 | `b5704ed1` | slim bot: catalog bootstrap, agent loop, guard, knowledge lifecycle, API/UI/MCP, evals, snapshot, synth, docs 01–17 |
-| `6ac74b63` | single `reportsbot.yaml` (~10 keys), secrets in env |
+| `6ac74b63` | single `rebo.yaml` (~10 keys), secrets in env |
 | `bba41e4f` | model registry: OpenRouter, Anthropic, Gemini, LM Studio, OpenAI, FallbackModel |
 | `eeb9ba64` | one-turn clarifications (≤ 3 questions) + drill-down follow-ups |
 | `908a47dc` | JWT auth, JMS chat-contract adapter, mock JMS host |
@@ -117,10 +117,10 @@ Run the whole JMS-shaped stack locally:
 
 ```bash
 docker compose up -d db
-export REPORTSBOT_JWT_SECRET=$(python -c "import secrets;print(secrets.token_hex(32))")
+export REBO_JWT_SECRET=$(python -c "import secrets;print(secrets.token_hex(32))")
 uv run python mocks/jms/server.py &                               # :8090
-# reportsbot.yaml: auth: {mode: jwt, issuer: orchid}, adapters: [jms]
-uv run reportsbot serve --no-ui &                                  # :8080
+# rebo.yaml: auth: {mode: jwt, issuer: orchid}, adapters: [jms]
+uv run rebo serve --no-ui &                                  # :8080
 TOKEN=$(curl -s -X POST localhost:8090/mock/token -H 'content-type: application/json' -d '{"user_id": 7}' | python -c "import sys,json;print(json.load(sys.stdin)['token'])")
 curl -s -X POST localhost:8080/api/v1/chat/0 -H "Authorization: Bearer $TOKEN" -H 'content-type: application/json' \
      -d '{"message":"active surrogates in screening","reports":{"action":"query"}}'
@@ -131,7 +131,7 @@ curl -s -X POST localhost:8080/api/v1/chat/0 -H "Authorization: Bearer $TOKEN" -
 Each line is one commit. "Gate" is the measurable condition to merge the phase.
 
 ### Phase P0: separate repo hygiene (½ day)
-- **P0.1** `build: initial import from orchid-ai-intake-bot reports-bot/` (section 1)
+- **P0.1** `build: initial import from orchid-ai-intake-bot rebo/` (section 1)
 - **P0.2** `build: GitHub Actions: uv sync --frozen, pytest, ruff (F,E9,B)`
 - **P0.3** `build: pre-commit with ruff + a 'no secrets' check (detect-secrets)`
 - **P0.4** `test: forbid domain words in src/ (a test that greps src/ for fixture table names from fixtures/*/profile.json)`
@@ -182,7 +182,7 @@ Each line is one commit. "Gate" is the measurable condition to merge the phase.
 
 1. `uv run pytest` (offline, ~10 s).
 2. `uv run python tools/eval_run.py fixtures/jms_staging/eval.jsonl fixtures/jms_staging/eval_results_<change>.json`
-   with the model setup in env (`REPORTSBOT_MODEL`, `REPORTSBOT_FAST_MODEL`, `REPORTSBOT_ESCALATE_MODEL`).
+   with the model setup in env (`REBO_MODEL`, `REBO_FAST_MODEL`, `REBO_ESCALATE_MODEL`).
 3. Compare `summary` (reports / clarify / errors / escalated / median seconds / total cost) and, after
    P1.1, execution match against the gold set. Commit the results file with the change.
 4. Run-to-run variance is real (doc 20 §5: the same model gave 55 rows one run and 5 the next on one

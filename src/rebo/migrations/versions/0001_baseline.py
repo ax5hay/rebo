@@ -13,7 +13,7 @@ depends_on = None
 
 
 def upgrade() -> None:
-    from reportsbot.store import SCHEMA, _pg_schema
+    from rebo.store import SCHEMA, _pg_schema
     bind = op.get_bind()
     script = SCHEMA if bind.dialect.name == "sqlite" else _pg_schema()
     for stmt in script.split(";\n"):

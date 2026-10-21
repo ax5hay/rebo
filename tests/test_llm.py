@@ -4,9 +4,9 @@ import httpx2 as httpx  # Pydantic AI 2.x injects httpx2 clients into OpenAI-com
 import pytest
 from pydantic_ai.models.fallback import FallbackModel
 
-from reportsbot.agent import build_agent
-from reportsbot.knowledge import User
-from reportsbot.llm import build_model, parse
+from rebo.agent import build_agent
+from rebo.knowledge import User
+from rebo.llm import build_model, parse
 
 
 def test_parse_prefixes_and_openrouter_shorthand():
@@ -169,7 +169,7 @@ async def test_no_grain_retry_when_the_entity_key_is_unique(app):
      "GROUP BY c.customer_id", None),
 ])
 def test_entity_key(app, sql, expected):
-    from reportsbot.agent import entity_key
+    from rebo.agent import entity_key
     assert entity_key(sql, "sqlite", app.catalog.primary_keys) == expected
 
 
@@ -306,7 +306,7 @@ async def test_instructions_are_identical_across_turns_and_users(app):
 def test_model_profiles_are_applied(app, monkeypatch):
     from pydantic_ai import PromptedOutput
 
-    from reportsbot import llm
+    from rebo import llm
     monkeypatch.setenv("OPENROUTER_API_KEY", "test")
     gem = build_model("openrouter:google/gemini-3.8-flash", app.settings)
     claude = build_model("openrouter:anthropic/claude-sonnet-5.5", app.settings)
@@ -367,7 +367,7 @@ async def test_no_second_opinion_with_two_assumptions_or_fewer(app):
 async def test_a_conversation_cannot_be_continued_by_someone_else(app):
     from fastapi.testclient import TestClient
 
-    from reportsbot.api import create_app
+    from rebo.api import create_app
     _scripted(app, [_completion("reply", {"text": "secret plans"})])
     first = await app.ask(User("alice"), "hello")
     with pytest.raises(PermissionError):
@@ -381,7 +381,7 @@ async def test_a_conversation_cannot_be_continued_by_someone_else(app):
 def test_agui_stream_reports_tool_steps_then_the_result(app):
     from fastapi.testclient import TestClient
 
-    from reportsbot.api import create_app
+    from rebo.api import create_app
     _scripted(app, [_completion("search_values", {"text": "paused"}),
                     _completion("present_report", {"title": "Paused customers", "assumptions": [],
                                                    "sql": "SELECT full_name FROM customer WHERE status = 'paused'"})])
@@ -395,7 +395,7 @@ def test_agui_stream_reports_tool_steps_then_the_result(app):
     assert types[0] == "RUN_STARTED" and types[-1] == "RUN_FINISHED"
     assert types.index("STEP_STARTED") < types.index("TEXT_MESSAGE_START")
     assert next(e for e in events if e["type"] == "STEP_STARTED")["stepName"] == "search_values"
-    result = next(e for e in events if e.get("name") == "reportsbot.result")["value"]
+    result = next(e for e in events if e.get("name") == "rebo.result")["value"]
     assert result["kind"] == "report" and len(result["rows"]) == 10 and result["conversation_id"] == "conv-1"
     other = client.post("/api/agui", json=body, headers={"X-User-Id": "bob"})
     assert other.status_code == 403
@@ -434,7 +434,7 @@ async def test_exact_answer_cache_hits_and_invalidates(app):
 def test_turn_limits_put_the_cost_cap_in_list_prices(monkeypatch):
     from decimal import Decimal
 
-    from reportsbot import llm
+    from rebo import llm
     sonnet = llm.turn_limits("openrouter:anthropic/claude-sonnet-5.5", tool_calls=25, cost_cap_usd=0.5)
     assert sonnet.cost_limit == Decimal("0.5") and sonnet.tool_calls_limit == 25   # genai-prices agrees here
     haiku = llm.turn_limits("openrouter:anthropic/claude-haiku-5.5", tool_calls=25, cost_cap_usd=0.5)
@@ -448,7 +448,7 @@ def test_turn_limits_put_the_cost_cap_in_list_prices(monkeypatch):
 
 
 async def test_a_turn_over_its_cost_cap_stops_with_the_budget_message(app, monkeypatch):
-    from reportsbot import llm, messages
+    from rebo import llm, messages
     monkeypatch.setattr(llm, "genai_price", lambda spec, **kw: None)           # enforce via token limits
     _scripted(app, [_completion("search_values", {"text": "paused"})])        # would keep exploring
     app.settings.cost_per_turn_usd = 0.0001                                    # about 40 input tokens of Sonnet
@@ -459,8 +459,8 @@ async def test_a_turn_over_its_cost_cap_stops_with_the_budget_message(app, monke
 async def test_per_user_rate_limit(app):
     from fastapi.testclient import TestClient
 
-    from reportsbot.api import create_app
-    from reportsbot.service import RateLimited
+    from rebo.api import create_app
+    from rebo.service import RateLimited
     _scripted(app, [_completion("reply", {"text": "hi"})])
     app.settings.per_user_per_minute = 2
     await app.ask(User("alice"), "one")
@@ -473,7 +473,7 @@ async def test_per_user_rate_limit(app):
 
 
 def test_profile_output_retries_reach_the_agent(app, monkeypatch):
-    from reportsbot import llm
+    from rebo import llm
     assert llm.profile("lmstudio:google/gemma-4-e2b").output_retries == 4
     assert llm.profile("openrouter:anthropic/claude-sonnet-5.5").output_retries == 2
     monkeypatch.setenv("OPENROUTER_API_KEY", "test")

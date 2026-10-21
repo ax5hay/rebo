@@ -4,7 +4,7 @@
   /knowledge   My knowledge    everyone: what I taught (edit, share, withdraw, undo, history), shared
                                knowledge (request a fix), my requests; add personal knowledge
   /admin       Admin           admins/owners: review queue, open requests, add shared knowledge, export/import
-  /config      Configuration   owners: edit reportsbot.yaml (validated), history, rollback
+  /config      Configuration   owners: edit rebo.yaml (validated), history, rollback
 
 Identity comes from the URL (?user=alice&role=admin&team=ops; roles user|admin|owner) because this UI
 is for local testing; a host application uses the HTTP API with its own login instead.
@@ -38,7 +38,7 @@ def _when(ts: float) -> str:
 def _nav(u: User) -> None:
     q = f"?user={u.id}&role={u.role}" + (f"&team={u.team}" if u.team else "")
     with ui.header().classes("items-center gap-4 bg-slate-800"):
-        ui.label("Reports").classes("text-lg font-semibold")
+        ui.label("ReBo").classes("text-lg font-semibold")
         ui.link("Ask", f"/{q}").classes("text-white")
         ui.link("My knowledge", f"/knowledge{q}").classes("text-white")
         if u.is_admin:
@@ -133,7 +133,7 @@ def mount_ui(api: FastAPI, app: App) -> None:
         state = {"conversation_id": None, "correcting": None}
         feed = ui.column().classes("w-full max-w-5xl mx-auto gap-3 p-4")
         with feed:
-            ui.chat_message(msg.say("welcome"), name="Reports", sent=False)
+            ui.chat_message(msg.say("welcome"), name="ReBo", sent=False)
             pins = app.pinned(u)
             if pins:
                 with ui.row().classes("gap-2 items-center"):
@@ -240,14 +240,14 @@ def mount_ui(api: FastAPI, app: App) -> None:
 
                     ui.button("Run", on_click=answer).props("color=primary")
             elif r["kind"] == "answer":
-                ui.chat_message(r["text"], name="Reports", sent=False)
+                ui.chat_message(r["text"], name="ReBo", sent=False)
                 if r.get("cites"):
                     ui.label("From: " + ", ".join(f"{c['title']} ({c['trust']})" for c in r["cites"])).classes(
                         "text-xs opacity-60")
                 for s in r.get("suggestions") or []:
                     suggestion_card(s)
             else:
-                ui.chat_message(r["message"], name="Reports", sent=False)
+                ui.chat_message(r["message"], name="ReBo", sent=False)
 
         def feedback_row(r: dict) -> None:
             row = ui.row().classes("items-center gap-2 w-full")
@@ -624,4 +624,4 @@ def mount_ui(api: FastAPI, app: App) -> None:
 
         draw()
 
-    ui.run_with(api, title="Reports", storage_secret="local-dev-only", show_welcome_message=False)
+    ui.run_with(api, title="ReBo", storage_secret="local-dev-only", show_welcome_message=False)

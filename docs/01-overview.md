@@ -2,7 +2,7 @@
 
 ## What this is
 
-`reportsbot` is a self-contained natural-language reports bot. Point it at any relational
+**ReBo** (`rebo`) is a self-contained natural-language reports bot. Point it at any relational
 database, and business users can ask for reports in plain words ("active clients in screening
 with their sub-stage"). The bot explores the database, writes one read-only SQL query, runs it,
 shows the rows, and says how it read the question. When the user says the answer is right, the
@@ -14,7 +14,7 @@ There are no YAML files describing the business domain, no hand-written concept 
 regex intent detectors and no per-customer code. Everything the bot knows about the database
 comes from two sources:
 
-1. **The database itself**, read once by `reportsbot bootstrap`: structure, statistics, the
+1. **The database itself**, read once by `rebo bootstrap`: structure, statistics, the
    actual stored values of categorical columns, declared and inferred joins, and LLM-drafted
    descriptions (marked as drafts).
 2. **People, in the chat**: confirmed reports, business terms, rules and joins, each with an

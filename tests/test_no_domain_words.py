@@ -9,7 +9,7 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SRC = ROOT / "src" / "reportsbot"
+SRC = ROOT / "src" / "rebo"
 # Table names that are ordinary words in this code base's own vocabulary.
 PLAIN_WORDS = {"admin", "building", "contact", "contract", "err", "event", "family", "form", "lease", "maintenance", "provider",
                "retrieval", "status", "template", "unit", "user"}

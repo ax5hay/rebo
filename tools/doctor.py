@@ -5,8 +5,8 @@
     uv run python tools/doctor.py --check  # report only, change nothing
 
 Prepares (idempotent):
-- git history from reportsbot.git.bundle;
-- reportsbot.yaml and .env from their examples;
+- git history from rebo.git.bundle;
+- rebo.yaml and .env from their examples;
 - the local MySQL container and its synthetic rows;
 - the demo SQLite database;
 - the bot's catalogs for both databases.
@@ -59,12 +59,12 @@ def env_file() -> dict[str, str]:
 
 def git_setup(check: bool) -> dict:
     inside = run(["git", "rev-parse", "--is-inside-work-tree"]).stdout.strip() == "true"
-    bundle = ROOT / "reportsbot.git.bundle"
+    bundle = ROOT / "rebo.git.bundle"
     if not inside and not check:
         run(["git", "init", "-b", "main"])
         if not run(["git", "config", "user.email"]).stdout.strip():
-            run(["git", "config", "user.email", "reportsbot-agent@localhost"])
-            run(["git", "config", "user.name", "reportsbot agent"])
+            run(["git", "config", "user.email", "rebo-agent@localhost"])
+            run(["git", "config", "user.name", "rebo agent"])
         if bundle.is_file():
             heads = run(["git", "bundle", "list-heads", str(bundle)]).stdout.split()
             ref = heads[1] if len(heads) > 1 else "HEAD"
@@ -73,7 +73,7 @@ def git_setup(check: bool) -> dict:
             say(f"git: restored history from {bundle.name}" + ("" if r.returncode == 0 else f" (fetch: {r.stderr[:200]})"))
         else:
             run(["git", "add", "-A"])
-            run(["git", "commit", "-q", "-m", "import reportsbot bundle"])
+            run(["git", "commit", "-q", "-m", "import rebo bundle"])
             say("git: new repository with one import commit (no history bundle found)")
         inside = True
     dirty = run(["git", "status", "--porcelain", "--", "."]).stdout.strip().splitlines() if inside else []
@@ -82,19 +82,19 @@ def git_setup(check: bool) -> dict:
 
 
 def ensure_files(check: bool) -> None:
-    for target, example in (("reportsbot.yaml", "reportsbot.example.yaml"), (".env", ".env.example")):
+    for target, example in (("rebo.yaml", "rebo.example.yaml"), (".env", ".env.example")):
         if not (ROOT / target).exists() and not check:
             shutil.copyfile(ROOT / example, ROOT / target)
             say(f"created {target} from {example}")
-    if "REPORTSBOT_DATABASE_URL" in env_file():
-        say("WARNING: .env sets REPORTSBOT_DATABASE_URL, which overrides `database:` in every YAML (docs/23 §4). "
+    if "REBO_DATABASE_URL" in env_file():
+        say("WARNING: .env sets REBO_DATABASE_URL, which overrides `database:` in every YAML (docs/23 §4). "
             "Keep .env for API keys only.")
 
 
 def capabilities() -> dict:
     keys = {**env_file(), **os.environ}
     caps = {"offline": True, "human": False, "browser": False}
-    caps["openrouter"] = bool(keys.get("OPENROUTER_API_KEY") or keys.get("REPORTSBOT_OPENROUTER_API_KEY"))
+    caps["openrouter"] = bool(keys.get("OPENROUTER_API_KEY") or keys.get("REBO_OPENROUTER_API_KEY"))
     caps["anthropic"] = bool(keys.get("ANTHROPIC_API_KEY"))
     caps["gemini"] = bool(keys.get("GEMINI_API_KEY") or keys.get("GOOGLE_API_KEY"))
     caps["openai"] = bool(keys.get("OPENAI_API_KEY"))
@@ -104,7 +104,7 @@ def capabilities() -> dict:
     url = "http://127.0.0.1:1234/v1"
     try:
         sys.path.insert(0, str(ROOT / "src"))
-        from reportsbot.settings import Settings  # noqa: E402
+        from rebo.settings import Settings  # noqa: E402
         url = Settings().lmstudio_url
     except Exception:
         pass
@@ -163,13 +163,13 @@ def bootstrap(check: bool, caps: dict) -> dict:
     out = {}
     describe = ["--describe"] if caps["llm"] else []
     targets = [("demo_property", ROOT / "data" / "demo_property" / "state.db",
-                {"REPORTSBOT_CONFIG": "fixtures/demo_property/reportsbot.yaml"})]
+                {"REBO_CONFIG": "fixtures/demo_property/rebo.yaml"})]
     if caps["docker"]:
-        targets.append(("jms_local", ROOT / "data" / "state.db", {"REPORTSBOT_CONFIG": "reportsbot.yaml"}))
+        targets.append(("jms_local", ROOT / "data" / "state.db", {"REBO_CONFIG": "rebo.yaml"}))
     for name, state, env in targets:
         if not catalog_ready(state) and not check:
             say(f"bootstrap {name}{' with descriptions' if describe else ''} ...")
-            r = run([sys.executable, "-m", "reportsbot.cli", "bootstrap", *describe], env=env, timeout=3600)
+            r = run([sys.executable, "-m", "rebo.cli", "bootstrap", *describe], env=env, timeout=3600)
             line = next((l for l in reversed(r.stdout.splitlines()) if l.startswith("{")), r.stderr[-300:])
             say(f"bootstrap {name}: {line}")
         out[name] = "ready" if catalog_ready(state) else "not bootstrapped"

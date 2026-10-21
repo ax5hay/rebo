@@ -3,8 +3,8 @@
 ## 1. Eval runner (`evals.py`, pydantic-evals 2.58)
 
 ```bash
-uv run reportsbot eval fixtures/jms_staging/eval.jsonl          # all cases
-uv run reportsbot eval fixtures/jms_staging/eval.jsonl --limit 3
+uv run rebo eval fixtures/jms_staging/eval.jsonl          # all cases
+uv run rebo eval fixtures/jms_staging/eval.jsonl --limit 3
 ```
 
 **Case format** (JSONL, one per line; only `id` and `question` are required):
@@ -83,9 +83,9 @@ Off by default. To turn it on:
 ```bash
 uv sync --extra otel
 export OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:6006   # e.g. Arize Phoenix: `uvx arize-phoenix serve`
-export OTEL_SERVICE_NAME=reportsbot
+export OTEL_SERVICE_NAME=rebo
 # optional: include prompts/results in spans (contains business data)
-export REPORTSBOT_TRACE_CONTENT=true
+export REBO_TRACE_CONTENT=true
 ```
 
 `setup_tracing()` (called once from `App.__init__`) installs an OTLP/HTTP exporter and calls
@@ -100,10 +100,10 @@ database's data.
 ### Tracing on by default in the compose files (B-035)
 
 Both `docker-compose.yml` (profile `bot`) and `compose.prod.yml` run Phoenix 20.23.0 and give the bot
-`OTEL_EXPORTER_OTLP_ENDPOINT=http://phoenix:6006` plus `openinference.project.name=reportsbot`; the
-image installs the `otel` extra. Content stays out of spans unless `REPORTSBOT_TRACE_CONTENT=true`.
+`OTEL_EXPORTER_OTLP_ENDPOINT=http://phoenix:6006` plus `openinference.project.name=rebo`; the
+image installs the `otel` extra. Content stays out of spans unless `REBO_TRACE_CONTENT=true`.
 Verified 2026-10-21: one scripted turn (tests/web_server.py model) exported to a Phoenix 20.23.0
-container showed the spans `invoke_agent reportsbot` (AGENT) and the model call (LLM) through
+container showed the spans `invoke_agent rebo` (AGENT) and the model call (LLM) through
 Phoenix's REST API (`/v1/projects/default/spans`, run without the project attribute). A trace from the
 containerised bot with a real model was not produced (no LLM key).
 
@@ -125,5 +125,5 @@ containerised bot with a real model was not produced (no LLM key).
 |---|---|---|
 | Share of reports with `feedback='wrong'` | falling over time | read the traces of the failing questions; teach terms; check value matches |
 | Share of `verified`/`yours` badges | rising | curators are not reviewing the queue |
-| `stale` items | near zero | run `reportsbot revalidate` after migrations; fix and re-confirm |
+| `stale` items | near zero | run `rebo revalidate` after migrations; fix and re-confirm |
 | Median tool calls per report | ≤ 8 | the schema search is missing tables; add descriptions (`--describe`) |

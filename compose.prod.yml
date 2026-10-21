@@ -1,21 +1,21 @@
 # Production stack (B-033): the bot behind oauth2-proxy, Postgres for its memory, Phoenix for traces.
-#   1. cp .env.example .env and fill in: an LLM key, REPORTSBOT_DATABASE_URL (read-only user on the
+#   1. cp .env.example .env and fill in: an LLM key, REBO_DATABASE_URL (read-only user on the
 #      database to report on), OAUTH2_PROXY_* (your identity provider, see oauth2-proxy docs),
 #      STATE_DB_PASSWORD.
 #   2. docker compose -f compose.prod.yml up -d          -> http://localhost:4180 (login first)
-#   Optional local embeddings server:  --profile tei  and  REPORTSBOT_EMBEDDINGS=http://tei:80
+#   Optional local embeddings server:  --profile tei  and  REBO_EMBEDDINGS=http://tei:80
 # Only the proxy is published. Phoenix (traces, on by default; prompts and rows are left out unless
-# REPORTSBOT_TRACE_CONTENT=true) is bound to localhost:6006.
+# REBO_TRACE_CONTENT=true) is bound to localhost:6006.
 services:
   bot:
     build: .
-    env_file: ${REPORTSBOT_ENV_FILE:-.env}
+    env_file: ${REBO_ENV_FILE:-.env}
     environment:
-      REPORTSBOT_STATE_URL: postgresql://reportsbot:${STATE_DB_PASSWORD:-change-me}@state-db:5432/reportsbot
-      REPORTSBOT_STATE_DIR: /data
-      REPORTSBOT_AUTH_MODE: headers          # identity comes from oauth2-proxy (X-Forwarded-User / -Email)
+      REBO_STATE_URL: postgresql://rebo:${STATE_DB_PASSWORD:-change-me}@state-db:5432/rebo
+      REBO_STATE_DIR: /data
+      REBO_AUTH_MODE: headers          # identity comes from oauth2-proxy (X-Forwarded-User / -Email)
       OTEL_EXPORTER_OTLP_ENDPOINT: http://phoenix:6006   # traces: agent runs, model calls, tool calls
-      OTEL_RESOURCE_ATTRIBUTES: openinference.project.name=reportsbot
+      OTEL_RESOURCE_ATTRIBUTES: openinference.project.name=rebo
     expose: ["8080"]
     volumes: ["botdata:/data"]
     depends_on:
@@ -29,19 +29,19 @@ services:
   state-db:
     image: postgres:18.6
     environment:
-      POSTGRES_USER: reportsbot
+      POSTGRES_USER: rebo
       POSTGRES_PASSWORD: ${STATE_DB_PASSWORD:-change-me}
-      POSTGRES_DB: reportsbot
+      POSTGRES_DB: rebo
     volumes: ["statedata:/var/lib/postgresql"]
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "reportsbot"]
+      test: ["CMD", "pg_isready", "-U", "rebo"]
       interval: 5s
       retries: 30
     restart: unless-stopped
 
   auth:
     image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.5
-    env_file: ${REPORTSBOT_ENV_FILE:-.env}   # OAUTH2_PROXY_PROVIDER, _CLIENT_ID, _CLIENT_SECRET, _COOKIE_SECRET, ...
+    env_file: ${REBO_ENV_FILE:-.env}   # OAUTH2_PROXY_PROVIDER, _CLIENT_ID, _CLIENT_SECRET, _COOKIE_SECRET, ...
     environment:
       OAUTH2_PROXY_HTTP_ADDRESS: 0.0.0.0:4180
       OAUTH2_PROXY_UPSTREAMS: http://bot:8080/

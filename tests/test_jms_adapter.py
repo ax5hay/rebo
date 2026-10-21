@@ -8,11 +8,11 @@ import httpx2
 import pytest
 from fastapi.testclient import TestClient
 
-from reportsbot.agent import build_agent
-from reportsbot.adapters.jms import builder_grammar_problem
-from reportsbot.api import create_app
-from reportsbot.knowledge import User
-from reportsbot.llm import build_model
+from rebo.agent import build_agent
+from rebo.adapters.jms import builder_grammar_problem
+from rebo.api import create_app
+from rebo.knowledge import User
+from rebo.llm import build_model
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "mocks" / "jms"))
 import server as mock_jms  # noqa: E402
@@ -33,7 +33,7 @@ def _completion(name, args):
 
 @pytest.fixture()
 def client(app, monkeypatch):
-    monkeypatch.setenv("REPORTSBOT_JWT_SECRET", SECRET)
+    monkeypatch.setenv("REBO_JWT_SECRET", SECRET)
     app.settings.auth_mode, app.settings.adapters, app.settings.jwt_secret = "jwt", ["jms"], SECRET
     http = httpx2.AsyncClient(transport=httpx2.MockTransport(
         lambda req: httpx2.Response(200, json=_completion("present_report", REPORT))))
@@ -115,7 +115,7 @@ async def test_async_answer_reaches_the_browser_as_reports_ready(client, app):
 
 @pytest.mark.parametrize("compatible", [True, False])
 def test_builder_compatible_reports_retry_until_the_builder_can_open_them(app, monkeypatch, compatible):
-    monkeypatch.setenv("REPORTSBOT_JWT_SECRET", SECRET)
+    monkeypatch.setenv("REBO_JWT_SECRET", SECRET)
     app.settings.auth_mode, app.settings.jwt_secret = "jwt", SECRET
     app.settings.adapters = {"jms": {"builder_compatible": compatible}}
     grouped = _completion("present_report", {"title": "By status", "assumptions": [],
@@ -142,7 +142,7 @@ def test_builder_compatible_reports_retry_until_the_builder_can_open_them(app, m
     ("SELECT full_name AS customer FROM customer WHERE status = 'paused'", True),
     ("SELECT status, COUNT(*) AS n FROM customer GROUP BY status", False)])
 def test_save_to_report_builder_reports_editable_or_view_only(app, monkeypatch, sql, editable):
-    monkeypatch.setenv("REPORTSBOT_JWT_SECRET", SECRET)
+    monkeypatch.setenv("REBO_JWT_SECRET", SECRET)
     app.settings.auth_mode, app.settings.jwt_secret = "jwt", SECRET
     app.settings.adapters = {"jms": {"save_url": "http://jms/mock/custom-reports"}}
     app.__dict__["agent"] = build_agent(build_model("lmstudio:m", app.settings, http_client=httpx2.AsyncClient(

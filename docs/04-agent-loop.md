@@ -1,13 +1,13 @@
 # 04 · The agent loop
 
-Code: `src/reportsbot/agent.py` (agent, tools, outcomes, validator) and `service.py` (`App.ask`,
+Code: `src/rebo/agent.py` (agent, tools, outcomes, validator) and `service.py` (`App.ask`,
 `_context_block`, `_load_history`). Framework: **Pydantic AI 2.58** with `OpenRouterModel`.
 
 ## 1. Shape
 
 ```python
 agent = Agent(
-    OpenRouterModel("anthropic/claude-sonnet-5.5", provider=OpenRouterProvider(api_key=..., app_title="reportsbot")),
+    OpenRouterModel("anthropic/claude-sonnet-5.5", provider=OpenRouterProvider(api_key=..., app_title="rebo")),
     deps_type=Deps,
     output_type=[ToolOutput(Report, name="present_report"),
                  ToolOutput(Clarify, name="ask_clarifying_question"),
@@ -176,7 +176,7 @@ ones the validator fetched; no second execution happens.
 | Limit | Value | Where |
 |---|---|---|
 | Model requests per turn | 40 | `UsageLimits(request_limit=40)` in `App.ask` |
-| Tool calls per turn | 25 (`REPORTSBOT_MAX_TOOL_CALLS`) | `UsageLimits(tool_calls_limit=…)` |
+| Tool calls per turn | 25 (`REBO_MAX_TOOL_CALLS`) | `UsageLimits(tool_calls_limit=…)` |
 | Probes per turn | 12 (soft message at 13+) | `run_sql` |
 | Output validation retries | 2 | `Agent(retries=2)` |
 | Rows shown / probe rows | 500 / 20 | settings |
@@ -191,6 +191,6 @@ the stack trace logged.
 | Agent | `anthropic/claude-sonnet-5.5` ($2/$10 per M tokens on OpenRouter, 1M context) | Best cost/quality for multi-step tool use |
 | Bootstrap descriptions | `anthropic/claude-haiku-5.5` ($0.10/$0.50) | One structured call per table |
 
-Both are environment settings (`REPORTSBOT_MODEL`, `REPORTSBOT_FAST_MODEL`). Any OpenRouter model with
+Both are environment settings (`REBO_MODEL`, `REBO_FAST_MODEL`). Any OpenRouter model with
 tool calling works. Pydantic AI also supports Anthropic, Bedrock and OpenAI directly by swapping
 the model class in `build_agent`.

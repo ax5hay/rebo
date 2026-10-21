@@ -1,6 +1,6 @@
 # 03 · Knowledge bootstrap: learning the database without config
 
-`reportsbot bootstrap [--describe]` → `App.bootstrap()` → `catalog.bootstrap(target, store, index, …)`.
+`rebo bootstrap [--describe]` → `App.bootstrap()` → `catalog.bootstrap(target, store, index, …)`.
 It runs on first install, after migrations, and on a schedule (nightly is fine). It is idempotent:
 the catalog is rebuilt, while learned knowledge and learned joins are untouched and then re-checked.
 
@@ -19,7 +19,7 @@ introspect ─► profile (4 threads) ─► detect protected ─► [describe w
 
 SQLAlchemy `inspect(engine)` collects tables, columns (name, type string, nullability, comment),
 primary keys, foreign keys and table comments. It is dialect-neutral (MySQL, MariaDB, Postgres,
-SQLite, SQL Server, Snowflake, BigQuery through their SQLAlchemy dialects). `REPORTSBOT_ALLOW_TABLES`
+SQLite, SQL Server, Snowflake, BigQuery through their SQLAlchemy dialects). `REBO_ALLOW_TABLES`
 limits the set.
 
 ### 2. Profile (`TargetDB.profile_table`)
@@ -44,7 +44,7 @@ ordinary string type in SQLite and Postgres.
 ### 3. Detect protected columns
 
 See doc 07 §2: name pattern, ciphertext/hash value pattern on 25 sampled rows, or
-`REPORTSBOT_DENY_COLUMNS`. Protected columns keep their name and type in the catalog (so the
+`REBO_DENY_COLUMNS`. Protected columns keep their name and type in the catalog (so the
 model can avoid them), but no values or statistics samples.
 
 ### 4. Draft descriptions (optional, `--describe`)
@@ -88,7 +88,7 @@ teaching always wins. Joins that no name hints at (JMS: `family.ip_1_id → cont
 be one if it were not declared) are left to the agent's exploration and to user teaching; a wrong
 guess would be worse than none.
 
-### 7. Embed (optional, when `fastembed` is installed and `REPORTSBOT_EMBEDDINGS=true`)
+### 7. Embed (optional, when `fastembed` is installed and `REBO_EMBEDDINGS=true`)
 
 Every `schema_fts` doc is embedded locally with `snowflake/snowflake-arctic-embed-s` (33M params,
 384-d, ONNX, CPU, 0.13 GB download, MTEB retrieval NDCG@10 51.98) and stored as float32 BLOBs in
@@ -103,7 +103,7 @@ caught on the next bootstrap.
 
 The 2026-10-20 snapshot (`fixtures/jms_staging/manifest.json`) has 207 tables, 2,769 columns,
 440 declared FKs and 554 categorical value catalogs. After `synth.py` fills the local copy,
-`reportsbot bootstrap` prints its own counts (tables, columns, foreign_keys, inferred_joins,
+`rebo bootstrap` prints its own counts (tables, columns, foreign_keys, inferred_joins,
 protected_columns, indexed_values, described_tables). Doc 17 records the measured run.
 
 ## What bootstrap deliberately does not do

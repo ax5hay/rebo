@@ -44,7 +44,7 @@ export default function App() {
   return (
     <div className="page">
       <header>
-        <h1>Reports</h1>
+        <h1>ReBo</h1>
         <button className="link" onClick={() => { setTurns([]); setThread(newThread()); }}>New conversation</button>
       </header>
       <main>

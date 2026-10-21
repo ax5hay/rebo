@@ -10,8 +10,8 @@ from fastapi.testclient import TestClient
 from pydantic_ai.messages import ModelResponse, ToolCallPart, UserPromptPart
 from pydantic_ai.models.function import FunctionModel
 
-from reportsbot.agent import build_agent
-from reportsbot.api import create_app
+from rebo.agent import build_agent
+from rebo.api import create_app
 from test_jms_adapter import SECRET, token
 
 SCHEMA = json.loads((Path(__file__).parents[1] / "fixtures" / "jms_contract" / "chat_contract.schema.json")
@@ -33,7 +33,7 @@ def model(messages, info):
 
 @pytest.fixture()
 def chat(app, monkeypatch):
-    monkeypatch.setenv("REPORTSBOT_JWT_SECRET", SECRET)
+    monkeypatch.setenv("REBO_JWT_SECRET", SECRET)
     app.settings.auth_mode, app.settings.adapters, app.settings.jwt_secret = "jwt", ["jms"], SECRET
     app.__dict__["agent"] = build_agent(FunctionModel(model))
     client = TestClient(create_app(app, with_ui=False))

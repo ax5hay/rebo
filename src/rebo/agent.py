@@ -180,7 +180,7 @@ def build_agent(model: Model, output: Literal["tool", "prompted"] = "tool", retr
         output_type=outputs,
         instructions=INSTRUCTIONS,
         retries=retries,
-        name="reportsbot",
+        name="rebo",
     )
 
     @agent.instructions

@@ -8,8 +8,8 @@ from typing import Iterator
 
 import pytest
 
-from reportsbot.service import App
-from reportsbot.settings import Settings
+from rebo.service import App
+from rebo.settings import Settings
 
 SHOP = """
 CREATE TABLE customer (customer_id INTEGER PRIMARY KEY, full_name TEXT, email TEXT, status TEXT,
@@ -20,9 +20,9 @@ CREATE TABLE note (note_id INTEGER PRIMARY KEY, author_id INTEGER, body TEXT);
 """
 
 
-# State backends to run the suite on. Postgres joins when REPORTSBOT_TEST_STATE_URL points at a server
+# State backends to run the suite on. Postgres joins when REBO_TEST_STATE_URL points at a server
 # (docker compose up -d state-db); each test then gets its own schema, dropped afterwards.
-PG_URL = os.environ.get("REPORTSBOT_TEST_STATE_URL", "")
+PG_URL = os.environ.get("REBO_TEST_STATE_URL", "")
 BACKENDS = ["sqlite", "postgres"] if PG_URL else ["sqlite"]
 
 

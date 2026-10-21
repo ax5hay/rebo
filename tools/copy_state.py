@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import sys
 
-from reportsbot.store import _PG_FTS, Store
+from rebo.store import _PG_FTS, Store
 
 FTS_COLUMNS = {t: [c.split()[0] for c in cols.split(", ")] for t, (_, cols, _) in _PG_FTS.items()}
 

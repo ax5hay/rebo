@@ -1,14 +1,14 @@
 # JMS integration contract (captured 2026-10-21, for use without JMS)
 
 Everything the bot needs to know about how JMS talks to a reports bot, captured from the
-orchid-ai-intake-bot code while it was available. The adapter (`src/reportsbot/adapters/jms.py`)
+orchid-ai-intake-bot code while it was available. The adapter (`src/rebo/adapters/jms.py`)
 and the mock (`mocks/jms/server.py`) implement this, and `tests/test_jms_adapter.py` checks it.
 There is no other JMS dependency.
 
 ## 1. Authentication (from `backend/app/core/tenant_auth.py`)
 
 - `Authorization: Bearer <JWT>`, **HS256**, shared secret (`CHATBOT_JWT_SECRET` on the JMS side,
-  `REPORTSBOT_JWT_SECRET` here), `iss` must be `"orchid"`.
+  `REBO_JWT_SECRET` here), `iss` must be `"orchid"`.
 - Claims read: `iss`, `bot_type` (`intake` | `knowledge` | `reports`; the reports bot accepts
   only `reports`), `db_schema` (agency database), `subdomain`, `user_id`, `user_type`, plus
   optional `contact` / `case` claim blocks used by other bots. The current code also derives

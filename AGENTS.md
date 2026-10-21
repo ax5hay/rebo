@@ -14,7 +14,7 @@ Do this without asking questions. The user expects work to resume and keep going
    uv sync --all-extras --frozen
    uv run python tools/doctor.py
    ```
-   Doctor restores git history from `reportsbot.git.bundle` on first run, creates `reportsbot.yaml`
+   Doctor restores git history from `rebo.git.bundle` on first run, creates `rebo.yaml`
    and `.env` from their examples, starts the local MySQL and fills it (if Docker exists), builds the
    demo database, bootstraps both catalogs, runs the tests, and prints **NEXT**: the first backlog
    item this machine can do. If it reports failing tests, fixing them is the first task.
@@ -54,19 +54,19 @@ items that fit.
 
 ## 1. What this is
 
-A **self-contained reports bot** for any SQL database. People ask for reports in plain words; the
+**ReBo**, a **self-contained reports bot** for any SQL database. People ask for reports in plain words; the
 bot answers with one read-only query, the rows, and how it read the question. It **learns** from the
 people who use it, not from configuration.
 
 - **The database is the only input about the domain.** The bot reads its structure, statistics and
-  stored values (`reportsbot bootstrap`). Everything else about meaning comes from people in the chat:
+  stored values (`rebo bootstrap`). Everything else about meaning comes from people in the chat:
   confirmed reports, corrections, definitions, joins.
-- **Configuration is ~10–20 lines** (`reportsbot.yaml`): which database, which models, limits, who
+- **Configuration is ~10–20 lines** (`rebo.yaml`): which database, which models, limits, who
   may do what. **Never** add domain meaning to configuration (no semantic YAML, concept registries,
   glossaries or per-customer prompt rules). If a change needs domain knowledge, it belongs in
   *learned knowledge* (people teach it; admins can also add or edit it directly).
 - **JMS is only the test database.** JMS data (structure snapshot, statistics, captured contract,
-  gold reports) lives in `fixtures/`, the JMS chat contract in `src/reportsbot/adapters/jms.py`, and a
+  gold reports) lives in `fixtures/`, the JMS chat contract in `src/rebo/adapters/jms.py`, and a
   stand-in for JMS in `mocks/jms/`. No JMS names in `src/` outside the adapter. Once this folder
   leaves the original machine there is **no access to JMS, its APIs or its databases**: everything
   runs locally against the replicated structure with synthetic data, or against any other database
@@ -78,7 +78,7 @@ people who use it, not from configuration.
 |---|---|
 | **user** | ask; confirm or reject answers, in buttons or in their own words; undo their feedback; teach things for themselves; edit/withdraw their own unshared knowledge; request fixes they cannot make |
 | **admin** | everything a user can, plus add, edit, share, withdraw and undo **any** learned knowledge; review the queue; resolve requests; export/import knowledge as YAML |
-| **owner** | everything an admin can, plus change the configuration (validated, audited, rollback). Editing `reportsbot.yaml` by hand on the server is also an owner action |
+| **owner** | everything an admin can, plus change the configuration (validated, audited, rollback). Editing `rebo.yaml` by hand on the server is also an owner action |
 
 Personal first, shared by evidence: what one user teaches affects only them until three people
 independently agree and an admin approves, or an admin adds it directly. Nothing is ever deleted;
@@ -125,7 +125,7 @@ The same applies to model choice: model IDs and prices change monthly. Re-check
 uv sync --all-extras && uv run pytest              # offline, ~10 s, no network, no LLM
 docker compose up -d db && uv run --extra synth python tools/synth/synth.py   # local JMS-shaped DB
 uv run python fixtures/demo_property/build.py      # made-up second domain (SQLite)
-uv run reportsbot bootstrap --describe && uv run reportsbot serve
+uv run rebo bootstrap --describe && uv run rebo serve
 uv run python tools/eval_run.py <cases.jsonl> <results.json> [limit]
 uv run python tools/export_bundle.py               # the checked zip for another machine
 ```

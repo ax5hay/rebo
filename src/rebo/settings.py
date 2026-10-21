@@ -1,8 +1,8 @@
-"""Runtime settings: one small YAML file (`reportsbot.yaml`, ~10 keys) + secrets from the environment.
+"""Runtime settings: one small YAML file (`rebo.yaml`, ~10 keys) + secrets from the environment.
 
-Precedence: explicit arguments > environment variables (REPORTSBOT_*) > reportsbot.yaml > defaults.
+Precedence: explicit arguments > environment variables (REBO_*) > rebo.yaml > defaults.
 Nothing here describes what the data means: that is learned (docs/05-learning-and-trust.md).
-The file format is documented in docs/13-operations.md and reportsbot.example.yaml.
+The file format is documented in docs/13-operations.md and rebo.example.yaml.
 """
 from __future__ import annotations
 
@@ -50,11 +50,11 @@ def load_env_file(path: str | Path = ".env") -> None:
 
 
 def config_path() -> Path:
-    return Path(os.environ.get("REPORTSBOT_CONFIG", "reportsbot.yaml"))
+    return Path(os.environ.get("REBO_CONFIG", "rebo.yaml"))
 
 
 class _YamlSource(PydanticBaseSettingsSource):
-    """Reads reportsbot.yaml and flattens the known keys; unknown keys are an error, so a typo
+    """Reads rebo.yaml and flattens the known keys; unknown keys are an error, so a typo
     never silently falls back to a default."""
 
     def get_field_value(self, field, field_name):  # pragma: no cover - required by the base class
@@ -67,7 +67,7 @@ class _YamlSource(PydanticBaseSettingsSource):
         return flatten_yaml(path.read_text(encoding="utf-8"), str(path))
 
 
-def flatten_yaml(text: str, source: str = "reportsbot.yaml") -> dict[str, Any]:
+def flatten_yaml(text: str, source: str = "rebo.yaml") -> dict[str, Any]:
     """YAML text -> flat setting values. Unknown keys raise (so do secrets: they are not YAML keys)."""
     doc = yaml.safe_load(text) or {}
     if not isinstance(doc, dict):
@@ -91,9 +91,9 @@ def flatten_yaml(text: str, source: str = "reportsbot.yaml") -> dict[str, Any]:
 
 
 def validate_yaml(text: str) -> None:
-    """Raise ValueError if `text` is not a valid reportsbot.yaml (types included)."""
+    """Raise ValueError if `text` is not a valid rebo.yaml (types included)."""
     flat = flatten_yaml(text)
-    flat.setdefault("database_url", os.environ.get("REPORTSBOT_DATABASE_URL", ""))
+    flat.setdefault("database_url", os.environ.get("REBO_DATABASE_URL", ""))
     if not flat["database_url"]:
         raise ValueError("'database' is required")
     try:
@@ -103,7 +103,7 @@ def validate_yaml(text: str) -> None:
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="REPORTSBOT_", env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_prefix="REBO_", env_file=".env", extra="ignore")
 
     # 1. The database to report on (use a read-only user).
     database_url: str = Field(..., description="SQLAlchemy URL of the database to report on.")
@@ -131,7 +131,7 @@ class Settings(BaseSettings):
     # 6. Identity: "headers" (X-User-* from a trusted gateway) or "jwt" (HS256 bearer, e.g. JMS).
     auth_mode: str = "headers"
     jwt_issuer: str = "orchid"
-    # 7. Optional host adapters, e.g. ["jms"] for the JMS chat contract (src/reportsbot/adapters/).
+    # 7. Optional host adapters, e.g. ["jms"] for the JMS chat contract (src/rebo/adapters/).
     adapters: list[str] | dict[str, dict[str, Any]] = Field(default_factory=list)  # [jms] or {jms: {option: …}}
     # 8. Optional webhook: POST {event, ...} on request created/resolved and item promoted/stale.
     notify_url: str = ""

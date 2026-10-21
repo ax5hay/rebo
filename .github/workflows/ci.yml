@@ -23,14 +23,14 @@ jobs:
       postgres:
         image: postgres:18.6
         env:
-          POSTGRES_USER: reportsbot
-          POSTGRES_PASSWORD: reportsbot
-          POSTGRES_DB: reportsbot
+          POSTGRES_USER: rebo
+          POSTGRES_PASSWORD: rebo
+          POSTGRES_DB: rebo
         ports: ["5433:5432"]
         options: >-
-          --health-cmd "pg_isready -U reportsbot" --health-interval 2s --health-retries 30
+          --health-cmd "pg_isready -U rebo" --health-interval 2s --health-retries 30
     env:
-      REPORTSBOT_TEST_STATE_URL: postgresql://reportsbot:reportsbot@127.0.0.1:5433/reportsbot
+      REBO_TEST_STATE_URL: postgresql://rebo:rebo@127.0.0.1:5433/rebo
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v10

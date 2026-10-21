@@ -78,14 +78,14 @@ prefixed `"Correction to the previous report: "`.
 | `POST /api/admin/config/preview` `{yaml}` | owner | what saving would do: `{ok, errors, changes}`; database and model names checked, nothing saved |
 | `GET /api/admin/stats?days=90` | admin, owner | usage dashboard: confirmation per week, provenance mix, top questions, most reported wrong, open requests by age, cost per day |
 | `GET /api/admin/preview?user=X&q=…&team=` | admin | the context block user X would get for that question, plus the knowledge items with owners |
-| `POST /api/agui` (AG-UI `RunAgentInput`; `threadId` = conversation id) | the asker | one turn as an AG-UI event stream: `RUN_STARTED`, `STEP_STARTED`/`STEP_FINISHED` + `CUSTOM reportsbot.progress` per tool step as it happens, the answer as a text message, `CUSTOM reportsbot.result` (the `/api/ask` payload), `RUN_FINISHED` or `RUN_ERROR` (B-029) |
+| `POST /api/agui` (AG-UI `RunAgentInput`; `threadId` = conversation id) | the asker | one turn as an AG-UI event stream: `RUN_STARTED`, `STEP_STARTED`/`STEP_FINISHED` + `CUSTOM rebo.progress` per tool step as it happens, the answer as a text message, `CUSTOM rebo.result` (the `/api/ask` payload), `RUN_FINISHED` or `RUN_ERROR` (B-029) |
 | `POST /api/jobs {text, conversation_id?}` / `GET /api/jobs/{id}` | the asker (admins may read any) | answer in the background as a durable job; poll it, or receive `report_ready` on `notify_url` |
 | `POST /api/schedules {turn_id, every}` / `GET /api/schedules` / `DELETE /api/schedules/{id}` | the report's asker | re-run a report on a schedule (no model) |
 | `GET /api/knowledge/about?q=` | anyone | what the bot knows about a word: visible learned items by trust, tables/columns with descriptions, stored values |
 | `GET /api/starter` | anyone | starter questions: the user's pinned reports first, then the most-used trusted reports |
 | `POST /api/turns/{id}/pin` / `DELETE /api/knowledge/{id}/pin` | the asker / the owner | pin a report (flags your own example with the same SQL, or creates one) / unpin; both logged in the item's history |
 | `GET /api/knowledge/export` / `POST /api/knowledge/import` `{yaml, dry_run?}` | admin | everything learned as editable YAML, and back; `dry_run: true` returns `changes` and errors and applies nothing |
-| `GET/PUT /api/admin/config` `{yaml, note}`, `POST /api/admin/config/rollback/{id}` | owner | view/change/roll back `reportsbot.yaml` (validated, atomic, audited) |
+| `GET/PUT /api/admin/config` `{yaml, note}`, `POST /api/admin/config/rollback/{id}` | owner | view/change/roll back `rebo.yaml` (validated, atomic, audited) |
 
 ## 3. Dev UI (`ui.py`, NiceGUI 3.18 mounted on the same FastAPI app)
 
@@ -118,19 +118,19 @@ Each card shows kind, status, title, owner, number of distinct confirmers, rejec
 "Why it is here" (the latest event note, e.g. "3 people confirmed this same query independently").
 Buttons: **Share with everyone**, **Share with team X** (when the owner has a team), **Reject**.
 
-## 4. MCP (`reportsbot mcp`, FastMCP 4.1, stdio)
+## 4. MCP (`rebo mcp`, FastMCP 4.1, stdio)
 
 Tools: `search_schema`, `describe_table`, `search_values`, `run_sql` (same guard and limits) and
 `verified_reports` (shared knowledge only). Learning is not exposed over MCP, because a
 confirmation needs an identified person. Example Claude Code config:
 
 ```json
-{"mcpServers": {"reports": {"command": "uv", "args": ["run", "--directory", "/path/to/reports-bot", "--extra", "mcp", "reportsbot", "mcp"]}}}
+{"mcpServers": {"reports": {"command": "uv", "args": ["run", "--directory", "/path/to/rebo", "--extra", "mcp", "rebo", "mcp"]}}}
 ```
 
 ## 5. Embedding into JMS (host adapter outline)
 
-1. JMS backend proxies `/reports-bot/*` → bot `/api/*`, setting `X-User-Id` = admin id,
+1. JMS backend proxies `/rebo/*` → bot `/api/*`, setting `X-User-Id` = admin id,
    `X-User-Role` = `curator` for admins with the reports-admin permission, and `X-User-Team` = agency id.
 2. JMS UI renders the `/api/ask` payload with its own components, using the `messages.py` texts
    returned in the payload.

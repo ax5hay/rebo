@@ -2,8 +2,8 @@
 import pytest
 import yaml
 
-from reportsbot import admin
-from reportsbot.knowledge import User
+from rebo import admin
+from rebo.knowledge import User
 
 USER, ADMIN, OWNER = User("alice"), User("ada", role="admin"), User("olga", role="owner")
 GOOD = "database: sqlite:///x.db\nlimits: {rows: 100}\n"
@@ -11,9 +11,9 @@ GOOD = "database: sqlite:///x.db\nlimits: {rows: 100}\n"
 
 @pytest.fixture()
 def cfg(tmp_path, monkeypatch):
-    p = tmp_path / "reportsbot.yaml"
+    p = tmp_path / "rebo.yaml"
     p.write_text("database: sqlite:///x.db\n", encoding="utf-8")
-    monkeypatch.setenv("REPORTSBOT_CONFIG", str(p))
+    monkeypatch.setenv("REBO_CONFIG", str(p))
     return p
 
 
@@ -63,8 +63,8 @@ def test_knowledge_export_edit_import_roundtrip(app):
 def test_admin_preview_shows_what_another_user_would_get(app):
     from fastapi.testclient import TestClient
 
-    from reportsbot.api import create_app
-    from reportsbot.knowledge import User
+    from rebo.api import create_app
+    from rebo.knowledge import User
     app.knowledge.add(User("alice"), kind="term", title="paused", body="a customer on hold")
     client = TestClient(create_app(app, with_ui=False))
     r = client.get("/api/admin/preview", params={"user": "alice", "q": "paused customers"},
@@ -99,7 +99,7 @@ def test_import_dry_run_lists_changes_and_changes_nothing(app):
 def test_bulk_review_shares_or_rejects_several_with_one_note(app):
     from fastapi.testclient import TestClient
 
-    from reportsbot.api import create_app
+    from rebo.api import create_app
     a = app.add_knowledge(USER, kind="note", title="fiscal year", body="starts in April")["item"]
     b = app.add_knowledge(USER, kind="term", title="vip", body="spent over 1000")["item"]
     c = app.add_knowledge(USER, kind="note", title="noise", body="ignore")["item"]
@@ -151,9 +151,9 @@ def test_usage_stats_on_seeded_turns(app):
 
 
 def test_config_preview_checks_database_and_models_without_saving(app, tmp_path, monkeypatch):
-    cfg = tmp_path / "reportsbot.yaml"
+    cfg = tmp_path / "rebo.yaml"
     cfg.write_text("database: sqlite:///x.db\n", encoding="utf-8")
-    monkeypatch.setenv("REPORTSBOT_CONFIG", str(cfg))
+    monkeypatch.setenv("REBO_CONFIG", str(cfg))
     good = f"database: {app.settings.database_url}\nmodels:\n  agent: lmstudio:qwen\n"
     r = admin.save_config(app, OWNER, good, preview=True)
     assert r["ok"] and {"setting": "model", "from": app.settings.model, "to": "lmstudio:qwen"} in r["changes"]

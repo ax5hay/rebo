@@ -1,4 +1,4 @@
-# The whole configuration for the made-up Greenleaf demo. Compare with reportsbot.example.yaml:
+# The whole configuration for the made-up Greenleaf demo. Compare with rebo.example.yaml:
 # only the database and where the bot keeps its memory differ. Nothing about leases, rent or
 # maintenance is configured: the bot learns that from the database and from people.
 database: sqlite:///fixtures/demo_property/greenleaf.db

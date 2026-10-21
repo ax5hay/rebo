@@ -28,7 +28,7 @@ cite it (`AGENTS.md` §3.6). Without a key, write `eval pending: needs llm` on t
 
 ```bash
 uv run python tools/export_bundle.py --check-only      # secret scan only, writes nothing
-uv run python tools/export_bundle.py                   # ../reportsbot-<date>.zip
+uv run python tools/export_bundle.py                   # ../rebo-<date>.zip
 ```
 
 The export fails (exit 1, no zip) on anything that looks like a secret or a real database host.
@@ -43,11 +43,11 @@ See `docs/23-offline-bundle.md`.
 | `uv run pytest` green before committing (offline, no network) | The suite runs on a SQLite fixture and mocked LLM/JMS, so it is fast and deterministic |
 | Behaviour that changes answers: run `tools/eval_run.py` and commit the results file | Accuracy and cost are tracked like code |
 | No domain words in `src/` (`tests/test_no_domain_words.py`) | Keeps the product generic; JMS lives in fixtures, mocks and adapters only |
-| Secrets never in files; config only in `reportsbot.yaml` | One place to look; nothing leaks into git |
+| Secrets never in files; config only in `rebo.yaml` | One place to look; nothing leaks into git |
 | Mark anything not run as not run | Docs and commit messages must not claim unverified results |
 
 Type prefixes: `feat` (behaviour), `fix`, `perf` (cost/latency), `eval` (eval sets/results), `docs`,
-`test`, `build` (packaging/CI), `chore`. Scope: `reports-bot`.
+`test`, `build` (packaging/CI), `chore`. Scope: `rebo`.
 
 ## Research protocol: tool suggestions are inputs, not decisions (AGENTS.md §4)
 

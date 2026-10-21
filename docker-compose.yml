@@ -1,8 +1,8 @@
 # Local guinea-pig database: the JMS staging structure (no real rows), filled by tools/synth.
 #   docker compose up -d db                       # first start loads the schema (about 30 s)
 #   uv run --extra synth python tools/synth/synth.py   # fill it with synthetic data
-#   uv run reportsbot bootstrap --describe        # teach the bot the structure
-#   uv run reportsbot serve                       # http://127.0.0.1:8080/?user=alice
+#   uv run rebo bootstrap --describe        # teach the bot the structure
+#   uv run rebo serve                       # http://127.0.0.1:8080/?user=alice
 services:
   db:
     image: mysql:8.0.44
@@ -23,17 +23,17 @@ services:
 
   # Optional Postgres for the bot's own state (state_url), and for the Postgres test run:
   #   docker compose up -d state-db
-  #   REPORTSBOT_TEST_STATE_URL=postgresql://reportsbot:reportsbot@127.0.0.1:5433/reportsbot uv run pytest
+  #   REBO_TEST_STATE_URL=postgresql://rebo:rebo@127.0.0.1:5433/rebo uv run pytest
   state-db:
     image: postgres:18.6
     environment:
-      POSTGRES_USER: reportsbot
-      POSTGRES_PASSWORD: reportsbot
-      POSTGRES_DB: reportsbot
+      POSTGRES_USER: rebo
+      POSTGRES_PASSWORD: rebo
+      POSTGRES_DB: rebo
     ports: ["5433:5432"]
     volumes: ["statedata:/var/lib/postgresql"]
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "reportsbot"]
+      test: ["CMD", "pg_isready", "-U", "rebo"]
       interval: 2s
       retries: 30
 
@@ -42,10 +42,10 @@ services:
     profiles: ["bot"]
     env_file: .env
     environment:
-      REPORTSBOT_DATABASE_URL: mysql+pymysql://reports_ro:reports_ro@db:3306/jms
-      REPORTSBOT_STATE_DIR: /data
+      REBO_DATABASE_URL: mysql+pymysql://reports_ro:reports_ro@db:3306/jms
+      REBO_STATE_DIR: /data
       OTEL_EXPORTER_OTLP_ENDPOINT: http://phoenix:6006
-      OTEL_RESOURCE_ATTRIBUTES: openinference.project.name=reportsbot
+      OTEL_RESOURCE_ATTRIBUTES: openinference.project.name=rebo
     ports: ["8080:8080"]
     volumes: ["botstate:/data"]
     depends_on:

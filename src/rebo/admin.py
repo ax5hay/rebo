@@ -1,10 +1,10 @@
 """Administration that people do by hand (docs/22-roles-and-user-aids.md):
 
-  owners  view / change / roll back reportsbot.yaml (validated, atomic, every version audited)
+  owners  view / change / roll back rebo.yaml (validated, atomic, every version audited)
   admins  export everything the bot has learned to an editable YAML file, and import it back
           (each change goes through the same validation, history and undo as an edit in the UI)
 
-Editing reportsbot.yaml directly on the server is equally supported: the file is the source of truth;
+Editing rebo.yaml directly on the server is equally supported: the file is the source of truth;
 this module only adds validation, an audit trail and rollback for edits made through the API/UI.
 """
 from __future__ import annotations
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from .service import App
 
 _EXPORT_HEADER = """\
-# Everything the bot has learned. Edit and import with:  reportsbot knowledge import <file>
+# Everything the bot has learned. Edit and import with:  rebo knowledge import <file>
 #   - change title / question / body / sql of any item (kept in its history; Undo works)
 #   - status: verified (share with everyone) or retired (withdraw); other statuses are set by the bot
 #   - add a new item: leave out `id` (it is added as shared knowledge by the importing admin)
@@ -60,7 +60,7 @@ def preview_config(app: "App", user: User, text: str) -> dict[str, Any]:
         return {"ok": False, "errors": [f"configuration: {e}"], "changes": [],
                 "message": msg.say("config_preview_bad", n=1)}
     flat = flatten_yaml(text)
-    flat.setdefault("database_url", os.environ.get("REPORTSBOT_DATABASE_URL", ""))
+    flat.setdefault("database_url", os.environ.get("REBO_DATABASE_URL", ""))
     new = Settings.model_validate(flat)
     for key in ("model", "fast_model", "escalate_model"):
         if getattr(new, key):
@@ -73,7 +73,7 @@ def preview_config(app: "App", user: User, text: str) -> dict[str, Any]:
             parse(spec)
         except ValueError as e:
             errors.append(f"fallback model: {e}")
-    with tempfile.TemporaryDirectory(prefix="reportsbot-preview-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="rebo-preview-") as tmp:
         try:
             trial = App(new.model_copy(update={"state_dir": Path(tmp)}))
             trial.target.run("SELECT 1", max_rows=1)
@@ -101,7 +101,7 @@ def save_config(app: "App", user: User, text: str, note: str = "", *, preview: b
     validate_yaml(text)
     path = config_path()
     previous = path.read_text(encoding="utf-8") if path.is_file() else None
-    fd, tmp = tempfile.mkstemp(dir=path.resolve().parent, prefix=".reportsbot.", suffix=".yaml")
+    fd, tmp = tempfile.mkstemp(dir=path.resolve().parent, prefix=".rebo.", suffix=".yaml")
     with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as f:
         f.write(text)
     os.replace(tmp, path)  # atomic: readers see the old or the new file, never half of one

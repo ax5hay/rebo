@@ -21,7 +21,7 @@ SCHEMA = """
 PRAGMA journal_mode=WAL;
 PRAGMA foreign_keys=ON;
 
--- Catalog: what the target database contains (rebuilt by `reportsbot bootstrap`).
+-- Catalog: what the target database contains (rebuilt by `rebo bootstrap`).
 CREATE TABLE IF NOT EXISTS cat_table (
     name TEXT PRIMARY KEY,
     rows INTEGER,
@@ -228,7 +228,7 @@ class _PgConnection:
 
 
 def migrate(store: "Store") -> None:
-    """Bring the state store to the latest Alembic revision (src/reportsbot/migrations). A state file from
+    """Bring the state store to the latest Alembic revision (src/rebo/migrations). A state file from
     before Alembic has no Alembic version stamp: the idempotent baseline and the add-if-missing column
     revision upgrade it in place, then it is stamped."""
     from alembic import command

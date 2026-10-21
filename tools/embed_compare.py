@@ -19,10 +19,10 @@ import tempfile
 import time
 from pathlib import Path
 
-from reportsbot.evals import load_cases
-from reportsbot.retrieval import Embedder, Index, get_embedder
-from reportsbot.safety import tables_in
-from reportsbot.store import Store
+from rebo.evals import load_cases
+from rebo.retrieval import Embedder, Index, get_embedder
+from rebo.safety import tables_in
+from rebo.store import Store
 
 MODELS = ["snowflake/snowflake-arctic-embed-s", "google/embeddinggemma-300m", "Qwen/Qwen3-Embedding-0.6B"]
 

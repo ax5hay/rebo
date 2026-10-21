@@ -8,13 +8,13 @@ beforehand and is inside the bundle. The only network access needed afterwards i
 ## 1. Make the bundle
 
 ```bash
-uv run python tools/export_bundle.py                 # ../reportsbot-YYYY-MM-DD.zip
+uv run python tools/export_bundle.py                 # ../rebo-YYYY-MM-DD.zip
 uv run python tools/export_bundle.py --with-models   # + models/fastembed (≈130 MB) for fully offline use
 uv run python tools/export_bundle.py --check-only    # scan only, no zip; the pre-commit hook runs this
 ```
 
 The tool includes the whole folder except `.venv/`, `data/` (the bot's memory on this machine),
-`models/`, `.env`, the local `reportsbot.yaml`, generated `*.db` files and caches.
+`models/`, `.env`, the local `rebo.yaml`, generated `*.db` files and caches.
 
 **It refuses to write the zip** if any file contains:
 - an API key (OpenRouter/OpenAI, Anthropic, Google),
@@ -26,7 +26,7 @@ It warns about email addresses not on example domains. It writes `BUNDLE_MANIFES
 sha256 of every file, the git commit, and whether there were uncommitted changes. Tested in
 `tests/test_bundle.py`.
 
-The commit history travels too, as `reportsbot.git.bundle`: a `git subtree split` of this folder,
+The commit history travels too, as `rebo.git.bundle`: a `git subtree split` of this folder,
 about 1 minute to make. `tools/doctor.py` restores it on the new machine. Use `--no-history` to leave it out.
 
 ## 2. Everything captured from JMS (and nothing else is needed)
@@ -37,7 +37,7 @@ about 1 minute to make. `tools/doctor.py` restores it on the new machine. Use `-
 | Realistic data | `fixtures/jms_staging/profile.json` (row counts, null rates, ranges, lengths; categorical value lists filtered for personal data; 51 measured undeclared references) → `tools/synth/synth.py` generates rows | same | Aggregates and business vocabulary only (doc 12 §1) |
 | The database engine | `docker-compose.yml` → `mysql:8.0.44`, same charset, collation and sql_mode as staging | `manifest.json` | No |
 | How JMS talks to the bot | `fixtures/jms_contract/` (JSON Schemas generated from the real models; JWT claims; endpoint; WebSocket message; save-to-Builder rules) | from the orchid-ai-intake-bot code | No |
-| A stand-in for JMS | `mocks/jms/server.py` (token, admin directory, custom-report save + Builder grammar, re-run) + `src/reportsbot/adapters/jms.py` | written to the captured contract | No |
+| A stand-in for JMS | `mocks/jms/server.py` (token, admin directory, custom-report save + Builder grammar, re-run) + `src/rebo/adapters/jms.py` | written to the captured contract | No |
 | Acceptance questions | `fixtures/jms_staging/eval.jsonl` (18 PO-validated prompts) | JMS-6723 corpus | No |
 | Human-built reports (gold SQL) | `fixtures/jms_staging/gold_custom_reports.jsonl` (79; 12 with real questions, `prompt_quality`) | `tools/jms_capture/capture_gold.py`, screened for personal literals | SQL text only |
 | Measured baselines | `fixtures/jms_staging/eval_results_*.json` | `tools/eval_run.py` | Synthetic rows only |
@@ -67,15 +67,15 @@ Put API keys in `.env` first to unlock the items that measure with an LLM. Every
 By hand, the equivalent is:
 
 ```bash
-unzip reportsbot-*.zip && cd reportsbot
+unzip rebo-*.zip && cd rebo
 git init -b main && git add -A && git commit -m "import"     # own repo (or use the subtree history)
 uv sync --all-extras                                         # needs PyPI once
 uv run pytest                                                # all offline
 docker compose up -d db                                      # JMS-shaped MySQL, structure only
 uv run --extra synth python tools/synth/synth.py             # synthetic rows
-cp reportsbot.example.yaml reportsbot.yaml                   # ~10–20 lines; edit models
+cp rebo.example.yaml rebo.yaml                   # ~10–20 lines; edit models
 cp .env.example .env                                         # API keys only
-uv run reportsbot bootstrap --describe && uv run reportsbot serve
+uv run rebo bootstrap --describe && uv run rebo serve
 ```
 
 Fully offline:
@@ -91,13 +91,13 @@ Fully offline:
 
 `fixtures/demo_property/` is the template:
 - `build.py` makes a deterministic SQLite database for a made-up property-management company.
-- `reportsbot.yaml` is 5 lines: the database URL and a separate memory folder.
+- `rebo.yaml` is 5 lines: the database URL and a separate memory folder.
 - `gold.jsonl` holds 10 questions with verified SQL.
 
 ```bash
 uv run python fixtures/demo_property/build.py
-REPORTSBOT_CONFIG=fixtures/demo_property/reportsbot.yaml uv run reportsbot bootstrap --describe
-REPORTSBOT_CONFIG=fixtures/demo_property/reportsbot.yaml uv run reportsbot serve --port 8081
+REBO_CONFIG=fixtures/demo_property/rebo.yaml uv run rebo bootstrap --describe
+REBO_CONFIG=fixtures/demo_property/rebo.yaml uv run rebo serve --port 8081
 uv run python tools/eval_run.py fixtures/demo_property/gold.jsonl fixtures/demo_property/eval_results_<name>.json
 ```
 
@@ -118,7 +118,7 @@ To add another domain:
 
 **Keep each domain's `state_dir` separate.** Learned knowledge belongs to one database.
 
-**Configuration precedence trap:** a `REPORTSBOT_DATABASE_URL` line in `.env` overrides `database:`
+**Configuration precedence trap:** a `REBO_DATABASE_URL` line in `.env` overrides `database:`
 in any YAML. Keep `.env` for secrets only (`.env.example` says so). This trap was hit once on
 2026-10-21.
 
@@ -128,4 +128,4 @@ in any YAML. Keep `.env` for secrets only (`.env.example` says so). This trap wa
 - [ ] `uv run python tools/export_bundle.py` passes with 0 blocks; any warnings reviewed.
 - [ ] Gold questions written by a PO if accuracy on JMS must be measured later (§2).
 - [ ] Decide `--with-models` (offline embeddings) and a wheelhouse (offline install) if needed.
-- [ ] No `.env`, `reportsbot.yaml`, `data/` or `*.db` in the zip (the tool excludes them; check the manifest).
+- [ ] No `.env`, `rebo.yaml`, `data/` or `*.db` in the zip (the tool excludes them; check the manifest).

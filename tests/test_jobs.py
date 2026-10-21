@@ -5,11 +5,11 @@ import json
 import httpx2 as httpx
 import pytest
 
-from reportsbot.agent import build_agent
-from reportsbot.jobs import Jobs, next_run
-from reportsbot.knowledge import User
-from reportsbot.llm import build_model
-from reportsbot.service import App
+from rebo.agent import build_agent
+from rebo.jobs import Jobs, next_run
+from rebo.knowledge import User
+from rebo.llm import build_model
+from rebo.service import App
 from test_learning import fake_turn
 from test_llm import _completion
 

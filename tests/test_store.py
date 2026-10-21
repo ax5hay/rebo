@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from reportsbot import store as store_module
-from reportsbot.store import Store
+from rebo import store as store_module
+from rebo.store import Store
 
 
 def test_existing_catalog_keeps_its_column_order_after_upgrade(tmp_path):
@@ -57,7 +57,7 @@ def test_a_state_file_from_before_migrations_upgrades_in_place(tmp_path):
 def test_copy_state_moves_everything_to_another_store(app, tmp_path):
     import importlib.util
 
-    from reportsbot.knowledge import User
+    from rebo.knowledge import User
     spec = importlib.util.spec_from_file_location("copy_state", Path(__file__).parents[1] / "tools" / "copy_state.py")
     tool = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(tool)

@@ -10,7 +10,7 @@ docker compose up -d db ◄── schema.sql (initdb) ────────�
         │
 synth.py ◄── profile.json ──► local MySQL 8.0.44 filled with synthetic rows
         │
-reportsbot bootstrap ──► bot learns the local copy
+rebo bootstrap ──► bot learns the local copy
 ```
 
 ## 1. The snapshot (`tools/snapshot/snapshot.py`)
@@ -19,7 +19,7 @@ reportsbot bootstrap ──► bot learns the local copy
 
 ```bash
 # needs: AWS creds via aws-vault, the VPN, Python with pymysql + boto3
-cd reports-bot/tools/snapshot
+cd rebo/tools/snapshot
 MSYS_NO_PATHCONV=1 aws-vault exec akshay-orchid -- \
   python snapshot.py --ssm /orchid/app-staging/JMS_DATABASE_URL --out ../../fixtures/jms_staging
 ```

@@ -1,4 +1,4 @@
-# reportsbot.yaml — the whole configuration. Copy to reportsbot.yaml and edit.
+# rebo.yaml — the whole configuration. Copy to rebo.yaml and edit.
 # Everything about what the data *means* is learned from the database and from people.
 # Secrets never go here: set them as environment variables (see the bottom of this file).
 
@@ -40,7 +40,7 @@ adapters: []                               # host contracts to expose, e.g. [jms
 notify_url: ""                             # optional webhook for requests and shared/stale items
 
 # Secrets (environment variables only):
-#   OPENROUTER_API_KEY   for openrouter:   (REPORTSBOT_OPENROUTER_API_KEY also accepted)
+#   OPENROUTER_API_KEY   for openrouter:   (REBO_OPENROUTER_API_KEY also accepted)
 #   ANTHROPIC_API_KEY    for anthropic:
 #   GEMINI_API_KEY       for google:       (GOOGLE_API_KEY also accepted)
-#   REPORTSBOT_JWT_SECRET  when auth.mode is jwt
+#   REBO_JWT_SECRET  when auth.mode is jwt

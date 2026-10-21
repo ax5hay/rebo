@@ -150,7 +150,7 @@ class Jobs:
         return job["id"]
 
     async def worker(self, idle_s: float = 2.0, stop: Callable[[], bool] = lambda: False) -> None:
-        """The background loop `reportsbot serve` runs: queue due schedules, run due jobs."""
+        """The background loop `rebo serve` runs: queue due schedules, run due jobs."""
         while not stop():
             try:
                 self.due_schedules()

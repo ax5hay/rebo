@@ -2,8 +2,8 @@
 # oauth2-proxy in front of the bot. Use together with the production stack:
 #   docker compose -f compose.prod.yml -f deploy/auth/compose.pocket-id.yml up -d
 # Then: open https://<POCKET_ID_URL>/setup, create the admin passkey, add an OIDC client
-# (callback https://<BOT_URL>/oauth2/callback), create the groups reportsbot-admins and
-# reportsbot-owners, and put the client id/secret into .env (see deploy/auth/README.md).
+# (callback https://<BOT_URL>/oauth2/callback), create the groups rebo-admins and
+# rebo-owners, and put the client id/secret into .env (see deploy/auth/README.md).
 services:
   pocket-id:
     image: ghcr.io/pocket-id/pocket-id:v2.18.0

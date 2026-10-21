@@ -1,7 +1,7 @@
 """Question masking for example retrieval (B-009): a stored value in the question stands for its column."""
 import json
 
-from reportsbot.knowledge import User
+from rebo.knowledge import User
 from test_learning import fake_turn
 
 

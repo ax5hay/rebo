@@ -1,10 +1,10 @@
 """Make the zip that leaves this machine, and prove it is safe to send.
 
-    uv run python tools/export_bundle.py                      # ../reportsbot-<date>.zip
+    uv run python tools/export_bundle.py                      # ../rebo-<date>.zip
     uv run python tools/export_bundle.py --with-models        # + the local embedding model (offline use)
     uv run python tools/export_bundle.py --check-only         # scan only, no zip (pre-commit hook)
 
-Includes the whole reports-bot folder except local state and secrets. Fails (exit 1, no zip) when any
+Includes the whole rebo folder except local state and secrets. Fails (exit 1, no zip) when any
 included file contains a secret-looking value or a real database host; warns about email addresses
 that are not on example domains. Writes BUNDLE_MANIFEST.json (files, sha256, git commit, checks) into
 the zip. See docs/23-offline-bundle.md for what is inside and why.
@@ -25,7 +25,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 EXCLUDE_DIRS = {".venv", "data", "__pycache__", ".pytest_cache", ".ruff_cache", ".mypy_cache", ".git", "models", ".vscode", ".idea", "node_modules",
                 "dist", "test-results", "playwright-report"}
-EXCLUDE_FILES = {".env", "reportsbot.yaml"}
+EXCLUDE_FILES = {".env", "rebo.yaml"}
 EXCLUDE_SUFFIXES = {".db", ".db-wal", ".db-shm", ".pyc", ".zip"}
 SECRETS = {
     "OpenRouter / OpenAI key": re.compile(r"sk-(or-v1-)?[A-Za-z0-9_-]{24,}"),
@@ -43,10 +43,10 @@ EMAIL_OK = re.compile(r"(example\.(com|org|net)|anthropic\.com)$")
 
 def included(path: Path) -> bool:
     rel = path.relative_to(ROOT)
-    root_level = len(rel.parts) == 1  # .env / reportsbot.yaml are local only at the top; fixtures may have their own
+    root_level = len(rel.parts) == 1  # .env / rebo.yaml are local only at the top; fixtures may have their own
     return not (set(rel.parts[:-1]) & EXCLUDE_DIRS or rel.parts[0] in EXCLUDE_DIRS
                 or (root_level and path.name in EXCLUDE_FILES) or path.suffix in EXCLUDE_SUFFIXES
-                or (root_level and path.name in ("BUNDLE_MANIFEST.json", "reportsbot.git.bundle")))
+                or (root_level and path.name in ("BUNDLE_MANIFEST.json", "rebo.git.bundle")))
 
 
 def scan(files: list[Path]) -> tuple[list[str], list[str]]:
@@ -81,11 +81,11 @@ def git_history_bundle() -> Path | None:
     if top.returncode != 0:
         return None
     prefix = os.path.relpath(ROOT, top.stdout.strip()).replace("\\", "/")
-    out = ROOT.parent / ".reportsbot.git.bundle.tmp"
+    out = ROOT.parent / ".rebo.git.bundle.tmp"
     if prefix in (".", ""):
         r = git("bundle", "create", str(out), "HEAD")
     else:
-        branch = "reportsbot-export"
+        branch = "rebo-export"
         git("branch", "-D", branch)
         split = git("subtree", "split", "-P", prefix, "-b", branch, "HEAD", cwd=Path(top.stdout.strip()))
         if split.returncode != 0:
@@ -98,9 +98,9 @@ def git_history_bundle() -> Path | None:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--out", type=Path, default=ROOT.parent / f"reportsbot-{dt.date.today().isoformat()}.zip")
+    ap.add_argument("--out", type=Path, default=ROOT.parent / f"rebo-{dt.date.today().isoformat()}.zip")
     ap.add_argument("--with-models", action="store_true", help="include the fastembed model cache as models/fastembed")
-    ap.add_argument("--no-history", action="store_true", help="leave out reportsbot.git.bundle (the commit history)")
+    ap.add_argument("--no-history", action="store_true", help="leave out rebo.git.bundle (the commit history)")
     ap.add_argument("--check-only", action="store_true", help="run the secret scan and exit; write nothing")
     args = ap.parse_args()
 
@@ -127,28 +127,28 @@ def main() -> int:
     with zipfile.ZipFile(args.out, "w", zipfile.ZIP_DEFLATED) as z:
         for f in files:
             data = f.read_bytes()
-            arc = Path("reportsbot") / f.relative_to(ROOT)
+            arc = Path("rebo") / f.relative_to(ROOT)
             z.writestr(str(arc).replace("\\", "/"), data)
             manifest["files"].append({"path": str(f.relative_to(ROOT)).replace("\\", "/"),
                                       "sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)})
         if args.with_models:
             cache = fastembed_cache()
             if not cache:
-                print("No fastembed cache found: run `uv run reportsbot bootstrap` once with embeddings on first.")
+                print("No fastembed cache found: run `uv run rebo bootstrap` once with embeddings on first.")
                 return 1
             for f in sorted(cache.rglob("*")):
                 if f.is_file():
-                    z.write(f, str(Path("reportsbot/models/fastembed") / f.relative_to(cache)).replace("\\", "/"))
+                    z.write(f, str(Path("rebo/models/fastembed") / f.relative_to(cache)).replace("\\", "/"))
             manifest["models"] = "models/fastembed (set FASTEMBED_CACHE_PATH or keep it in place: found automatically)"
         if not args.no_history:
             hist = git_history_bundle()
             if hist:
-                z.write(hist, "reportsbot/reportsbot.git.bundle")
-                manifest["history"] = "reportsbot.git.bundle (committed history of this folder; tools/doctor.py restores it)"
+                z.write(hist, "rebo/rebo.git.bundle")
+                manifest["history"] = "rebo.git.bundle (committed history of this folder; tools/doctor.py restores it)"
                 hist.unlink()
             else:
                 manifest["history"] = "not included (not a git checkout)"
-        z.writestr("reportsbot/BUNDLE_MANIFEST.json", json.dumps(manifest, indent=1))
+        z.writestr("rebo/BUNDLE_MANIFEST.json", json.dumps(manifest, indent=1))
     size = args.out.stat().st_size / 1e6
     print(json.dumps({"zip": str(args.out), "files": len(files), "mb": round(size, 1), "git_commit": commit,
                       "uncommitted_changes": dirty, "warnings": len(warnings)}))

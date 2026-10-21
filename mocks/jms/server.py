@@ -10,7 +10,7 @@ Endpoints (each mirrors a real JMS behaviour; docs/18-production-build.md §4 ma
   GET  /mock/custom-reports/{id}    the saved definition
   GET  /mock/custom-reports/{id}/run  live re-run on open (JMS executes report_query every time)
 
-Environment: REPORTSBOT_JWT_SECRET (shared with the bot), MOCK_JMS_DATABASE_URL (default: the local
+Environment: REBO_JWT_SECRET (shared with the bot), MOCK_JMS_DATABASE_URL (default: the local
 read-only test DB).
 """
 from __future__ import annotations
@@ -24,7 +24,7 @@ from fastapi import FastAPI, HTTPException, WebSocket
 from pydantic import BaseModel
 from sqlalchemy import create_engine, text
 
-from reportsbot.adapters.jms import builder_grammar_problem  # the same check the bot's guard uses (B-038)
+from rebo.adapters.jms import builder_grammar_problem  # the same check the bot's guard uses (B-038)
 
 DB_URL = os.environ.get("MOCK_JMS_DATABASE_URL", "mysql+pymysql://reports_ro:reports_ro@127.0.0.1:3307/jms")
 class TokenIn(BaseModel):
@@ -52,9 +52,9 @@ def _engine():
 
 @app.post("/mock/token")
 def token(body: TokenIn):
-    secret = os.environ.get("REPORTSBOT_JWT_SECRET")
+    secret = os.environ.get("REBO_JWT_SECRET")
     if not secret:
-        raise HTTPException(500, "REPORTSBOT_JWT_SECRET is not set")
+        raise HTTPException(500, "REBO_JWT_SECRET is not set")
     now = int(time.time())
     claims = {"iss": "orchid", "bot_type": "reports", "sub": str(body.user_id), "user_id": body.user_id,
               "user_type": body.user_type, "role": body.role, "tenant_id": body.tenant_id,

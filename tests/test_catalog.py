@@ -49,7 +49,7 @@ def test_embeddings_setting_selects_the_embedder(app):
     import httpx2
     import numpy as np
 
-    from reportsbot.retrieval import Embedder, TEIEmbedder, get_embedder
+    from rebo.retrieval import Embedder, TEIEmbedder, get_embedder
     assert type(get_embedder(True)) is Embedder and get_embedder(True).model_name.startswith("snowflake/")
     assert get_embedder(False).available is False
     assert get_embedder("google/embeddinggemma-300m").model_name == "google/embeddinggemma-300m"
@@ -69,7 +69,7 @@ def test_embeddings_setting_selects_the_embedder(app):
 def test_lmstudio_embeddings_use_the_openai_compatible_endpoint_with_nomic_prefixes():
     import httpx2
 
-    from reportsbot.retrieval import OpenAICompatEmbedder, get_embedder
+    from rebo.retrieval import OpenAICompatEmbedder, get_embedder
     assert isinstance(get_embedder("lmstudio:text-embedding-nomic-embed-text-v1.5"), OpenAICompatEmbedder)
     sent = []
 

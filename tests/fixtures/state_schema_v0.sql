@@ -3,7 +3,7 @@
 PRAGMA journal_mode=WAL;
 PRAGMA foreign_keys=ON;
 
--- Catalog: what the target database contains (rebuilt by `reportsbot bootstrap`).
+-- Catalog: what the target database contains (rebuilt by `rebo bootstrap`).
 CREATE TABLE IF NOT EXISTS cat_table (
     name TEXT PRIMARY KEY,
     rows INTEGER,

@@ -1,7 +1,7 @@
 """Undoing feedback, feedback in the user's own words, and requests to admins/owners."""
 import pytest
 
-from reportsbot.knowledge import User
+from rebo.knowledge import User
 from test_learning import fake_turn
 
 ALICE, BOB, CAROL = User("alice"), User("bob"), User("carol")
@@ -96,7 +96,7 @@ def test_webhook_on_requests_and_shared_or_stale_items(app):
         sent.append(json.loads(request.content))
         return httpx2.Response(204)
 
-    app.settings.notify_url = "http://hooks.example.com/reportsbot"
+    app.settings.notify_url = "http://hooks.example.com/rebo"
     app.__dict__["notify_client"] = httpx2.Client(transport=httpx2.MockTransport(receiver))
     admin = User("ada", role="admin")
     r = app.create_request(ALICE, kind="other", text="please add a report on refunds")["request"]

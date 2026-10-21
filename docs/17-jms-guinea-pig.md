@@ -72,7 +72,7 @@ Use this to exercise the full lifecycle with three testers and one curator:
    uses it and that alice's does not.
 6. **dan**: Withdraw that item in My knowledge → Undo → it is back.
 7. Schema drift drill: `docker compose exec db mysql -uroot -proot jms -e "ALTER TABLE custom_sub_stage RENAME COLUMN ordering TO position"`
-   → `uv run reportsbot bootstrap` → step 1's item becomes **Paused** → rename the column back →
+   → `uv run rebo bootstrap` → step 1's item becomes **Paused** → rename the column back →
    bootstrap → it is restored automatically.
    *Measured 2026-10-21:* the first half ran live. Alice's example went `stale` with the note
    "schema changed: Unknown column: ordering". The column was renamed back, but the restoring bootstrap
@@ -84,8 +84,8 @@ Use this to exercise the full lifecycle with three testers and one curator:
 ## 5. Repeat the measurements
 
 ```bash
-uv run reportsbot bootstrap --describe
-uv run reportsbot eval fixtures/jms_staging/eval.jsonl
+uv run rebo bootstrap --describe
+uv run rebo eval fixtures/jms_staging/eval.jsonl
 ```
 
 Live numbers depend on the model and the synthetic seed. Keep the seed at 7 for comparisons.

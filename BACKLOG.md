@@ -36,7 +36,7 @@ result: 2026-10-21, see `git log --grep B-002`; 82 passed; pre-commit run --all-
 needs: offline
 do: `tests/test_no_domain_words.py`:
 - Collect table names from `fixtures/*/profile.json` and the table names in `fixtures/demo_property/build.py`.
-- Fail if any appears as a whole word in `src/reportsbot/**/*.py`, excluding `adapters/`.
+- Fail if any appears as a whole word in `src/rebo/**/*.py`, excluding `adapters/`.
 done when: the test passes now and fails if `gc_case` is added to `agent.py`.
 result: 2026-10-21, `git log --grep B-003`; verified both ways; 13 plain-English table names allow-listed in the test.
 

@@ -26,8 +26,8 @@ Identity comes from the host (headers `X-User-Id`, `X-User-Role`, `X-User-Team`,
 | See my requests and the answers | ✓ | ✓ | ✓ | My knowledge, `GET /api/requests` |
 | Add / edit / share / withdraw / undo **any** knowledge | | ✓ | ✓ | My knowledge, Admin, `PATCH`/`POST` routes |
 | Review queue (proposed, quarantined); resolve fix requests | | ✓ | ✓ | Admin, `GET /api/review`, `POST /api/requests/{id}/resolve` |
-| Export / import everything learned (editable YAML) | | ✓ | ✓ (CLI too) | Admin, `GET /api/knowledge/export`, `POST /api/knowledge/import`, `reportsbot knowledge export/import` |
-| Re-check knowledge after schema changes | | ✓ | ✓ | `POST /api/admin/revalidate`, `reportsbot revalidate` |
+| Export / import everything learned (editable YAML) | | ✓ | ✓ (CLI too) | Admin, `GET /api/knowledge/export`, `POST /api/knowledge/import`, `rebo knowledge export/import` |
+| Re-check knowledge after schema changes | | ✓ | ✓ | `POST /api/admin/revalidate`, `rebo revalidate` |
 | View / change / roll back configuration; resolve access and config requests | | | ✓ | Configuration page, `GET/PUT /api/admin/config`, `POST /api/admin/config/rollback/{id}` |
 | Bootstrap the database, serve, export the bundle | | | ✓ (server access) | CLI |
 
@@ -37,7 +37,7 @@ Rules behind the table:
 - An admin's edits apply to everyone at once, are logged with the before and after text, and are
   undoable step by step.
 - Configuration never contains domain meaning (AGENTS.md §3), so owners change wiring and limits only.
-  Hand-editing `reportsbot.yaml` on the server is equivalent; `reportsbot config check` validates it.
+  Hand-editing `rebo.yaml` on the server is equivalent; `rebo config check` validates it.
 
 ## 2. User aids that exist today
 

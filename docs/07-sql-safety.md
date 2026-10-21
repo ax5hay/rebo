@@ -7,7 +7,7 @@ Five independent walls. Any one of them alone stops a write. Code: `safety.py`, 
 |---|---|---|---|
 | 1 | **Database user with SELECT only** | Any write, DDL, grant: the database refuses | `GRANT SELECT, SHOW VIEW ON jms.* TO 'reports_ro'` |
 | 2 | **Read-only session** on every connection | Writes even if the user had rights | `TargetDB._read_only_session`: MySQL `SET SESSION TRANSACTION READ ONLY`; Postgres `SET SESSION CHARACTERISTICS AS TRANSACTION READ ONLY`; SQLite `PRAGMA query_only=ON` |
-| 3 | **Statement timeout** | Runaway joins, `SLEEP` that slipped through | MySQL `max_execution_time` (ms), MariaDB `max_statement_time` (s), Postgres `statement_timeout`; `REPORTSBOT_QUERY_TIMEOUT_S` (default 30) |
+| 3 | **Statement timeout** | Runaway joins, `SLEEP` that slipped through | MySQL `max_execution_time` (ms), MariaDB `max_statement_time` (s), Postgres `statement_timeout`; `REBO_QUERY_TIMEOUT_S` (default 30) |
 | 4 | **Syntax-tree guard** | Non-SELECT, multi-statement, locks, `INTO`, server functions, unknown tables/columns, protected columns, unbounded rows | `safety.guard()` |
 | 5 | **Rollback + fetch cap** | Lingering transactions, giant result sets in memory | `TargetDB.run`: `fetchmany(max_rows+1)`, then `rollback()` and close |
 
@@ -25,7 +25,7 @@ Five independent walls. Any one of them alone stops a write. Code: `safety.py`, 
    LO_EXPORT, PG_READ_FILE, XP_CMDSHELL, SYS_EXEC, SYS_EVAL`, whether parsed as known functions or `Anonymous`.
 7. Every `exp.Table` that is not a CTE name must exist in the catalog (case-insensitive), or
    `"Table 'x' does not exist. Use search_schema to find the right table."` If
-   `REPORTSBOT_ALLOW_TABLES` is set, it must also be on that list.
+   `REBO_ALLOW_TABLES` is set, it must also be on that list.
 8. **Column validation:** `sqlglot.optimizer.qualify.qualify(tree, schema=catalog, validate_qualify_columns=True)`.
    An unresolvable or ambiguous column → `"Column 'nope' could not be resolved. Check the columns
    with describe_table."` Other qualify failures (a dialect feature sqlglot cannot model) do not
@@ -51,7 +51,7 @@ agent corrects itself instead of giving up.
   (`$2a$/$2b$/$2y$`), argon2, PEM blocks, or base64 of 60+ characters. Example: on JMS this catches
   `user_form_answer.text_answer` when it holds Fernet ciphertext; the 2026-09 workbook audit found
   210 production reports selecting that column.
-- It matches `REPORTSBOT_DENY_COLUMNS`: an optional regex on `table.column`, for anything a
+- It matches `REBO_DENY_COLUMNS`: an optional regex on `table.column`, for anything a
   customer wants hidden that detection misses.
 
 Effects: values are never stored in the catalog, never sent to the LLM, never indexed for
@@ -59,7 +59,7 @@ search, and the guard refuses any query that touches the column. `describe_table
 `"protected": true`, so the model knows it exists and avoids it.
 
 Contact data (names, emails, phones) is **not** protected by default: reports legitimately need
-it. A deployment that must hide it lists it in `REPORTSBOT_DENY_COLUMNS`.
+it. A deployment that must hide it lists it in `REBO_DENY_COLUMNS`.
 
 ## 3. Execution details (`TargetDB.run`)
 

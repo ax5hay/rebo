@@ -3,8 +3,8 @@
 > Model IDs and prices below were checked on 2026-10-21 and change often. They are a starting point:
 > re-check vendor pages and `openrouter.ai/api/v1/models` before changing defaults (`AGENTS.md` §4).
 
-Code: `src/reportsbot/llm.py` (registry), `service.py` (`agent`, `fast_agent_model`,
-`escalation_model`, routing in `ask`). Config: `models.*` and `lmstudio_url` in `reportsbot.yaml`.
+Code: `src/rebo/llm.py` (registry), `service.py` (`agent`, `fast_agent_model`,
+`escalation_model`, routing in `ask`). Config: `models.*` and `lmstudio_url` in `rebo.yaml`.
 
 ## 1. Model strings
 
@@ -112,7 +112,7 @@ platform.claude.com/docs/en/about-claude/{models/overview,pricing}, openrouter.a
 2. Start the server: `lms server start` (default `http://localhost:1234/v1`). JIT loading is on by
    default, and idle models unload after 60 minutes.
 3. `curl http://localhost:1234/v1/models`, then copy the model id.
-4. `reportsbot.yaml`:
+4. `rebo.yaml`:
    ```yaml
    models: {agent: "lmstudio:<id>", fast: "lmstudio:<id>"}
    lmstudio_url: http://127.0.0.1:1234/v1

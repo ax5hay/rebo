@@ -1,6 +1,6 @@
 # 08 · Retrieval
 
-Code: `src/reportsbot/retrieval.py`. Three corpora, all in `state.db`:
+Code: `src/rebo/retrieval.py`. Three corpora, all in `state.db`:
 
 | Corpus | Table | Rows (JMS local) | Searched by |
 |---|---|---|---|
@@ -27,7 +27,7 @@ Code: `src/reportsbot/retrieval.py`. Three corpora, all in `state.db`:
   matrix cached in memory per prefix. That is a few milliseconds for 3,000 rows. sqlite-vec (pre-v1)
   or LanceDB become worth it past about 100k items.
 - Hits below cosine 0.2 are dropped.
-- Disabled with `REPORTSBOT_EMBEDDINGS=false`, or automatically when the `embed` extra is not
+- Disabled with `REBO_EMBEDDINGS=false`, or automatically when the `embed` extra is not
   installed. Everything still works on BM25 alone; the offline tests run that way.
 
 ## 3. Fusion: Reciprocal Rank Fusion

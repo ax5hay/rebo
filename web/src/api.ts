@@ -42,8 +42,8 @@ export async function askStream(text: string, threadId: string, onStep: (s: Step
       const line = chunk.split("\n").find((l) => l.startsWith("data: "));
       if (!line) continue;
       const ev = JSON.parse(line.slice(6));
-      if (ev.type === "CUSTOM" && ev.name === "reportsbot.progress") onStep(ev.value);
-      if (ev.type === "CUSTOM" && ev.name === "reportsbot.result") result = ev.value;
+      if (ev.type === "CUSTOM" && ev.name === "rebo.progress") onStep(ev.value);
+      if (ev.type === "CUSTOM" && ev.name === "rebo.result") result = ev.value;
       if (ev.type === "RUN_ERROR") throw new Error(ev.message);
     }
   }

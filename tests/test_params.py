@@ -2,8 +2,8 @@ import pytest
 import sqlglot
 from sqlglot import exp
 
-from reportsbot.knowledge import User
-from reportsbot.safety import fill_params, parameterize
+from rebo.knowledge import User
+from rebo.safety import fill_params, parameterize
 
 
 def test_literals_become_numbered_placeholders_and_round_trip():
@@ -39,7 +39,7 @@ def test_rerun_returns_fresh_rows_without_a_model(app):
 
     from fastapi.testclient import TestClient
 
-    from reportsbot.api import create_app
+    from rebo.api import create_app
     from test_learning import fake_turn
     alice = User("alice")
     t = fake_turn(app, alice, "SELECT full_name AS customer FROM customer WHERE status = 'paused'")
@@ -57,7 +57,7 @@ def test_rerun_returns_fresh_rows_without_a_model(app):
 def test_pin_puts_a_report_first_among_starters_and_unpin_removes_it(app):
     from fastapi.testclient import TestClient
 
-    from reportsbot.api import create_app
+    from rebo.api import create_app
     from test_learning import fake_turn
     alice = User("alice")
     t = fake_turn(app, alice, "SELECT full_name FROM customer WHERE status = 'paused'")
@@ -78,7 +78,7 @@ def test_pin_puts_a_report_first_among_starters_and_unpin_removes_it(app):
 def test_what_do_you_know_about(app):
     from fastapi.testclient import TestClient
 
-    from reportsbot.api import create_app
+    from rebo.api import create_app
     alice, bob = User("alice"), User("bob")
     app.knowledge.add(alice, kind="term", title="paused", body="a customer on hold")
     client = TestClient(create_app(app, with_ui=False))
@@ -94,7 +94,7 @@ async def test_reply_cites_visible_items_only(app):
     from pydantic_ai.messages import ModelResponse, ToolCallPart
     from pydantic_ai.models.function import FunctionModel
 
-    from reportsbot.agent import build_agent
+    from rebo.agent import build_agent
     alice = User("alice")
     item = app.knowledge.add(alice, kind="term", title="paused", body="a customer on hold").item
 
@@ -112,7 +112,7 @@ async def test_personal_default_reaches_the_prompt_for_its_owner_only(app):
     from pydantic_ai.messages import ModelResponse, ToolCallPart, UserPromptPart
     from pydantic_ai.models.function import FunctionModel
 
-    from reportsbot.agent import build_agent
+    from rebo.agent import build_agent
     prompts = []
 
     def model(messages, info):

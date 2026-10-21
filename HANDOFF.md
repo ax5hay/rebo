@@ -43,7 +43,7 @@ on gold answers, not on row counts of unconfirmed answers.
 
 ## 3. Gotchas (each cost time once)
 
-- A `REPORTSBOT_DATABASE_URL` in `.env` overrides `database:` in every YAML. Keep `.env` for API
+- A `REBO_DATABASE_URL` in `.env` overrides `database:` in every YAML. Keep `.env` for API
   keys only. Doctor warns about this.
 - On Windows Git Bash, paths that start with `/` get rewritten. Prefix commands that pass such
   arguments with `MSYS_NO_PATHCONV=1`.
@@ -57,7 +57,7 @@ on gold answers, not on row counts of unconfirmed answers.
 - On macOS the copied tree had CRLF line endings on some files: `git status` showed them modified with
   no content change (`git diff --ignore-cr-at-eol` empty). They were stashed, not committed.
 - Postgres tests: `docker compose up -d state-db` then
-  `REPORTSBOT_TEST_STATE_URL=postgresql://reportsbot:reportsbot@127.0.0.1:5433/reportsbot uv run pytest`.
+  `REBO_TEST_STATE_URL=postgresql://rebo:rebo@127.0.0.1:5433/rebo uv run pytest`.
 - Web tests: `cd web && npm ci && npm run build && npx playwright test` (starts `tests/web_server.py`).
 - In Chrome 156 `scrollIntoView` returns a Promise: never return it from a React effect.
 - The domain-word guard (`tests/test_no_domain_words.py`) flags plain words that are also JMS table

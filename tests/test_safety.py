@@ -1,6 +1,6 @@
 import pytest
 
-from reportsbot.safety import GuardError, canonical_hash, guard
+from rebo.safety import GuardError, canonical_hash, guard
 
 SCHEMA = {"a": {"id": "int", "name": "varchar", "secret": "varchar"}, "b": {"a_id": "int", "v": "int"}}
 SENSITIVE = {("a", "secret")}

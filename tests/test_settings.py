@@ -1,6 +1,6 @@
 import pytest
 
-from reportsbot.settings import Settings
+from rebo.settings import Settings
 
 YAML = """
 database: sqlite:///x.db
@@ -14,10 +14,10 @@ auth: {mode: jwt}
 
 @pytest.fixture()
 def cfg(tmp_path, monkeypatch):
-    p = tmp_path / "reportsbot.yaml"
+    p = tmp_path / "rebo.yaml"
     p.write_text(YAML, encoding="utf-8")
-    monkeypatch.setenv("REPORTSBOT_CONFIG", str(p))
-    for k in ("REPORTSBOT_DATABASE_URL", "REPORTSBOT_ROW_LIMIT", "REPORTSBOT_MODEL"):
+    monkeypatch.setenv("REBO_CONFIG", str(p))
+    for k in ("REBO_DATABASE_URL", "REBO_ROW_LIMIT", "REBO_MODEL"):
         monkeypatch.delenv(k, raising=False)
     monkeypatch.chdir(tmp_path)  # no stray .env
     return p
@@ -33,7 +33,7 @@ def test_yaml_keys_map_to_settings(cfg):
 
 
 def test_environment_overrides_yaml(cfg, monkeypatch):
-    monkeypatch.setenv("REPORTSBOT_ROW_LIMIT", "7")
+    monkeypatch.setenv("REBO_ROW_LIMIT", "7")
     assert Settings().row_limit == 7
 
 
@@ -44,10 +44,10 @@ def test_unknown_key_is_an_error(cfg):
 
 
 def test_api_keys_in_dotenv_reach_the_model_registry(tmp_path, monkeypatch):
-    from reportsbot.llm import credentials_present
-    from reportsbot.settings import load_env_file
+    from rebo.llm import credentials_present
+    from rebo.settings import load_env_file
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
-    monkeypatch.delenv("REPORTSBOT_OPENROUTER_API_KEY", raising=False)
+    monkeypatch.delenv("REBO_OPENROUTER_API_KEY", raising=False)
     (tmp_path / ".env").write_text("OPENROUTER_API_KEY=test-key-from-dotenv\n", encoding="utf-8")
     s = Settings(database_url="sqlite://")
     assert not credentials_present("openrouter:anthropic/claude-sonnet-5.5", s)
@@ -60,18 +60,18 @@ def test_example_config_stays_small():
     """AGENTS.md §3.3: the example configuration holds at most 20 settings."""
     from pathlib import Path
 
-    from reportsbot.settings import flatten_yaml
-    text = (Path(__file__).resolve().parents[1] / "reportsbot.example.yaml").read_text(encoding="utf-8")
+    from rebo.settings import flatten_yaml
+    text = (Path(__file__).resolve().parents[1] / "rebo.example.yaml").read_text(encoding="utf-8")
     assert len(flatten_yaml(text)) <= 20
 
 
 def test_identity_from_the_login_proxy_headers(app):
     from fastapi.testclient import TestClient
 
-    from reportsbot.api import create_app
+    from rebo.api import create_app
     client = TestClient(create_app(app, with_ui=False))
     assert client.get("/api/defaults", headers={"X-Forwarded-Email": "ann@example.com"}).status_code == 200
-    app.set_default(__import__("reportsbot.knowledge", fromlist=["User"]).User("ann@example.com"), "period", "2026")
+    app.set_default(__import__("rebo.knowledge", fromlist=["User"]).User("ann@example.com"), "period", "2026")
     mine = client.get("/api/defaults", headers={"X-Forwarded-Email": "ann@example.com",
                                                 "X-Forwarded-User": "ann"}).json()
     assert mine and mine[0]["value"] == "2026"
@@ -81,11 +81,11 @@ def test_identity_from_the_login_proxy_headers(app):
 def test_behind_the_proxy_roles_come_from_groups_and_x_user_headers_are_ignored(app):
     from fastapi.testclient import TestClient
 
-    from reportsbot.api import create_app
+    from rebo.api import create_app
     client = TestClient(create_app(app, with_ui=False))
     proxy = {"X-Forwarded-Email": "ann@example.com"}
     assert client.get("/api/review", headers=proxy).status_code == 403                   # a plain user
-    assert client.get("/api/review", headers={**proxy, "X-Forwarded-Groups": "staff,reportsbot-admins"}).status_code == 200
+    assert client.get("/api/review", headers={**proxy, "X-Forwarded-Groups": "staff,rebo-admins"}).status_code == 200
     forged = {**proxy, "X-User-Id": "olga", "X-User-Role": "owner"}                       # sent by the client
     assert client.get("/api/review", headers=forged).status_code == 403
-    assert client.get("/api/admin/config", headers={**proxy, "X-Forwarded-Groups": "reportsbot-owners"}).status_code != 403
+    assert client.get("/api/admin/config", headers={**proxy, "X-Forwarded-Groups": "rebo-owners"}).status_code != 403

@@ -1,10 +1,10 @@
 """Run scripted multi-turn conversations and save a results file: turns to the first correct report,
-clarify rate and cost. Model choice comes from reportsbot.yaml / REPORTSBOT_* env.
+clarify rate and cost. Model choice comes from rebo.yaml / REBO_* env.
 
     uv run python tools/eval_conversations.py fixtures/demo_property/conversations.jsonl \
         fixtures/demo_property/eval_conversations_<name>.json [limit]
 
-Format: reportsbot.evals.run_conversations.
+Format: rebo.evals.run_conversations.
 """
 from __future__ import annotations
 
@@ -14,8 +14,8 @@ import sys
 import time
 from pathlib import Path
 
-from reportsbot.evals import run_conversations
-from reportsbot.service import App
+from rebo.evals import run_conversations
+from rebo.service import App
 
 
 async def main(cases: str, out: str, limit: int = 0) -> None:

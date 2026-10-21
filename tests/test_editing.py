@@ -1,7 +1,7 @@
 """Direct editing of learned knowledge: who may edit what, validation, history and undo."""
 import pytest
 
-from reportsbot.knowledge import User
+from rebo.knowledge import User
 
 ALICE, BOB = User("alice"), User("bob")
 ADMIN, OWNER = User("ada", role="admin"), User("olga", role="owner")
