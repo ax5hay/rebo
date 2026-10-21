@@ -1,4 +1,4 @@
-# rebo
+# ReBo
 
 **ReBo** is a self-contained, self-learning reports bot for any SQL database: ask in plain words,
 get one read-only query, the rows, and how your question was read. It learns from the people who
@@ -16,7 +16,7 @@ use it, not from configuration.
 JMS is the first test database (`fixtures/jms_staging/`). Nothing in `src/` is JMS-specific.
 
 Read **AGENTS.md** first (direction and rules), then **CONTRIBUTING.md** (checks, evals, commit rules). Roles: users ask and teach for themselves, admins manage
-learned knowledge, owners manage the ~10–20 line configuration (docs/22).
+learned knowledge, owners manage the configuration of about 20 values (docs/22).
 
 ## Continue on another machine
 
@@ -27,23 +27,42 @@ keeping `HANDOFF.md` up to date. Add API keys to `.env` to unlock LLM measuremen
 ## Quick start
 
 ```bash
-uv sync --all-extras
-docker compose up -d db                                  # MySQL 8.0.44 with the JMS staging structure
-uv run --extra synth python tools/synth/synth.py         # synthetic rows (≈88k, ≈5 min)
-cp rebo.example.yaml rebo.yaml               # the whole config (~10 values)
-cp .env.example .env                                     # API keys only
-uv run rebo bootstrap --describe                   # learn the database
-uv run rebo serve                                  # http://127.0.0.1:8080/?user=alice
-uv run pytest                                            # offline tests (no network, no LLM)
+uv sync --all-extras                                     # Python 3.13, everything incl. tracing
+cp rebo.example.yaml rebo.yaml                           # the whole config (about 20 values)
+cp .env.example .env                                     # API keys only (OpenRouter is enough)
+(cd web && npm ci && npm run build)                      # the product UI
+docker compose --profile bot up -d phoenix               # traces (optional, picked up automatically)
+uv run rebo bootstrap --describe                         # learn the database
+uv run rebo serve                                        # http://127.0.0.1:8080 (pick who you are at the top)
 ```
 
-Curator view: `http://127.0.0.1:8080/review?user=cora&role=curator`.
+No database at hand? The made-up demo: `uv run python fixtures/demo_property/build.py`, then prefix
+the last two commands with `REBO_CONFIG=fixtures/demo_property/rebo.yaml`. The JMS-shaped local
+database: `docker compose up -d db && uv run --extra synth python tools/synth/synth.py`.
+
+Tests: `uv run pytest` (offline), `cd web && npx playwright test` (UI), and with
+`docker compose up -d state-db` plus `REBO_TEST_STATE_URL=postgresql://rebo:rebo@127.0.0.1:5433/rebo`
+the suite runs on Postgres + pgvector too.
+
+![ReBo answering a question](docs/screenshots/02-answer.png)
+
+## What is inside
+
+| Part | What it is |
+|---|---|
+| Product UI | `web/`: Ask, What I taught, Review, Admin, Insights, Configuration (React 19, react-aria) |
+| Observability | Phoenix traces (one trace per question, every model call and query), people's feedback and eval verdicts on the traces, Insights page with live health checks, accuracy history, cost |
+| Retrieval | SQLite FTS5 or Postgres full text + vectors (in-process, or pgvector on Postgres), RRF |
+| Models | Claude via OpenRouter or Anthropic, Gemini, OpenAI, LM Studio (local); rate limits waited out |
+| State | SQLite file or Postgres (+ pgvector), Alembic migrations |
+| Production | `compose.prod.yml`: bot, Postgres, oauth2-proxy login, Phoenix; `deploy/auth/` for Pocket ID |
 
 ## Layout
 
 ```
-src/rebo/      the bot (settings, store, target, safety, catalog, retrieval, knowledge,
-                     agent, service, messages, api, ui, mcp_server, evals, observability, cli)
+src/rebo/            the bot (settings, store, target, safety, catalog, retrieval, knowledge,
+                     agent, service, jobs, messages, api, ui, mcp_server, evals, observability, cli)
+web/                 the product UI (React); served at / when built
 tests/               offline tests on a SQLite "shop" database
 tools/snapshot/      capture any MySQL database's structure + statistics (no rows)
 tools/synth/         fill a structure-only MySQL database with synthetic rows

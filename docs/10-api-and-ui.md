@@ -151,20 +151,28 @@ adapter registers it in `App.sql_checks`; the report validator turns a violation
 produced in this mode (the Builder cannot express them); the bot then explains or asks. Off by
 default, so core behaviour is unchanged (decision in HANDOFF §4).
 
-## React Ask page (`web/`, B-034)
+## The product UI (`web/`)
 
-`web/` is a Vite 8 + React 19 + TypeScript app for people who ask questions: report cards (provenance
-badge, table, "How I read your question", SQL, CSV), clarification and follow-up chips, feedback
-(**Yes** / **No, fix it** with the correction in words, **Undo my feedback**), "Remember this?" cards
-and **Request a fix**. It streams progress from `/api/agui`. `cd web && npm ci && npm run build`;
-the bot then serves it at `/app/` (when `web/dist` exists). Identity comes from the login proxy, or
-from `?user=…&role=…` in the URL for local use. The NiceGUI pages stay for admins and owners
-(`/admin`, `/review`, `/config`, `/knowledge`).
+`rebo serve` opens it at `/` when `web/dist` is built (`cd web && npm ci && npm run build`); the
+older NiceGUI pages remain behind `rebo serve --nicegui`. Pages: **Ask** (start page with known
+reports and recent conversations; live progress; answers with sortable data, highlighted reading,
+drill into a summary row, confirm / fix in words / undo, run again, pin, schedule, CSV, ask an admin,
+open trace), **What I taught** (lookup, defaults, saved knowledge with edit / share / undo / history /
+withdraw, schedules, requests), **Review** and **Admin** (admins), **Insights** (admins, owners),
+**Configuration** (owners). Screenshots: `docs/screenshots/`.
 
-Research (2026-10-21, npm): assistant-ui 0.15.30 and CopilotKit 1.79.1 (both MIT, active) bring chat
-thread primitives and runtimes that this page would mostly override (its turns are report cards),
-and `@ag-ui/client` 1.0.3 targets AG-UI 1.x while the server emits events through ag-ui-protocol
-0.1.22; so the page uses no chat framework and reads its own events with a 25-line SSE reader
-(`web/src/api.ts`). Tests: `npx playwright test` (Playwright 1.64.1, headless Chromium) starts
-`tests/web_server.py` (shop DB, scripted FunctionModel) and covers report + feedback + undo +
-remember + follow-up, and clarification chip + correction in words.
+Design: a marked-up working sheet. Square edges; 2px ink rules; the question as each answer's
+headline; trust as the coloured left edge (verified / yours / adapted / new); the reading of the
+question highlighted; one typeface (Schibsted Grotesk, self-hosted); dark mode; visible focus;
+reduced motion respected.
+
+Libraries (npm, 2026-10-21): React 19.3, react-aria-components 1.22.1 (Apache-2.0; accessible
+unstyled primitives: tables with sorting, dialogs, toggle groups), TanStack Query 5.104, React Router
+8.5, Observable Plot 0.6.17 (ISC; charts, loaded only on Insights), Vite 8.3. No chat framework:
+assistant-ui 0.15 / CopilotKit 1.79 bring thread primitives the report cards would override, and
+`@ag-ui/client` 1.0 targets AG-UI 1.x while the server's ag-ui-protocol is 0.1.22, so the page reads
+the `/api/agui` stream with a 25-line SSE reader. Identity: the login proxy in production; locally,
+the "Signed in as" picker (or `?user=…&role=…`), remembered in the browser.
+
+Tests: `npx playwright test` (Playwright 1.64, headless Chromium) against `tests/web_server.py`
+(shop DB, scripted model); CI runs them.

@@ -76,26 +76,39 @@ prompt change or schema migration, and any drop in `ExecutionMatch` is a regress
 They run against a 3-table SQLite "shop" database built in `tests/conftest.py`, which also shows
 the bot is not tied to MySQL.
 
-## 4. Tracing (`observability.py`)
+## 4. Observability (`observability.py`): traces, verdicts and insights
 
-Off by default. To turn it on:
+**On by default.** With `OTEL_EXPORTER_OTLP_ENDPOINT` set, spans go there (any OTLP backend). Without
+it, the bot probes Phoenix on `127.0.0.1:6006` at start-up and traces there when it answers
+(`docker compose --profile bot up -d phoenix`); `REBO_TRACING=off` disables. The OpenTelemetry SDK
+is part of the core install.
 
-```bash
-uv sync --extra otel
-export OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:6006   # e.g. Arize Phoenix: `uvx arize-phoenix serve`
-export OTEL_SERVICE_NAME=rebo
-# optional: include prompts/results in spans (contains business data)
-export REBO_TRACE_CONTENT=true
-```
+**What a trace holds.** Each question is one `rebo.ask` span (user, model, kind). Under it: the
+agent run, every model request (tokens, cost, model), every tool call (`search_schema`,
+`describe_table`, `run_sql`, …), the second-opinion review, and the HTTP request it came in on.
+The trace id is kept on the turn (`usage.trace_id`); admins open it from the answer ("Open trace",
+`GET /api/trace/{id}`; the browser link uses `PHOENIX_URL`). Prompts and rows stay out of spans
+unless `REBO_TRACE_CONTENT=true`, because they contain the reported database's data.
 
-`setup_tracing()` (called once from `App.__init__`) installs an OTLP/HTTP exporter and calls
-`Agent.instrument_all(InstrumentationSettings(include_content=…))`. You get one span per agent
-run, per model request (tokens, cost, model) and per tool call (arguments, duration), using the
-OpenTelemetry GenAI conventions. Phoenix (Elastic-2.0, one container) is the lightest self-hosted
-viewer. Langfuse works too but needs Postgres, ClickHouse, Redis and S3 to self-host.
+**Verdicts on traces.** `annotate_trace` posts to Phoenix's `/v1/trace_annotations`: a person's "Yes,
+this is right" / "No, fix it" (with their words) becomes a HUMAN "user feedback" annotation and undo
+changes it to "withdrawn"; `tools/eval_run.py` adds a CODE "gold match" (match / miss) to every eval
+question's trace. In Phoenix you can filter traces by those verdicts.
 
-Content is excluded from traces by default because prompts and tool results contain the target
-database's data.
+**Insights page (`/app/insights`, `GET /api/insights`).** For admins and owners: live, timed health
+checks (reported database, state store and schema revision, catalog, search index with a dense-search
+probe, model keys, LM Studio when used, tracing, background jobs, stale knowledge), headline figures,
+accuracy over time from recorded eval runs (`eval_run` table; `tools/record_eval_results.py` imports
+older results files), weekly confirmations, provenance, most asked, most reported wrong, cost per
+day. Each answer's details stay in Phoenix; the page links there.
+
+**Why Phoenix** (re-checked 2026-10-21): one container with SQLite, OpenTelemetry-native, traces +
+annotations + datasets/experiments; ELv2 permits self-hosting (not offering it as a service).
+Langfuse v3 needs Postgres, ClickHouse, Redis and S3; Opik also needs a multi-service stack.
+
+Verified live 2026-10-21 (demo DB, Sonnet via OpenRouter, Phoenix 20.23.0): one question = one trace
+of 13 spans (cost $0.04, 15.8 s); the answer's "Open trace" link opened it; confirming the answer
+put `{label: correct, score: 1.0, explanation}` on the trace; Insights showed nine green checks.
 
 ### Tracing on by default in the compose files (B-035)
 
