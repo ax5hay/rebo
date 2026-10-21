@@ -70,10 +70,14 @@ async def test_failed_turn_escalates_once_to_the_stronger_model(app):
 async def test_trusted_saved_example_routes_to_fast_model_new_questions_to_agent_model(app):
     good = _completion("present_report", {"title": "Paused", "assumptions": [],
                                           "sql": "SELECT full_name FROM customer WHERE status = 'paused'"})
-    calls = {"fast": 0, "big": 0}
+    calls = {"fast": 0, "big": 0, "params": 0}
+    not_same = _completion("fill_parameters", {"same_report": False, "values": []})
 
     def client(name):
         def handler(req):
+            if "fill_parameters" in req.content.decode():   # the value-only check runs first on a reuse hit
+                calls["params"] += 1
+                return httpx.Response(200, json=not_same)
             calls[name] += 1
             return httpx.Response(200, json=good)
         return httpx.AsyncClient(transport=httpx.MockTransport(handler))
@@ -88,7 +92,7 @@ async def test_trusted_saved_example_routes_to_fast_model_new_questions_to_agent
     other = await app.ask(bob, "show the paused customers")            # bob cannot see alice's item -> agent model
     route = lambda r: json.loads(app.store.one("SELECT usage FROM turn WHERE id=?", (r["turn_id"],))["usage"])["route"]
     assert [route(first), route(again), route(other)] == ["new", "reuse", "new"]
-    assert calls == {"fast": 1, "big": 2}
+    assert calls == {"fast": 1, "big": 2, "params": 1}
 
 
 async def test_lmstudio_wire_protocol_end_to_end(app):
@@ -250,7 +254,33 @@ async def test_exact_repeat_of_own_confirmed_question_makes_no_model_request(app
     usage = json.loads(app.store.one("SELECT usage FROM turn WHERE id=?", (again["turn_id"],))["usage"])
     assert usage["route"] == "direct" and usage["requests"] == 0
     follow = await app.ask(alice, "and the closed ones", again["conversation_id"])   # history stays usable
-    assert follow["kind"] == "report" and "re-running saved report" in seen[-1]
+    assert follow["kind"] == "report" and "route direct" in seen[-1]
     calls = len(seen)
     await app.ask(User("bob"), "show the paused customers")     # someone else's example: the model is asked
     assert len(seen) == calls + 1
+
+
+async def test_saved_report_with_new_values_is_filled_in_without_the_agent(app):
+    sql = "SELECT full_name AS customer FROM customer WHERE status = 'paused'"
+    seen = _scripted(app, [_completion("present_report", {"title": "Customers by status", "sql": sql,
+                                                          "assumptions": []})])
+    fills = []
+
+    def fast(req):
+        fills.append(req.content.decode())
+        values = ["closed"] if "closed" in fills[-1] else []
+        return httpx.Response(200, json=_completion("fill_parameters", {"same_report": bool(values), "values": values}))
+
+    app.__dict__["fast_agent_model"] = build_model(
+        "lmstudio:fast", app.settings, http_client=httpx.AsyncClient(transport=httpx.MockTransport(fast)))
+    alice = User("alice")
+    first = await app.ask(alice, "list customers with status paused by name")
+    app.feedback(alice, first["turn_id"], "correct")
+    calls = len(seen)
+    r = await app.ask(alice, "list customers with status closed by name")
+    assert len(seen) == calls and len(fills) == 1 and r["kind"] == "report"
+    assert "'closed'" in r["sql"] and len(r["rows"]) == 10
+    usage = json.loads(app.store.one("SELECT usage FROM turn WHERE id=?", (r["turn_id"],))["usage"])
+    assert usage["route"] == "params" and usage["model"] == app.settings.fast_model
+    other = await app.ask(alice, "list customers with status and name grouped by month")   # not a value change
+    assert len(seen) == calls + 1 and other["kind"] == "report"

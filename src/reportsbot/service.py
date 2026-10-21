@@ -15,7 +15,8 @@ from functools import cached_property
 from typing import Any
 
 from pydantic import BaseModel, Field
-from pydantic_ai import Agent, ModelMessage, ModelMessagesTypeAdapter, ModelRetry, UsageLimitExceeded, UsageLimits
+from pydantic_ai import (Agent, ModelMessage, ModelMessagesTypeAdapter, ModelRetry, ToolOutput, UsageLimitExceeded,
+                         UsageLimits)
 from pydantic_ai.messages import ModelRequest, ModelResponse, TextPart, UserPromptPart
 
 from . import messages as msg
@@ -25,7 +26,7 @@ from .knowledge import Knowledge, User
 from .llm import build_model, credentials_present
 from .observability import setup_tracing
 from .retrieval import Index, fts_query, get_embedder
-from .safety import canonical_hash, guard
+from .safety import canonical_hash, fill_params, guard
 from .settings import Settings, get_settings, load_env_file
 from .store import Store, new_id, now
 from .target import QueryResult, TargetDB
@@ -51,6 +52,16 @@ class TableDoc(BaseModel):
         "like created, updated, first_name."))
 
 
+class ParamFill(BaseModel):
+    """Whether a new request is a saved report with only its values changed, and the new values."""
+    same_report: bool = Field(description=(
+        "true only if the new request asks for the same report and differs only in values (names, statuses, "
+        "dates, numbers); false if it changes what is selected, grouped, joined or filtered on"))
+    values: list[str | int | float] = Field(default_factory=list, description=(
+        "When same_report: one value per placeholder :p1, :p2, ... in order, spelled as in saved_values; "
+        "unchanged ones copied as they are"))
+
+
 class App:
     def __init__(self, settings: Settings | None = None):
         load_env_file()  # API keys from .env into the environment (explicit settings objects too)
@@ -74,6 +85,12 @@ class App:
     def fast_agent_model(self):
         s = self.settings
         return build_model(s.fast_model, s)
+
+    @cached_property
+    def param_agent(self) -> Agent:
+        return Agent(output_type=ToolOutput(ParamFill, name="fill_parameters"), retries=1, instructions=(
+            "A user's new request is compared with a saved report. Decide whether it asks for the same report "
+            "with only different values, and if so give the new value for every placeholder."))
 
     @cached_property
     def escalation_model(self):
@@ -222,8 +239,12 @@ class App:
         limits = UsageLimits(request_limit=40, tool_calls_limit=self.settings.max_tool_calls)
         items = self.knowledge.search(user, text, top=6)
         prompt = self._context_block(user, text, items)
-        # Routing: adapting a trusted saved report -> fast model; anything new -> agent model.
-        reuse = self._reuse_match(user, text, items) if self.settings.fast_model != self.settings.model else None
+        # Routing: a trusted saved report with new values -> filled in by the fast model, no agent;
+        # adapting one otherwise -> agent on the fast model; anything new -> agent model.
+        reuse = self._reuse_match(user, text, items)
+        if reuse and (filled := await self._param_answer(user, conv_id, text, history, reuse)):
+            return filled
+        reuse = reuse if self.settings.fast_model != self.settings.model else None
         first_model, first_name = (self.fast_agent_model, self.settings.fast_model) if reuse else (None, self.settings.model)
         escalated = False
         try:
@@ -313,22 +334,50 @@ class App:
                      if i["owner"] == user.id and i.get("question") and _norm_question(i["question"]) == key), None)
         if not item:
             return None
-        try:
-            res = self._run_report_sql(item["sql"])
-        except Exception:
-            log.info("direct answer failed for %s; using the agent", item["id"], exc_info=True)
+        usage_d = {"requests": 0, "input_tokens": 0, "output_tokens": 0, "cache_read_tokens": 0, "tool_calls": 0,
+                   "model": None, "escalated": False, "route": "direct"}
+        return self._answer_from_saved(user, conv_id, text, history, item, item["sql"], usage_d)
+
+    async def _param_answer(self, user: User, conv_id: str, text: str, history: list[ModelMessage],
+                            item: dict[str, Any]) -> dict | None:
+        """A trusted example matched and has a template: if the fast model says the request only changes
+        its values, fill them in (as syntax-tree literals) and run, route "params". Anything else: None."""
+        if not item.get("sql_template") or not item.get("params"):
             return None
+        prompt = json.dumps({"saved_question": item.get("question"), "sql_template": item["sql_template"],
+                             "saved_values": item["params"], "new_request": text})
+        try:
+            result = await self.param_agent.run(prompt, model=self.fast_agent_model)
+            fill = result.output
+            if not fill.same_report or len(fill.values) != len(item["params"]):
+                return None
+            sql = fill_params(item["sql_template"], self.target.dialect, fill.values)
+        except Exception:
+            log.info("parameter fill failed for %s; using the agent", item["id"], exc_info=True)
+            return None
+        u = result.usage
+        usage_d = {"requests": u.requests, "input_tokens": u.input_tokens, "output_tokens": u.output_tokens,
+                   "cache_read_tokens": getattr(u, "cache_read_tokens", None), "tool_calls": u.tool_calls,
+                   "model": self.settings.fast_model, "escalated": False, "route": "params"}
+        return self._answer_from_saved(user, conv_id, text, history, item, sql, usage_d, empty_ok=False)
+
+    def _answer_from_saved(self, user, conv_id, text, history, item, sql, usage_d, *, empty_ok=True) -> dict | None:
+        try:
+            res = self._run_report_sql(sql)
+        except Exception:
+            log.info("saved report %s failed; using the agent", item["id"], exc_info=True)
+            return None
+        if not res.rows and not empty_ok:
+            return None  # new values matched nothing: let the agent check the spelling
         src = self.store.one("SELECT payload FROM turn WHERE id=?", (item["source_turn"],)) if item["source_turn"] else None
-        out = Report(title=item["title"], sql=item["sql"], used_knowledge=[item["id"]],
+        out = Report(title=item["title"], sql=sql, used_knowledge=[item["id"]],
                      assumptions=json.loads(src["payload"]).get("assumptions") or [] if src else [])
-        note = f"(Answered by re-running saved report {item['id']}, no model call.) {out.title}: {out.sql}"
+        note = f"(Answered from saved report {item['id']}, route {usage_d['route']}.) {out.title}: {sql}"
         msgs = [*history, ModelRequest(parts=[UserPromptPart(text)]), ModelResponse(parts=[TextPart(note)])]
         with self.store.tx() as db:
             db.execute("UPDATE conversation SET messages=?, updated_at=? WHERE id=?",
                        (ModelMessagesTypeAdapter.dump_json(msgs).decode(), now(), conv_id))
-        usage_d = {"requests": 0, "input_tokens": 0, "output_tokens": 0, "cache_read_tokens": 0, "tool_calls": 0,
-                   "model": None, "escalated": False, "route": "direct"}
-        deps = Deps(app=self, user=user, trace=[{"tool": "direct", "item": item["id"]}])
+        deps = Deps(app=self, user=user, trace=[{"tool": usage_d["route"], "item": item["id"]}])
         return self._report_turn(new_id("turn"), conv_id, user, text, out, res, deps, usage_d)
 
     def _ask_gate(self, out: Clarify, text: str) -> tuple[Report, QueryResult] | None:
