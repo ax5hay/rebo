@@ -1,5 +1,8 @@
 """The state store itself: upgrades of existing state files."""
 import sqlite3
+from pathlib import Path
+
+import pytest
 
 from reportsbot import store as store_module
 from reportsbot.store import Store
@@ -49,3 +52,22 @@ def test_a_state_file_from_before_migrations_upgrades_in_place(tmp_path):
         assert c.execute(text("SELECT version_num FROM alembic_version")).scalar() == head
     Store(path)                                                   # second start: nothing to do, no error
     assert store.one("SELECT COUNT(*) AS n FROM knowledge_event")["n"] == 1
+
+
+def test_copy_state_moves_everything_to_another_store(app, tmp_path):
+    import importlib.util
+
+    from reportsbot.knowledge import User
+    spec = importlib.util.spec_from_file_location("copy_state", Path(__file__).parents[1] / "tools" / "copy_state.py")
+    tool = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(tool)
+    alice = User("alice")
+    item = app.add_knowledge(alice, kind="term", title="paused", body="a customer on hold")["item"]
+    app.edit_knowledge(alice, item["id"], {"body": "status is paused"})
+    dst = Store(tmp_path / "copy.db")
+    counts = tool.copy(app.store, dst)
+    assert counts["knowledge"] == 1 and counts["knowledge_event"] >= 2 and counts["cat_column"] > 0
+    assert dst.one("SELECT body, scope, owner FROM knowledge")["owner"] == "alice"
+    assert [r["id"] for r in dst.match("knowledge_fts", '"paused"*', "id", limit=5)] == [item["id"]]
+    with pytest.raises(SystemExit):
+        tool.copy(app.store, dst)                                    # never into a store with knowledge
