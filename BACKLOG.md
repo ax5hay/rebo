@@ -202,7 +202,7 @@ do: Select several queue items, then Share or Reject them with one note. Add `PO
 done when: offline test.
 result: 2026-10-21, `git log --grep B-022`; 124 passed. UI not browser-tested.
 
-### [ ] B-023 · Usage dashboard (admin/owner)
+### [x] B-023 · Usage dashboard (admin/owner)
 needs: offline
 do: Add an Admin page section and `GET /api/admin/stats`:
 - confirmation rate per week,
@@ -212,6 +212,7 @@ do: Add an Admin page section and `GET /api/admin/stats`:
 - open requests by age,
 - cost per day (`turn.usage` × price table from `tools/eval_run.py`; move PRICES to `llm.py`).
 done when: offline test on seeded turns.
+result: 2026-10-21, `git log --grep B-023`; 125 passed. UI not browser-tested.
 
 ### [ ] B-024 · Config change preview (owner)
 needs: offline
