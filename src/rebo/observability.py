@@ -1,21 +1,46 @@
-"""Optional tracing. When OTEL_EXPORTER_OTLP_ENDPOINT is set and the `otel` extra is installed,
-every agent run, model request and tool call is exported as OpenTelemetry spans (Pydantic AI's
-built-in instrumentation, GenAI semantic conventions). Works with Arize Phoenix, Langfuse,
-Jaeger or any OTLP backend. See docs/11-evals-and-observability.md.
+"""Tracing. Every question is one `rebo.ask` span; the agent run, model requests and tool calls nest
+under it (Pydantic AI's instrumentation, GenAI semantic conventions). Exported over OTLP to
+OTEL_EXPORTER_OTLP_ENDPOINT, or, when that is not set, to Phoenix on 127.0.0.1:6006 if it answers
+(`docker compose up -d phoenix`), so local development is traced by default. Works with any OTLP
+backend. See docs/11-evals-and-observability.md.
 """
 from __future__ import annotations
 
 import logging
 import os
+from contextlib import contextmanager
 
 log = logging.getLogger(__name__)
 _done = False
 
 
+PHOENIX_DEFAULT = "http://127.0.0.1:6006"
+
+
+def phoenix_url() -> str | None:
+    """Where traces can be opened: PHOENIX_URL, else the OTLP endpoint when it is Phoenix's, else None."""
+    url = os.environ.get("PHOENIX_URL") or os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT") or ""
+    return url.rstrip("/") or None
+
+
+def _phoenix_answers(url: str) -> bool:
+    import urllib.request
+    try:
+        urllib.request.urlopen(url, timeout=0.3)
+        return True
+    except Exception:
+        return False
+
+
 def setup_tracing() -> bool:
     global _done
-    if _done or not os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT"):
+    if _done:
         return _done
+    if not os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT"):
+        if os.environ.get("REBO_TRACING", "auto") == "off" or not _phoenix_answers(PHOENIX_DEFAULT):
+            return False
+        os.environ["OTEL_EXPORTER_OTLP_ENDPOINT"] = PHOENIX_DEFAULT  # local Phoenix found: trace there
+        os.environ.setdefault("OTEL_RESOURCE_ATTRIBUTES", "openinference.project.name=rebo")
     try:
         from opentelemetry import trace
         from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
@@ -35,3 +60,22 @@ def setup_tracing() -> bool:
                                                  include_binary_content=False))
     _done = True
     return True
+
+
+@contextmanager
+def ask_span(**attributes):
+    """One span per question; yields a dict that receives `trace_id` (hex) when tracing is on."""
+    out: dict = {}
+    try:
+        from opentelemetry import trace
+    except ImportError:
+        yield out
+        return
+    with trace.get_tracer("rebo").start_as_current_span("rebo.ask") as span:
+        ctx = span.get_span_context()
+        if ctx.is_valid:
+            out["trace_id"] = format(ctx.trace_id, "032x")
+        for k, v in attributes.items():
+            span.set_attribute(f"rebo.{k}", str(v))
+        out["span"] = span
+        yield out

@@ -27,7 +27,7 @@ from .agent import Clarify, Deps, Report, Reply, Trace, build_agent
 from .catalog import Catalog, bootstrap
 from .knowledge import Knowledge, User
 from .llm import build_model, cost, credentials_present, profile, turn_limits
-from .observability import setup_tracing
+from .observability import ask_span, setup_tracing
 from .retrieval import Index, fts_query, get_embedder
 from .safety import canonical_hash, drill_sql, fill_params, guard
 from .settings import Settings, get_settings, load_env_file
@@ -283,7 +283,22 @@ class App:
 
     async def ask(self, user: User, text: str, conversation_id: str | None = None,
                   progress: Callable[[dict[str, Any]], None] | None = None) -> dict[str, Any]:
-        """Answer one message. `progress` (optional) is called with each tool step as it happens."""
+        """Answer one message. `progress` (optional) is called with each tool step as it happens.
+        Traced as one `rebo.ask` span; its trace id is kept on the turn (usage.trace_id)."""
+        with ask_span(user=user.id, model=self.settings.model) as sp:
+            r = await self._ask(user, text, conversation_id, progress)
+            if span := sp.get("span"):
+                span.set_attribute("rebo.kind", r.get("kind", ""))
+            if (tid := sp.get("trace_id")) and r.get("turn_id"):
+                row = self.store.one("SELECT usage FROM turn WHERE id=?", (r["turn_id"],))
+                usage = {**json.loads((row or {}).get("usage") or "{}"), "trace_id": tid}
+                with self.store.tx() as db:
+                    db.execute("UPDATE turn SET usage=? WHERE id=?", (json.dumps(usage), r["turn_id"]))
+                r["trace_id"] = tid
+            return r
+
+    async def _ask(self, user: User, text: str, conversation_id: str | None = None,
+                   progress: Callable[[dict[str, Any]], None] | None = None) -> dict[str, Any]:
         self._check_rate(user)
         conv_id = conversation_id or new_id("conv")
         conv = self.store.one("SELECT owner FROM conversation WHERE id=?", (conv_id,))

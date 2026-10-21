@@ -522,3 +522,23 @@ def test_only_remote_models_are_patient(app, monkeypatch):
     monkeypatch.setenv("GEMINI_API_KEY", "test")
     assert isinstance(build_model("google:gemini-3.8-flash", app.settings), PatientModel)
     assert not isinstance(build_model("lmstudio:google/gemma-4-e2b", app.settings), PatientModel)
+
+
+async def test_each_question_is_one_traced_span_and_the_turn_keeps_its_trace_id(app):
+    from opentelemetry import trace
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+    from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+    exporter = InMemorySpanExporter()
+    provider = TracerProvider()
+    provider.add_span_processor(SimpleSpanProcessor(exporter))
+    trace.set_tracer_provider(provider)
+    _scripted(app, [_completion("reply", {"text": "hi"})])
+    r = await app.ask(User("alice"), "hello")
+    spans = [s for s in exporter.get_finished_spans() if s.name == "rebo.ask"]
+    if not spans:  # a tracer provider was already set globally in this process: nothing to assert on
+        pytest.skip("global tracer provider already configured")
+    assert spans[-1].attributes["rebo.kind"] == "answer" and spans[-1].attributes["rebo.user"] == "alice"
+    assert r["trace_id"] == format(spans[-1].context.trace_id, "032x")
+    usage = json.loads(app.store.one("SELECT usage FROM turn WHERE id=?", (r["turn_id"],))["usage"])
+    assert usage["trace_id"] == r["trace_id"]

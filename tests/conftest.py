@@ -22,6 +22,7 @@ CREATE TABLE note (note_id INTEGER PRIMARY KEY, author_id INTEGER, body TEXT);
 
 # State backends to run the suite on. Postgres joins when REBO_TEST_STATE_URL points at a server
 # (docker compose up -d state-db); each test then gets its own schema, dropped afterwards.
+os.environ.setdefault("REBO_TRACING", "off")  # never send test spans to a Phoenix that happens to run
 PG_URL = os.environ.get("REBO_TEST_STATE_URL", "")
 BACKENDS = ["sqlite", "postgres"] if PG_URL else ["sqlite"]
 
