@@ -10,6 +10,8 @@ const ReviewPage = lazy(() => import("./pages/review"));
 const AdminPage = lazy(() => import("./pages/admin"));
 const ConfigPage = lazy(() => import("./pages/config"));
 const InsightsPage = lazy(() => import("./pages/insights"));
+const MePage = lazy(() => import("./pages/me"));
+const HelpPage = lazy(() => import("./pages/help"));
 const later = (page: React.ReactNode) => <Suspense fallback={<p className="empty">Loading…</p>}>{page}</Suspense>;
 import "./styles.css";
 
@@ -28,6 +30,8 @@ const router = createBrowserRouter(
         { path: "admin", element: later(<AdminPage />) },
         { path: "config", element: later(<ConfigPage />) },
         { path: "insights", element: later(<InsightsPage />) },
+        { path: "me", element: later(<MePage />) },
+        { path: "help", element: later(<HelpPage />) },
       ],
     },
   ],

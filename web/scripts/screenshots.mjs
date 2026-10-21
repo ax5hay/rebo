@@ -8,8 +8,8 @@ const browser = await browser_();
 const issues = [];
 
 async function browser_() { return chromium.launch(); }
-async function page(user, role, viewport = { width: 1280, height: 860 }) {
-  const ctx = await browser.newContext({ viewport });
+async function page(user, role, viewport = { width: 1280, height: 860 }, colorScheme = "light") {
+  const ctx = await browser.newContext({ viewport, colorScheme });
   await ctx.addInitScript(([u, r]) => localStorage.setItem("rebo.identity", JSON.stringify({ user: u, role: r })), [user, role]);
   const p = await ctx.newPage();
   p.on("pageerror", (e) => issues.push(`pageerror: ${e.message}`));
@@ -47,6 +47,14 @@ await ada.goto(`${base}/app/insights`); await ada.waitForTimeout(2000); await sh
 // the owner's configuration
 const olga = await page("olga", "owner");
 await olga.goto(`${base}/app/config`); await olga.waitForTimeout(800); await shot(olga, "10-configuration");
+
+// you, help, the history sheet, dark mode
+await alice.goto(`${base}/app/me`); await alice.waitForTimeout(800); await shot(alice, "12-you");
+await alice.goto(`${base}/app/help`); await alice.waitForTimeout(800); await shot(alice, "13-help");
+await alice.goto(`${base}/app/`); await alice.keyboard.press("Meta+/"); await alice.waitForTimeout(600); await shot(alice, "14-history");
+const night = await page("alice", "user", { width: 1280, height: 860 }, "dark");
+await night.goto(`${base}/app/`); await ask(night, "customers on hold, i.e. paused");
+await night.getByTestId("report").waitFor(); await night.waitForTimeout(500); await shot(night, "15-dark-answer");
 
 // a phone
 const phone = await page("alice", "user", { width: 390, height: 844 });

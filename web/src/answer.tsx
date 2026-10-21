@@ -1,8 +1,9 @@
-// One turn: the person's question, then the answer panel. Trust (verified / yours / adapted / new) is
-// the first thing on the panel; the data follows; then how the question was read, as plain steps
-// generated from the query itself plus the assumptions the model made.
+// One turn: the person's question, then the answer panel, built to be scanned: trust label and title,
+// one line of facts (rows, time, choices made, things to check), the data with its tools, then how the
+// question was read and what the query does, each foldable.
 import {
-  BarChart3, Check, ChevronRight, Code2, Download, ExternalLink, Flag, MoreHorizontal, Pencil, Pin, RotateCcw, Table as TableIcon, Timer, Undo2,
+  BarChart3, Check, ChevronRight, CircleCheck, Code2, Copy, Download, ExternalLink, Flag, MoreHorizontal, MousePointerClick, Pencil, Pin,
+  RotateCcw, Search, Table as TableIcon, Timer, TriangleAlert, Undo2,
 } from "lucide-react";
 import { lazy, Suspense, useMemo, useState } from "react";
 import {
@@ -10,6 +11,7 @@ import {
   Table, TableBody, TableHeader, ToggleButton, ToggleButtonGroup, type SortDescriptor,
 } from "react-aria-components";
 import { call, csvUrl, plural } from "./api";
+import { usePrefs } from "./prefs";
 import { useMe, useToast } from "./shell";
 import { Md } from "./md";
 import { SqlCode } from "./code";
@@ -62,11 +64,13 @@ export function TurnView({ t, ask, onTurn, onFix, initial }: {
 function Report({ r, ask, onTurn, onFix }: { r: any; ask: (q: string) => void; onTurn: (q: string, r: any) => void; onFix: (id: string) => void }) {
   const me = useMe();
   const toast = useToast();
+  const prefs = usePrefs();
   const [feedback, setFeedback] = useState<string | null>(r.feedback ?? null);
   const [dialog, setDialog] = useState<null | "fix" | "schedule">(null);
   const grouped = /\bgroup\s+by\b/i.test(r.sql);
   const chartable = useMemo(() => chartShape(r.columns, r.rows) !== null, [r.columns, r.rows]);
-  const [view, setView] = useState<"table" | "chart">("table");
+  const [view, setView] = useState<"table" | "chart">(chartable && prefs.chartFirst ? "chart" : "table");
+  const [filter, setFilter] = useState("");
   const label = r.provenance?.label ?? "new";
   const act = async (fn: () => Promise<any>) => {
     try { const res = await fn(); if (res?.message) toast(res.message); return res; }
@@ -83,63 +87,84 @@ function Report({ r, ask, onTurn, onFix }: { r: any; ask: (q: string) => void; o
       catch (e) { toast((e as Error).message); }
     }
   };
+  const copy = async () => {
+    const tsv = [r.columns.join("\t"), ...r.rows.map((row: any[]) => row.map((v) => (v === null ? "" : String(v))).join("\t"))].join("\n");
+    try { await navigator.clipboard.writeText(tsv); toast(`Copied ${plural(r.rows.length, "row", "rows")}. Paste into a spreadsheet.`); }
+    catch { toast("Copying is blocked in this browser. Use Download CSV."); }
+  };
+  const checks = (r.assumptions ?? []).filter((a: string) => a.startsWith("Check:")).length;
 
   return (
     <section className="panel answer" data-testid="report">
       <header className="answer-head">
-        <span className={`pill ${label}`} title={r.provenance?.text}><span className="dot" />{PILL[label] ?? "New"}</span>
-        <span className="title">{r.title}</span>
-        <span className="meta">{plural(r.rows.length, "row", "rows")}{r.truncated ? "+" : ""}{r.elapsed_ms ? `, ${r.elapsed_ms} ms` : ""}</span>
-        <span className="spacer" />
-        {feedback ? (
-          <>
-            <span className={`pill ${feedback === "correct" ? "verified" : "warn"}`}>{feedback === "correct" ? "You confirmed this" : "You asked for a fix"}</span>
-            <button className="btn ghost" onClick={async () => { if (await act(() => call("DELETE", `/turns/${r.turn_id}/feedback`))) setFeedback(null); }}><Undo2 />Undo my feedback</button>
-          </>
-        ) : (
-          <>
-            <button className="btn good" onClick={async () => { if (await act(() => call("POST", `/turns/${r.turn_id}/feedback`, { verdict: "correct" }))) setFeedback("correct"); }}><Check />Yes, this is right</button>
-            <button className="btn fix" onClick={() => { onFix(r.turn_id); setFeedback("wrong"); }}><Pencil />No, fix it</button>
-          </>
-        )}
-        <MenuTrigger>
-          <Button className="btn ghost icon" aria-label="More actions"><MoreHorizontal /></Button>
-          <Popover placement="bottom end" offset={6}>
-            <Menu className="menu" onAction={(k) => menu(String(k))}>
-              <MenuItem id="rerun"><RotateCcw />Run again on today's data</MenuItem>
-              <MenuItem id="schedule"><Timer />Send me this regularly</MenuItem>
-              <MenuItem id="pin"><Pin />Pin to my start page</MenuItem>
-              <MenuItem id="csv"><Download />Download CSV</MenuItem>
-              <Separator />
-              <MenuItem id="fix"><Flag />Ask an admin to fix this</MenuItem>
-              {me?.is_admin && r.trace_id ? <MenuItem id="trace"><ExternalLink />Open the trace</MenuItem> : null}
-            </Menu>
-          </Popover>
-        </MenuTrigger>
+        <div className="headline">
+          <span className={`pill ${label}`} title={r.provenance?.text}><span className="dot" />{PILL[label] ?? "New"}</span>
+          <h3 className="title">{r.title}</h3>
+        </div>
+        <div className="actions">
+          {feedback ? (
+            <>
+              <span className={`pill ${feedback === "correct" ? "verified" : "warn"}`}>{feedback === "correct" ? "You confirmed this" : "You asked for a fix"}</span>
+              <button className="btn ghost" onClick={async () => { if (await act(() => call("DELETE", `/turns/${r.turn_id}/feedback`))) setFeedback(null); }}><Undo2 />Undo my feedback</button>
+            </>
+          ) : (
+            <>
+              <button className="btn good" onClick={async () => { if (await act(() => call("POST", `/turns/${r.turn_id}/feedback`, { verdict: "correct" }))) setFeedback("correct"); }}><Check />Yes, this is right</button>
+              <button className="btn fix" onClick={() => { onFix(r.turn_id); setFeedback("wrong"); }}><Pencil />No, fix it</button>
+            </>
+          )}
+          <MenuTrigger>
+            <Button className="btn icon" aria-label="More actions"><MoreHorizontal /></Button>
+            <Popover placement="bottom end" offset={6}>
+              <Menu className="menu" onAction={(k) => menu(String(k))}>
+                <MenuItem id="rerun"><RotateCcw />Run again on today's data</MenuItem>
+                <MenuItem id="schedule"><Timer />Send me this regularly</MenuItem>
+                <MenuItem id="pin"><Pin />Pin to my start page</MenuItem>
+                <MenuItem id="csv"><Download />Download CSV</MenuItem>
+                <Separator />
+                <MenuItem id="fix"><Flag />Ask an admin to fix this</MenuItem>
+                {me?.is_admin && r.trace_id ? <MenuItem id="trace"><ExternalLink />Open the trace</MenuItem> : null}
+              </Menu>
+            </Popover>
+          </MenuTrigger>
+        </div>
       </header>
-      {r.route && ROUTE_NOTE[r.route] && <p className="answer-note">{ROUTE_NOTE[r.route]}</p>}
-      {chartable && (
-        <div className="viewtoggle">
-          <ToggleButtonGroup aria-label="Show as" selectionMode="single" disallowEmptySelection selectedKeys={[view]}
+      <ul className="facts" aria-label="About this answer">
+        <li><b>{r.rows.length.toLocaleString()}{r.truncated ? "+" : ""}</b> {r.rows.length === 1 ? "row" : "rows"}</li>
+        {r.elapsed_ms ? <li><b>{r.elapsed_ms}</b> ms</li> : null}
+        {r.assumptions?.length > 0 && <li><b>{r.assumptions.length}</b> {r.assumptions.length === 1 ? "choice made" : "choices made"}</li>}
+        {checks > 0 && <li className="warn"><b>{checks}</b> to check</li>}
+        {r.route && ROUTE_NOTE[r.route] && <li className="route">{ROUTE_NOTE[r.route]}</li>}
+      </ul>
+      <div className="tabletools">
+        {chartable && (
+          <ToggleButtonGroup aria-label="Show as" selectionMode="single" disallowEmptySelection selectedKeys={[view]} className="segmented small"
                              onSelectionChange={(k) => setView([...k][0] as "table" | "chart")}>
             <ToggleButton id="table"><TableIcon size={14} />Table</ToggleButton>
             <ToggleButton id="chart"><BarChart3 size={14} />Chart</ToggleButton>
           </ToggleButtonGroup>
-        </div>
-      )}
+        )}
+        {view === "table" && r.rows.length > 8 && (
+          <label className="filter"><Search /><input aria-label="Filter these rows" placeholder="Filter these rows" value={filter} onChange={(e) => setFilter(e.target.value)} /></label>
+        )}
+        <span className="spacer" />
+        <button className="btn ghost small" onClick={copy}><Copy />Copy</button>
+        <a className="btn ghost small" href={csvUrl(r.turn_id)}><Download />CSV</a>
+      </div>
       {view === "chart" && chartable ? <Suspense fallback={<div className="empty">Drawing…</div>}><ResultChart columns={r.columns} rows={r.rows} /></Suspense> :
-      <DataSheet columns={r.columns} rows={r.rows} label={r.title}
+      <DataSheet columns={r.columns} rows={r.rows} label={r.title} filter={filter}
                  onRowAction={grouped ? async (i) => {
                    const res = await act(() => call("POST", `/turns/${r.turn_id}/drill`, { row: i }));
                    if (res?.kind) onTurn(`The records behind row ${i + 1} of “${r.title}”`, res);
                  } : undefined} />}
       <div className="table-foot">
         <span><Md inline>{r.provenance?.text}</Md></span>
-        {grouped && view === "table" && <span>Select a row to see the records behind it.</span>}
+        {grouped && view === "table" && <span><MousePointerClick size={13} />Select a row to see the records behind it</span>}
       </div>
       <Reading steps={r.steps} assumptions={r.assumptions} sql={r.sql} />
       {r.follow_ups?.length > 0 && (
         <div className="followups">
+          <span className="label">Ask next</span>
           {r.follow_ups.map((f: string) => <button key={f} className="chip" onClick={() => ask(f)}>{f}</button>)}
         </div>
       )}
@@ -150,22 +175,29 @@ function Report({ r, ask, onTurn, onFix }: { r: any; ask: (q: string) => void; o
   );
 }
 
+// "How I read your question" first: it is what decides whether the numbers answer the question asked.
+// Each choice is its own line; a "Check:" line (the reviewer's doubt) is set apart in amber.
 export function Reading({ steps, assumptions, sql }: { steps?: string[]; assumptions: string[]; sql: string }) {
+  const prefs = usePrefs();
+  const list = assumptions ?? [];
+  const checks = list.filter((a) => a.startsWith("Check:"));
+  const choices = list.filter((a) => !a.startsWith("Check:"));
   return (
     <div className="reading">
-      {steps && steps.length > 0 && (
-        <div>
-          <h3>What the query does</h3>
-          <ol className="steps">{steps.map((s, i) => <li key={i}><Md inline>{s}</Md></li>)}</ol>
-        </div>
-      )}
-      {assumptions?.length > 0 && (
-        <div>
-          <h3>How I read your question</h3>
-          <ul className="assumptions">
-            {assumptions.map((a) => <li key={a} className={a.startsWith("Check:") ? "check" : ""}><mark><Md inline>{a}</Md></mark></li>)}
+      {list.length > 0 && (
+        <details className="readas" open={prefs.reading === "open"}>
+          <summary><h4>How I read your question</h4><span className="count">{plural(choices.length, "choice", "choices")}{checks.length ? `, ${checks.length} to check` : ""}</span><ChevronRight size={15} /></summary>
+          <ul>
+            {checks.map((a) => <li key={a} className="check"><TriangleAlert /><Md inline>{a.replace(/^Check:\s*/, "")}</Md></li>)}
+            {choices.map((a) => <li key={a}><CircleCheck /><Md inline>{a}</Md></li>)}
           </ul>
-        </div>
+        </details>
+      )}
+      {steps && steps.length > 0 && (
+        <details className="stepsbox" open={prefs.reading === "open"}>
+          <summary><h4>What the query does</h4><span className="count">{plural(steps.length, "step", "steps")}</span><ChevronRight size={15} /></summary>
+          <ol className="steps">{steps.map((s, i) => <li key={i}><Md inline>{s}</Md></li>)}</ol>
+        </details>
       )}
       <details className="query">
         <summary><Code2 size={14} />Show the query<ChevronRight size={14} /></summary>
@@ -175,12 +207,17 @@ export function Reading({ steps, assumptions, sql }: { steps?: string[]; assumpt
   );
 }
 
-export function DataSheet({ columns, rows, label, onRowAction }: {
-  columns: string[]; rows: any[][]; label: string; onRowAction?: (index: number) => void;
+const ID_COLUMN = /(^|_)(id|code|number|no|year|zip|postcode|phone)$/i;
+const fmt = (v: any, plain: boolean) =>
+  v === null ? "" : typeof v === "number" && !plain ? v.toLocaleString(undefined, { maximumFractionDigits: 2 }) : String(v);
+
+export function DataSheet({ columns, rows, label, onRowAction, filter = "" }: {
+  columns: string[]; rows: any[][]; label: string; onRowAction?: (index: number) => void; filter?: string;
 }) {
   const [sort, setSort] = useState<SortDescriptor | undefined>();
   const items = useMemo(() => {
-    const indexed = rows.map((row, i) => ({ id: i, row }));
+    const f = filter.trim().toLowerCase();
+    const indexed = rows.map((row, i) => ({ id: i, row })).filter((x) => !f || x.row.some((v) => v !== null && String(v).toLowerCase().includes(f)));
     if (!sort) return indexed;
     const c = Number(sort.column);
     const dir = sort.direction === "descending" ? -1 : 1;
@@ -191,8 +228,9 @@ export function DataSheet({ columns, rows, label, onRowAction }: {
       if (y === null) return -1;
       return (typeof x === "number" && typeof y === "number" ? x - y : String(x).localeCompare(String(y))) * dir;
     });
-  }, [rows, sort]);
+  }, [rows, sort, filter]);
   const numeric = columns.map((_, c) => rows.length > 0 && rows.every((r) => r[c] === null || typeof r[c] === "number"));
+  const plain = columns.map((c) => ID_COLUMN.test(c));
   if (!rows.length) return <div className="empty">No rows matched.</div>;
   return (
     <div className="table-wrap">
@@ -201,10 +239,10 @@ export function DataSheet({ columns, rows, label, onRowAction }: {
         <TableHeader>
           {columns.map((c, i) => <Column key={i} id={String(i)} isRowHeader={i === 0} allowsSorting className={numeric[i] ? "num" : undefined}>{c.replaceAll("_", " ")}</Column>)}
         </TableHeader>
-        <TableBody items={items}>
+        <TableBody items={items} renderEmptyState={() => <div className="empty">No row contains “{filter}”.</div>}>
           {(item) => (
             <Row id={item.id} className={onRowAction ? "clickable" : undefined}>
-              {item.row.map((v: any, j: number) => <Cell key={j} className={numeric[j] ? "num" : undefined}>{v === null ? "" : String(v)}</Cell>)}
+              {item.row.map((v: any, j: number) => <Cell key={j} className={numeric[j] ? "num" : undefined}>{fmt(v, plain[j])}</Cell>)}
             </Row>
           )}
         </TableBody>
@@ -220,7 +258,7 @@ function Clarify({ r, ask }: { r: any; ask: (q: string) => void }) {
     : r.questions.map((q: any) => `${q.question} → ${picked[q.question]}`).join("; "));
   return (
     <section className="panel answer" data-testid="clarify">
-      <header className="answer-head"><span className="pill yours"><span className="dot" />One question first</span><span className="title"><Md inline>{r.why}</Md></span></header>
+      <header className="answer-head"><div className="headline"><span className="pill yours"><span className="dot" />One question first</span><h3 className="title"><Md inline>{r.why}</Md></h3></div></header>
       <div className="answer-body">
         {r.questions.map((q: any) => (
           <div key={q.question} style={{ marginBottom: 14 }}>

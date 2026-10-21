@@ -212,5 +212,7 @@ gets a Table / Chart toggle; dates draw a line, labels draw bars in the table's 
 a time with a picker (measures on different scales flatten each other on a shared axis). Observable
 Plot, loaded when the chart is first opened (`web/src/chart.tsx`); the table stays the default.
 
+Design v4 (2026-10-21, Liquid Glass, logo, You and Help pages, readability rules): doc 25.
+
 Tests: `npx playwright test` (Playwright 1.64, headless Chromium) against `tests/web_server.py`
 (shop DB, scripted model); CI runs them.

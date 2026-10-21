@@ -1,16 +1,20 @@
-// The frame around every page: sidebar (sections, recent conversations, who is signed in), the page
-// title bar, toasts, and the command palette (⌘K / Ctrl+K).
+// The frame around every page. No sidebar: a floating glass bar of three islands (brand and history;
+// sections, with a lens that slides to the open one; tools and you), content scrolling underneath, the
+// conversation history in a glass sheet, and on phones a floating tab bar at the bottom. ⌘K opens the
+// command palette, ⌘/ the history, ? the help page.
 import { useQuery } from "@tanstack/react-query";
 import { Command } from "cmdk";
 import {
-  Activity, BookMarked, ClipboardCheck, Command as CommandIcon, MessageSquarePlus, MessagesSquare, Menu as MenuIcon,
-  Search, Settings2, Shield,
+  Activity, BookMarked, CircleHelp, ClipboardCheck, History, MessagesSquare, Search, Settings2, Shield, SquarePen, UserRound, X,
 } from "lucide-react";
-import { createContext, useContext, useEffect, useState } from "react";
-import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
+import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 import { toast, Toaster } from "sonner";
-import { get, identity, setIdentity, type Identity } from "./api";
+import { get, setIdentity, when } from "./api";
+import { Mark, Wordmark } from "./brand";
+import { Glass } from "./glass";
 import { Md } from "./md";
+import { applyPrefs } from "./prefs";
 
 export type Me = { id: string; role: "user" | "admin" | "owner"; team: string | null; is_admin: boolean; is_owner: boolean };
 
@@ -20,111 +24,148 @@ export const useToast = () => (text: string) => toast(<Md inline>{text}</Md>);
 const PaletteContext = createContext<(open: boolean) => void>(() => {});
 export const usePalette = () => useContext(PaletteContext);
 
-const PAGES = [
+export const PAGES = [
   { to: "/", label: "Ask", icon: MessagesSquare, end: true },
-  { to: "/knowledge", label: "What I taught", icon: BookMarked },
+  { to: "/knowledge", label: "Knowledge", icon: BookMarked },
   { to: "/review", label: "Review", icon: ClipboardCheck, admin: true },
   { to: "/admin", label: "Admin", icon: Shield, admin: true },
   { to: "/insights", label: "Insights", icon: Activity, admin: true },
   { to: "/config", label: "Configuration", icon: Settings2, owner: true },
 ];
-const TITLES: Record<string, string> = { "": "Ask", knowledge: "What I taught", review: "Review", admin: "Admin",
-                                        insights: "Insights", config: "Configuration", c: "Conversation" };
+const visible = (me: Me | null) => PAGES.filter((p) => (!p.admin || me?.is_admin) && (!p.owner || me?.is_owner));
+export const ROLE = { user: "Member", admin: "Admin", owner: "Owner" } as const;
 
 export default function Shell() {
   const me = useQuery({ queryKey: ["me"], queryFn: () => get<Me>("/me"), retry: false });
   const [palette, setPalette] = useState(false);
-  const [drawer, setDrawer] = useState(false);
+  const [history, setHistory] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
+  useEffect(() => { applyPrefs(); }, []);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement;
+      const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable;
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setPalette((p) => !p); }
+      else if ((e.metaKey || e.ctrlKey) && e.key === "/") { e.preventDefault(); setHistory((h) => !h); }
+      else if (!typing && e.key === "?") navigate("/help");
+      else if (e.key === "Escape") setHistory(false);
     };
-    const onScroll = () => setScrolled(window.scrollY > 4);
+    const onScroll = () => setScrolled(window.scrollY > 8);
     window.addEventListener("keydown", onKey);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => { window.removeEventListener("keydown", onKey); window.removeEventListener("scroll", onScroll); };
-  }, []);
-  useEffect(() => setDrawer(false), [location.pathname]);
+  }, [navigate]);
+  useEffect(() => setHistory(false), [location.pathname]);
 
   if (me.isError) return <SignIn />;
   const m = me.data ?? null;
-  const title = TITLES[location.pathname.split("/")[1] ?? ""] ?? "ReBo";
   return (
     <MeContext.Provider value={m}>
       <PaletteContext.Provider value={setPalette}>
-        <div className="app">
-          <Sidebar me={m} open={drawer} openPalette={() => setPalette(true)} />
-          <div className="main">
-            <header className={`topbar${scrolled ? " scrolled" : ""}`}>
-              <button className="btn ghost icon menubtn" aria-label="Open navigation" onClick={() => setDrawer((d) => !d)}><MenuIcon /></button>
-              <h1>{title}</h1>
-              <span className="spacer" />
-              <button className="btn ghost" onClick={() => setPalette(true)}><Search /> Search or ask <kbd>⌘K</kbd></button>
-            </header>
-            <div className="content">{m ? <Outlet /> : <p className="empty">Loading…</p>}</div>
-          </div>
+        <div className={`frame${scrolled ? " scrolled" : ""}`}>
+          <header className="bar">
+            <Glass className="island brandisland">
+              <button className="iconbtn" aria-label="Conversations (⌘/)" title="Conversations (⌘/)" onClick={() => setHistory(true)}><History /></button>
+              <Link to="/" className="home" aria-label="ReBo, new question"><Wordmark size={26} /></Link>
+            </Glass>
+            <Tabs me={m} />
+            <Glass className="island tools">
+              <button className="iconbtn" aria-label="New question" title="New question" onClick={() => navigate("/")}><SquarePen /></button>
+              <button className="iconbtn wide" aria-label="Search or ask (⌘K)" onClick={() => setPalette(true)}><Search /><span className="kbdhint">⌘K</span></button>
+              <NavLink to="/help" className={({ isActive }) => `iconbtn${isActive ? " on" : ""}`} aria-label="Help (?)" title="Help (?)"><CircleHelp /></NavLink>
+              <NavLink to="/me" className={({ isActive }) => `me${isActive ? " on" : ""}`} aria-label={`You: ${m?.id ?? ""}`} title="You: settings, reports, sign-in">
+                <span className="avatar">{(m?.id ?? "?").slice(0, 1)}</span>
+              </NavLink>
+            </Glass>
+          </header>
+          <main className="content">{m ? <Outlet /> : <p className="empty">Loading…</p>}</main>
+          <PhoneTabs openHistory={() => setHistory(true)} />
         </div>
+        {history && m && <HistorySheet close={() => setHistory(false)} />}
         {palette && m && <Palette me={m} close={() => setPalette(false)} />}
-        <Toaster position="top-center" offset={10} toastOptions={{ style: { fontFamily: "var(--font)", borderRadius: 10 } }} />
+        <Toaster position="top-center" offset={78} toastOptions={{ className: "toast" }} />
       </PaletteContext.Provider>
     </MeContext.Provider>
   );
 }
 
-function Sidebar({ me, open, openPalette }: { me: Me | null; open: boolean; openPalette: () => void }) {
-  const navigate = useNavigate();
-  const recent = useQuery({ queryKey: ["conversations"], queryFn: () => get<any[]>("/conversations"), enabled: !!me });
+// Section tabs; a lens slides to the open one with a spring, like a drop moving under a finger.
+function Tabs({ me }: { me: Me | null }) {
+  const track = useRef<HTMLSpanElement>(null);
+  const location = useLocation();
+  const [lens, setLens] = useState<{ x: number; w: number } | null>(null);
+  const pages = visible(me);
+  useLayoutEffect(() => {
+    const measure = () => {
+      const a = track.current?.querySelector<HTMLElement>("a.on");
+      setLens(a ? { x: a.offsetLeft, w: a.offsetWidth } : null);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [location.pathname, pages.length]);
+  if (pages.length < 2) return <span className="tabs-spacer" />;
   return (
-    <aside className={`sidebar${open ? " open" : ""}`} aria-label="Navigation">
-      <div className="brand">
-        <span className="mark" aria-hidden>Rb</span><span className="name">ReBo</span>
-        <button className="btn ghost icon" aria-label="Command palette" onClick={openPalette} style={{ marginLeft: "auto" }}><CommandIcon /></button>
-      </div>
-      <button className="btn newq" onClick={() => navigate("/")}><MessageSquarePlus /> New question</button>
-      <nav className="navgroup" aria-label="Sections">
-        {PAGES.filter((p) => (!p.admin || me?.is_admin) && (!p.owner || me?.is_owner)).map((p) => (
-          <NavLink key={p.to} to={p.to} end={p.end} className={({ isActive }) => `navitem${isActive ? " active" : ""}`}>
+    <Glass as="nav" className="island tabs" aria-label="Sections">
+      <span className="tabtrack" ref={track}>
+        {lens && <span className="lens" style={{ transform: `translateX(${lens.x}px)`, width: lens.w }} aria-hidden />}
+        {pages.map((p) => (
+          <NavLink key={p.to} to={p.to} end={p.end} className={({ isActive }) => (isActive || (p.to === "/" && location.pathname.startsWith("/c/")) ? "on" : "")}>
             <p.icon />{p.label}
           </NavLink>
         ))}
-      </nav>
-      {(recent.data?.length ?? 0) > 0 && (
-        <nav className="navgroup" aria-label="Recent conversations">
-          <span className="label">Recent</span>
-          {recent.data!.slice(0, 12).map((c) => (
-            <NavLink key={c.id} to={`/c/${c.id}`} className={({ isActive }) => `navitem recent${isActive ? " active" : ""}`} title={c.title}>
-              <span>{c.title}</span>
-            </NavLink>
-          ))}
-        </nav>
-      )}
-      <div className="footer"><Who me={me} /></div>
-    </aside>
+      </span>
+    </Glass>
   );
 }
 
-// Who is signed in. Behind the login proxy that is decided there; locally you can switch here.
-function Who({ me }: { me: Me | null }) {
-  const current = identity();
-  const [user, setUser] = useState(current?.user ?? me?.id ?? "alice");
-  const [role, setRole] = useState<Identity["role"]>(current?.role ?? me?.role ?? "user");
+function PhoneTabs({ openHistory }: { openHistory: () => void }) {
+  const cls = ({ isActive }: { isActive: boolean }) => (isActive ? "on" : "");
   return (
-    <>
-      <div className="whoami">
-        <span className="avatar">{(me?.id ?? "?").slice(0, 1)}</span>
-        <span className="meta"><b>{me?.id}</b><span>{me?.role === "owner" ? "Owner" : me?.role === "admin" ? "Admin" : "Member"}</span></span>
-      </div>
-      <form className="devpick" onSubmit={(e) => { e.preventDefault(); setIdentity({ user: user.trim() || "alice", role }); }}>
-        <input className="input" aria-label="Switch user" value={user} onChange={(e) => setUser(e.target.value)} />
-        <select className="select" aria-label="Role" value={role} onChange={(e) => setRole(e.target.value as Identity["role"])}>
-          <option value="user">Member</option><option value="admin">Admin</option><option value="owner">Owner</option>
-        </select>
-        <button className="btn" type="submit">Switch</button>
-      </form>
-    </>
+    <Glass as="nav" className="phonetabs" aria-label="Sections on a phone">
+      <NavLink to="/" end className={cls}><MessagesSquare /><span>Ask</span></NavLink>
+      <NavLink to="/knowledge" className={cls}><BookMarked /><span>Knowledge</span></NavLink>
+      <button onClick={openHistory}><History /><span>History</span></button>
+      <NavLink to="/help" className={cls}><CircleHelp /><span>Help</span></NavLink>
+      <NavLink to="/me" className={cls}><UserRound /><span>You</span></NavLink>
+    </Glass>
+  );
+}
+
+function HistorySheet({ close }: { close: () => void }) {
+  const recent = useQuery({ queryKey: ["conversations"], queryFn: () => get<any[]>("/conversations") });
+  const [q, setQ] = useState("");
+  const rows = (recent.data ?? []).filter((c) => c.title.toLowerCase().includes(q.trim().toLowerCase()));
+  const today = new Date().toDateString();
+  const isToday = (c: any) => new Date(c.updated_at * 1000).toDateString() === today;
+  const groups: [string, any[]][] = [["Today", rows.filter(isToday)], ["Earlier", rows.filter((c) => !isToday(c))]];
+  return (
+    <div className="scrim" onMouseDown={(e) => e.target === e.currentTarget && close()}>
+      <Glass as="aside" className="sheet" aria-label="Conversations" strength={18}>
+        <div className="sheethead">
+          <h2>Conversations</h2>
+          <button className="iconbtn" aria-label="Close" onClick={close}><X /></button>
+        </div>
+        <input className="input" autoFocus placeholder="Find a conversation" aria-label="Find a conversation" value={q} onChange={(e) => setQ(e.target.value)} />
+        <Link to="/" className="btn primary block" onClick={close}><SquarePen />New question</Link>
+        <div className="sheetlist">
+          {groups.map(([label, items]) => items.length > 0 && (
+            <section key={label}>
+              <h3>{label}</h3>
+              {items.map((c) => (
+                <NavLink key={c.id} to={`/c/${c.id}`} className={({ isActive }) => `conv${isActive ? " on" : ""}`}>
+                  <span className="t">{c.title}</span><span className="w">{when(c.updated_at)}</span>
+                </NavLink>
+              ))}
+            </section>
+          ))}
+          {rows.length === 0 && <p className="empty">{q ? "No conversation matches." : "Your conversations appear here."}</p>}
+        </div>
+      </Glass>
+    </div>
   );
 }
 
@@ -133,6 +174,7 @@ function Palette({ me, close }: { me: Me; close: () => void }) {
   const [q, setQ] = useState("");
   const recent = useQuery({ queryKey: ["conversations"], queryFn: () => get<any[]>("/conversations") });
   const go = (to: string) => { navigate(to); close(); };
+  const places = [...visible(me), { to: "/me", label: "You and your settings", icon: UserRound }, { to: "/help", label: "Help", icon: CircleHelp }];
   return (
     <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && close()}>
       <Command label="Command palette" onKeyDown={(e) => e.key === "Escape" && close()}>
@@ -145,14 +187,12 @@ function Palette({ me, close }: { me: Me; close: () => void }) {
             </Command.Group>
           )}
           <Command.Group heading="Go to">
-            {PAGES.filter((p) => (!p.admin || me.is_admin) && (!p.owner || me.is_owner)).map((p) => (
-              <Command.Item key={p.to} value={`go ${p.label}`} onSelect={() => go(p.to)}><p.icon />{p.label}</Command.Item>
-            ))}
+            {places.map((p) => <Command.Item key={p.to} value={`go ${p.label}`} onSelect={() => go(p.to)}><p.icon />{p.label}</Command.Item>)}
           </Command.Group>
           {(recent.data?.length ?? 0) > 0 && (
             <Command.Group heading="Recent conversations">
               {recent.data!.slice(0, 8).map((c) => (
-                <Command.Item key={c.id} value={`recent ${c.title} ${c.id}`} onSelect={() => go(`/c/${c.id}`)}><MessagesSquare />{c.title}</Command.Item>
+                <Command.Item key={c.id} value={`recent ${c.title} ${c.id}`} onSelect={() => go(`/c/${c.id}`)}><History />{c.title}</Command.Item>
               ))}
             </Command.Group>
           )}
@@ -165,14 +205,14 @@ function Palette({ me, close }: { me: Me; close: () => void }) {
 function SignIn() {
   const [user, setUser] = useState("alice");
   return (
-    <div className="content" style={{ maxWidth: 520 }}>
-      <div className="hello">
-        <span className="brand" style={{ padding: 0, marginBottom: 18 }}><span className="mark">Rb</span><span className="name">ReBo</span></span>
+    <div className="signin">
+      <div className="card">
+        <Mark size={56} />
         <h1>Who is asking?</h1>
         <p>ReBo answers as a person: what you teach it stays yours until it is shared. Behind your company's
           sign-in this is filled in for you; here, give a name.</p>
-        <form className="row" style={{ marginTop: 18 }} onSubmit={(e) => { e.preventDefault(); setIdentity({ user, role: "user" }); }}>
-          <input className="input" style={{ maxWidth: 260 }} aria-label="Your name" value={user} onChange={(e) => setUser(e.target.value)} />
+        <form className="row" onSubmit={(e) => { e.preventDefault(); setIdentity({ user, role: "user" }); }}>
+          <input className="input" aria-label="Your name" value={user} onChange={(e) => setUser(e.target.value)} />
           <button className="btn primary" type="submit">Continue</button>
         </form>
       </div>

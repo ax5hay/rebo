@@ -133,10 +133,10 @@ function Accuracy({ runs }: { runs: any[] }) {
     series: `${String(r.model).split(":").pop()?.split("/").pop()}${r.kind === "conversations" ? " (conversations)" : ""}`,
   })).filter((p) => p.value !== null);
   const ref = usePlot(() => data.length ? Plot.plot({
-    width: 1040, height: 260, marginLeft: 44, marginBottom: 36, style: { background: "transparent", fontSize: "12px", color: css("--text-2") },
+    width: 1040, height: 260, marginLeft: 44, marginBottom: 36, style: { background: "transparent", fontSize: "12px", color: css("--ink-2") },
     y: { domain: [0, 1], tickFormat: "%", label: null, grid: true },
     x: { label: null, domain: data.map((d) => d.run), padding: 0.5 }, color: { legend: true },
-    marks: [Plot.ruleY([0], { stroke: css("--border-strong") }),
+    marks: [Plot.ruleY([0], { stroke: css("--line-2") }),
             Plot.lineY(data, { x: "run", y: "value", stroke: "series", strokeWidth: 1.5 }),
             Plot.dot(data, { x: "run", y: "value", fill: "series", r: 5, tip: true, channels: { when: "when", cases: "cases" } })],
   }) : null, [JSON.stringify(data)]);
@@ -149,10 +149,10 @@ function Weekly({ weeks }: { weeks: [string, any][] }) {
     { week: w, n: v.reports - v.confirmed - v.rejected, what: "no feedback" },
   ]);
   const ref = usePlot(() => data.length ? Plot.plot({
-    width: 1040, height: 220, marginLeft: 40, style: { background: "transparent", fontSize: "12px", color: css("--text-2") },
+    width: 1040, height: 220, marginLeft: 40, style: { background: "transparent", fontSize: "12px", color: css("--ink-2") },
     x: { label: null }, y: { label: "answers", grid: true, tickFormat: "d", ticks: Math.max(...data.map((d) => d.n), 1) },
-    color: { legend: true, domain: ["confirmed", "reported wrong", "no feedback"], range: [css("--accent"), css("--danger"), css("--border-strong")] },
-    marks: [Plot.barY(data, { x: "week", y: "n", fill: "what", tip: true, inset: 6 }), Plot.ruleY([0], { stroke: css("--border-strong") })],
+    color: { legend: true, domain: ["confirmed", "reported wrong", "no feedback"], range: [css("--accent"), css("--danger"), css("--line-2")] },
+    marks: [Plot.barY(data, { x: "week", y: "n", fill: "what", tip: true, inset: 6 }), Plot.ruleY([0], { stroke: css("--line-2") })],
   }) : null, [JSON.stringify(data)]);
   return data.length ? <div className="chart" ref={ref} /> : <div className="empty">No answers yet in the last 90 days.</div>;
 }

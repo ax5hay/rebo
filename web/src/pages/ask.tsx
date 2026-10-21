@@ -1,9 +1,10 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowUp, History, Sparkle } from "lucide-react";
+import { ArrowRight, ArrowUp, CircleHelp, History, Pin, Sparkle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { askStream, call, get, when, type Step } from "../api";
 import { TurnView, type Turn } from "../answer";
+import { Glass } from "../glass";
 import { useMe } from "../shell";
 
 const newThread = () => `conv_${crypto.randomUUID().replaceAll("-", "").slice(0, 12)}`;
@@ -81,17 +82,20 @@ export default function AskPage() {
         </div>
       )}
       <div className="composer">
-        {fixing && <div className="hint">Say what should be different, for example “only count the active ones”. ReBo redoes the report.</div>}
-        <form onSubmit={(e) => { e.preventDefault(); ask(text); }}>
-          <textarea ref={box} rows={1} aria-label="Your question" value={text} autoFocus
-                    placeholder={fixing ? "What should change?" : "Ask for a report in plain words"}
-                    onChange={(e) => setText(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ask(text); } }} />
-          <button className="btn primary" type="submit" disabled={!!busy || !text.trim()} aria-label={fixing ? "Fix it" : "Ask"}>
-            <ArrowUp />{fixing ? "Fix it" : "Ask"}
-          </button>
-        </form>
-        <div className="foot"><span>Read-only: ReBo never changes your data.</span><span>Enter to ask, Shift+Enter for a new line</span></div>
+        <Glass className="composerglass" strength={20}>
+          {fixing && <div className="hint">Say what should be different, for example “only count the active ones”. ReBo redoes the report.</div>}
+          <form onSubmit={(e) => { e.preventDefault(); ask(text); }}>
+            <textarea ref={box} rows={1} aria-label="Your question" value={text} autoFocus
+                      placeholder={fixing ? "What should change?" : "Ask for a report in plain words"}
+                      onChange={(e) => setText(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ask(text); } }} />
+            <button className="send" type="submit" disabled={!!busy || !text.trim()} aria-label={fixing ? "Fix it" : "Ask"} title={fixing ? "Fix it" : "Ask (Enter)"}>
+              <ArrowUp />
+            </button>
+          </form>
+          <p className="notice" role="note"><Sparkle />ReBo is an AI. The rows are real data, but it can misread a question,
+            so each answer says how it read yours. <Link to="/help#safety">How to check</Link></p>
+        </Glass>
       </div>
     </>
   );
@@ -100,32 +104,47 @@ export default function AskPage() {
 function Start({ ask, name }: { ask: (q: string) => void; name: string }) {
   const starters = useQuery({ queryKey: ["starter"], queryFn: () => get<string[]>("/starter") });
   const recent = useQuery({ queryKey: ["conversations"], queryFn: () => get<any[]>("/conversations") });
+  const k = useQuery({ queryKey: ["knowledge"], queryFn: () => get<any>("/knowledge") });
+  const pinned = (k.data?.mine ?? []).filter((i: any) => i.pinned && i.status !== "retired");
   const navigate = useNavigate();
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
   return (
-    <>
+    <div className="start">
       <section className="hello">
-        <h1>What do you need to know, {name}?</h1>
-        <p>Ask in your own words. You get the rows, what the query does, how your question was read, and
-          where the answer came from. Say whether it is right and ReBo remembers it, for you first.</p>
+        <h1>{greeting}, {name}.</h1>
+        <p>Ask for any report in your own words. You get the rows, how your question was read, and where the
+          answer came from.</p>
       </section>
       {(starters.data?.length ?? 0) > 0 && (
-        <>
-          <div className="section-title"><h2>Start from a known report</h2></div>
-          <div className="starters">
-            {starters.data!.map((s) => <button key={s} onClick={() => ask(s)}><Sparkle />{s}</button>)}
-          </div>
-        </>
+        <section className="block">
+          <h2>Try a known report</h2>
+          <div className="chips">{starters.data!.slice(0, 8).map((s) => <button key={s} className="chip big" onClick={() => ask(s)}><Sparkle />{s}</button>)}</div>
+        </section>
       )}
-      {(recent.data?.length ?? 0) > 0 && (
-        <>
-          <div className="section-title"><h2>Pick up where you left off</h2></div>
-          <div className="starters">
-            {recent.data!.slice(0, 6).map((c) => (
-              <button key={c.id} onClick={() => navigate(`/c/${c.id}`)}><History />{c.title}<span className="when">{when(c.updated_at)}</span></button>
-            ))}
-          </div>
-        </>
-      )}
-    </>
+      <div className="startgrid">
+        {pinned.length > 0 && (
+          <section className="card">
+            <h2><Pin />Pinned</h2>
+            <ul className="rows">{pinned.slice(0, 6).map((i: any) => <li key={i.id}><button className="linkrow" onClick={() => ask(i.question || i.title)}><span>{i.title}</span><ArrowRight /></button></li>)}</ul>
+          </section>
+        )}
+        {(recent.data?.length ?? 0) > 0 && (
+          <section className="card">
+            <h2><History />Pick up where you left off</h2>
+            <ul className="rows">
+              {recent.data!.slice(0, 6).map((c) => (
+                <li key={c.id}><button className="linkrow" onClick={() => navigate(`/c/${c.id}`)}><span>{c.title}</span><span className="w">{when(c.updated_at)}</span></button></li>
+              ))}
+            </ul>
+          </section>
+        )}
+        <section className="card quiet">
+          <h2><CircleHelp />New here?</h2>
+          <p className="muted">Two minutes on how to ask, check and teach.</p>
+          <Link className="more" to="/help">Read how ReBo works<ArrowRight /></Link>
+        </section>
+      </div>
+    </div>
   );
 }

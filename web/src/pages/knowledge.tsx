@@ -30,7 +30,7 @@ export default function KnowledgePage() {
     <>
       <div className="row" style={{ alignItems: "flex-end", marginTop: 8 }}>
         <div style={{ flex: 1, minWidth: 280 }}>
-          <p className="lead">What you taught ReBo</p>
+          <h1 className="lead">What you taught ReBo</h1>
           <p className="intro">It shapes answers for you only, until it is shared with everyone. Nothing is deleted:
             every change has a history and can be undone.</p>
         </div>
@@ -40,10 +40,10 @@ export default function KnowledgePage() {
 
       <Lookup />
 
-      <div className="section-title"><h2>My defaults</h2><p>Applied to every question unless it says otherwise.</p></div>
+      <div className="section-title" id="defaults"><h2>My defaults</h2><p>Applied to every question unless it says otherwise.</p></div>
       <Defaults rows={defaults.data ?? []} onSaved={refresh} />
 
-      <div className="section-title"><h2>Saved knowledge</h2><p>{mine.length || "None yet"}</p></div>
+      <div className="section-title" id="saved"><h2>Saved knowledge</h2><p>{mine.length || "None yet"}</p></div>
       <ul className="list panel">
         {mine.length === 0 && <li className="empty">Confirm a report with “Yes, this is right”, accept a “Remember this?” note, or teach something new.</li>}
         {mine.map((i: any) => (
@@ -72,18 +72,18 @@ export default function KnowledgePage() {
         ))}
       </ul>
 
-      <div className="section-title"><h2>Reports sent to me regularly</h2></div>
+      <div className="section-title" id="schedules"><h2>Reports sent to me regularly</h2></div>
       <ul className="list panel">
         {(schedules.data ?? []).length === 0 && <li className="empty">None. Choose “Send me this regularly” in a report's menu.</li>}
         {(schedules.data ?? []).map((s: any) => (
           <li key={s.id}>
-            <div><div className="title">{s.every}</div><div className="sub">Next on {when(s.next_at)}</div></div>
+            <div><div className="title">{s.question ?? "A report"}</div><div className="sub">{s.every}, next on {when(s.next_at)}</div></div>
             <div className="acts"><button className="btn ghost danger" onClick={() => act(() => call("DELETE", `/schedules/${s.id}`))}>Stop</button></div>
           </li>
         ))}
       </ul>
 
-      <div className="section-title"><h2>Shared knowledge my answers use</h2><p>{shared.length || "None yet"}</p></div>
+      <div className="section-title" id="shared"><h2>Shared knowledge my answers use</h2><p>{shared.length || "None yet"}</p></div>
       <ul className="list panel">
         {shared.length === 0 && <li className="empty">Nothing is shared with everyone yet.</li>}
         {shared.map((i: any) => (
@@ -97,7 +97,7 @@ export default function KnowledgePage() {
         ))}
       </ul>
 
-      <div className="section-title"><h2>My requests</h2></div>
+      <div className="section-title" id="requests"><h2>My requests</h2></div>
       <ul className="list panel">
         {(requests.data ?? []).length === 0 && <li className="empty">No requests. When a shared answer is wrong and you cannot change it, ask an admin from the report's menu.</li>}
         {(requests.data ?? []).map((r: any) => (
@@ -159,7 +159,7 @@ function Defaults({ rows, onSaved }: { rows: any[]; onSaved: () => void }) {
   return (
     <div className="panel">
       {rows.length > 0 && <ul className="list">{rows.map((d) => <li key={d.id}><div><div className="title">{d.name}</div><div className="sub">{d.value}</div></div><span /></li>)}</ul>}
-      <form className="row" style={{ padding: 12, borderTop: rows.length ? "1px solid var(--border)" : 0 }} onSubmit={async (e) => {
+      <form className="row" style={{ padding: 12, borderTop: rows.length ? "1px solid var(--line)" : 0 }} onSubmit={async (e) => {
         e.preventDefault();
         try { await call("PUT", `/defaults/${encodeURIComponent(name)}`, { value }); toast(`Default saved: ${name} = ${value}.`); setName(""); setValue(""); onSaved(); }
         catch (err) { toast((err as Error).message); }

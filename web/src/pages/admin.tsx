@@ -39,7 +39,7 @@ export default function AdminPage() {
               {!diff && <span className="small muted">Import is possible after a preview.</span>}
             </div>
             {diff && (
-              <ul className="list" style={{ marginTop: 12, borderTop: "1px solid var(--border)" }}>
+              <ul className="list" style={{ marginTop: 12, borderTop: "1px solid var(--line)" }}>
                 <li><Md className="sub">{diff.message}</Md><span /></li>
                 {diff.changes.map((c: any, i: number) => (
                   <li key={i}><div><div className="title">{c.title}</div>

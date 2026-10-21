@@ -31,12 +31,12 @@ export default function ResultChart({ columns, rows }: { columns: string[]; rows
       const width = Math.max(ref.current.clientWidth - 8, 320);
       el = Plot.plot({
         width, height: 300, marginLeft: 56, marginBottom: shape.dates ? 32 : 64,
-        style: { background: "transparent", fontSize: "12px", color: css("--text-2"), fontFamily: "var(--font)" },
+        style: { background: "transparent", fontSize: "12px", color: css("--ink-2"), fontFamily: "var(--font)" },
         y: { grid: true, label: label(y) },
         x: shape.dates ? { label: null } : { label: null, domain: rows.map((r) => String(r[shape.x])), tickRotate: rows.length > 8 ? -35 : 0 },
         marks: shape.dates
-          ? [Plot.lineY(data, { x: "x", y: "y", stroke: ink, strokeWidth: 2, sort: "x" }), Plot.dot(data, { x: "x", y: "y", fill: ink, r: 3, tip: true }), Plot.ruleY([0], { stroke: css("--border-strong") })]
-          : [Plot.barY(data, { x: "x", y: "y", fill: ink, tip: true, inset: 4 }), Plot.ruleY([0], { stroke: css("--border-strong") })],
+          ? [Plot.lineY(data, { x: "x", y: "y", stroke: ink, strokeWidth: 2, sort: "x" }), Plot.dot(data, { x: "x", y: "y", fill: ink, r: 3, tip: true }), Plot.ruleY([0], { stroke: css("--line-2") })]
+          : [Plot.barY(data, { x: "x", y: "y", fill: ink, tip: true, inset: 4 }), Plot.ruleY([0], { stroke: css("--line-2") })],
       });
       ref.current.replaceChildren(el);
     });
