@@ -748,3 +748,5 @@ blockquote.reply { margin: 8px 0 0; padding: 8px 12px; border-left: 3px solid va
 .tabbar button:focus-visible { outline-offset: -4px; border-radius: 12px; }
 .fieldchange { flex-wrap: wrap; }
 .cm-host .cm-scroller { overflow-x: auto; }
+/* without lensing (Safari, Firefox) the frost carries legibility alone: use the denser tint */
+.glass:not(.lensed) { background: var(--glass-strong); }

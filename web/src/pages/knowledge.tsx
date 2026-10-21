@@ -39,7 +39,8 @@ export default function KnowledgePage() {
   const [params, setParams] = useSearchParams();
   const k = useQuery({ queryKey: ["knowledge"], queryFn: () => get<any>("/knowledge") });
   const defaults = useQuery({ queryKey: ["defaults"], queryFn: () => get<any[]>("/defaults") });
-  const requests = useQuery({ queryKey: ["requests", "mine"], queryFn: () => get<any[]>("/requests?status=") });
+  // admins get everyone's requests from this endpoint; this page is about your own
+  const requests = useQuery({ queryKey: ["requests", "mine", me?.id], queryFn: async () => (await get<any[]>("/requests?status=")).filter((r) => r.requester === me?.id) });
   const schedules = useQuery({ queryKey: ["schedules"], queryFn: () => get<any[]>("/schedules") });
   const [editing, setEditing] = useState<any | null>(null);
   const [adding, setAdding] = useState(params.get("teach") === "1");
