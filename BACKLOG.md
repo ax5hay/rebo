@@ -214,7 +214,7 @@ do: Add an Admin page section and `GET /api/admin/stats`:
 done when: offline test on seeded turns.
 result: 2026-10-21, `git log --grep B-023`; 125 passed. UI not browser-tested.
 
-### [ ] B-024 · Config change preview (owner)
+### [x] B-024 · Config change preview (owner)
 needs: offline
 do: Before saving, `admin.save_config(preview=True)` validates and also:
 - builds an App against the new config in a temp state dir,
@@ -222,6 +222,7 @@ do: Before saving, `admin.save_config(preview=True)` validates and also:
 - reports the differences.
 No model calls.
 done when: offline tests (bad database URL → readable error; good → OK).
+result: 2026-10-21, `git log --grep B-024`; 126 passed. UI not browser-tested.
 
 ### [ ] B-025 · Request notifications and ages
 needs: offline
