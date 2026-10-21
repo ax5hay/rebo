@@ -66,6 +66,8 @@ class ExecutionMatch(Evaluator):
         a = self.app
         g = guard(gold, dialect=a.target.dialect, schema=a.catalog.schema, sensitive=set(), row_cap=a.settings.row_limit + 1)
         ref = a.target.run(g.sql, max_rows=a.settings.row_limit)
+        if not ref.rows or ref.truncated:
+            return {}  # an empty or truncated gold result proves nothing: not scored
         return _rows_key(ref.columns, ref.rows) == _rows_key(ctx.output["columns"], ctx.output["rows"])
 
 

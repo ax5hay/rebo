@@ -1,0 +1,1044 @@
+version: 1
+source: staging JMS custom_report + constructed NL prompts
+generated_from: app\config\generated\staging_custom_reports.json
+active_report_count: 80
+eval_note: Pass = orchestrator preview SQL row COUNT matches custom_report.report_query COUNT on staging (same population/grain,
+  not byte-identical SQL).
+reports:
+- custom_report_id: 1
+  report_title: All Contacts
+  prompt: Give me the email and phone number for all users in my system.
+  patterns:
+  - contact_directory
+  grain: one_row_per_contact
+  anchor: contact
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - contact
+- custom_report_id: 4
+  report_title: NP User
+  prompt: Show me NP User.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: gc_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - gc_case
+  - case_party
+  - user_np
+- custom_report_id: 5
+  report_title: Hellosigns (IP)
+  prompt: Show me Hellosigns (IP).
+  patterns:
+  - workflow_task_status
+  grain: one_row_per_case
+  anchor: hellosign
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - hellosign
+  - custom_task
+  - custom_sub_stage
+  - ip_case
+  - family
+  - contact
+  - template_task
+  - contract_rel
+- custom_report_id: 6
+  report_title: Hellosigns (GC/ED)
+  prompt: Show me Hellosigns (GC/ED).
+  patterns:
+  - workflow_task_status
+  grain: one_row_per_case
+  anchor: hellosign
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - hellosign
+  - custom_task
+  - custom_sub_stage
+  - gc_case
+  - contact
+  - template_task
+  - contract_rel
+- custom_report_id: 7
+  report_title: Campaigns (IP)
+  prompt: Show me Campaigns (IP).
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: campaign
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - campaign
+  - case_campaign
+  - ip_case
+  - family
+  - contact
+- custom_report_id: 8
+  report_title: Campaigns (GC/ED)
+  prompt: Show me Campaigns (GC/ED).
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: campaign
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - campaign
+  - case_campaign
+  - gc_case
+- custom_report_id: 9
+  report_title: GC/ED Confirmed Email & Last Login
+  prompt: Show me GC/ED Confirmed Email & Last Login.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: gc_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - gc_case
+  - contact
+  - user
+- custom_report_id: 10
+  report_title: All Users
+  prompt: Show me All Users.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: user
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - user
+- custom_report_id: 11
+  report_title: Another NP User lookup
+  prompt: Show me Another NP User lookup.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: case_party
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - case_party
+  - user_np
+- custom_report_id: 12
+  report_title: IP Workflow.Snippet
+  prompt: Show me IP Workflow.Snippet.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: ip_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - ip_case
+  - template
+- custom_report_id: 13
+  report_title: IP Snippet.Workflow
+  prompt: Show me IP Snippet.Workflow.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: template
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - template
+  - ip_case
+- custom_report_id: 14
+  report_title: General Form Submission
+  prompt: Show me General Form Submission.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: general_form_submission
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - general_form_submission
+- custom_report_id: 15
+  report_title: cycle report
+  prompt: Show me cycle report.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: gc_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - gc_case
+  - pregnancy
+  - contact
+- custom_report_id: 16
+  report_title: IP SSN
+  prompt: Show me IP SSN.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: ip_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - ip_case
+  - family
+  - contact
+- custom_report_id: 17
+  report_title: GC SSN
+  prompt: Show me GC SSN.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: gc_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - gc_case
+  - contact
+- custom_report_id: 18
+  report_title: calculator
+  prompt: Show me calculator.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: calculator_custom_response
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - calculator_custom_response
+  - agency
+- custom_report_id: 19
+  report_title: Case Calculator
+  prompt: Show me Case Calculator.
+  patterns:
+  - matching_queue_status
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: ip_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - ip_case
+  - matching_queue
+  - gc_case
+- custom_report_id: 20
+  report_title: GC Monitoring
+  prompt: Show me GC Monitoring.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: gc_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - gc_case
+  - lab
+  - contact
+- custom_report_id: 22
+  report_title: Sperm Donor Matches
+  prompt: Show me Sperm Donor Matches.
+  patterns:
+  - matching_queue_status
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: ip_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - ip_case
+  - matching_queue
+  - gc_case
+- custom_report_id: 23
+  report_title: GC Average Days in Screening Sample report
+  prompt: Show me GC Average Days in Screening Sample report.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: gc_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - gc_case
+- custom_report_id: 24
+  report_title: IP Average Days in Matching sample
+  prompt: Show me IP Average Days in Matching sample.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: ip_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - ip_case
+- custom_report_id: 25
+  report_title: Egg Donor Matches
+  prompt: Show me Egg Donor Matches.
+  patterns:
+  - matching_queue_status
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: ip_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - ip_case
+  - matching_queue
+  - gc_case
+- custom_report_id: 26
+  report_title: Test matchsheet mapping
+  prompt: Show me Test matchsheet mapping.
+  patterns:
+  - contact_directory
+  grain: one_row_per_case
+  anchor: contact
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - contact
+  - gc_case
+- custom_report_id: 27
+  report_title: ED Matchsheet Mapping
+  prompt: Show me ED Matchsheet Mapping.
+  patterns:
+  - contact_directory
+  grain: one_row_per_case
+  anchor: contact
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - contact
+  - gc_case
+- custom_report_id: 28
+  report_title: Status
+  prompt: Show me Status.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: gc_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - gc_case
+  - contact
+  - status
+- custom_report_id: 29
+  report_title: SD Profile Image
+  prompt: Show me SD Profile Image.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: sd_profile_image
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - sd_profile_image
+- custom_report_id: 30
+  report_title: Egg Donation Workflow (DEFAULT)
+  prompt: Show me Egg Donation Workflow (DEFAULT).
+  patterns:
+  - workflow_task_status
+  grain: one_row_per_case
+  anchor: template
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - template
+  - template_stage
+  - template_sub_stage
+  - template_task
+  - email_template
+  - form
+- custom_report_id: 31
+  report_title: GC/ED Case Notes
+  prompt: Show all notes on GC and egg donor cases including case file name, note text, created date, and admin who wrote
+    it.
+  patterns:
+  - case_notes_list
+  grain: one_row_per_case_note
+  anchor: gc_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - gc_case
+  - case_note
+  - admin
+- custom_report_id: 32
+  report_title: GC Profile Career
+  prompt: Show me GC Profile Career.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: gc_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - gc_case
+  - contact
+- custom_report_id: 33
+  report_title: Form ID
+  prompt: Show me Form ID.
+  patterns:
+  - contact_directory
+  grain: one_row_per_case
+  anchor: contact
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - contact
+  - user_form
+- custom_report_id: 37
+  report_title: Notification
+  prompt: Show me Notification.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: notification
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - notification
+- custom_report_id: 38
+  report_title: Test Report
+  prompt: Show me Test Report.
+  patterns:
+  - case_activity_event
+  grain: one_row_per_activity_event
+  anchor: activity_feed
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - activity_feed
+  - contact
+- custom_report_id: 39
+  report_title: Test Contacts
+  prompt: Show me Test Contacts.
+  patterns:
+  - contact_directory
+  grain: one_row_per_case
+  anchor: contact
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - contact
+- custom_report_id: 40
+  report_title: Logs
+  prompt: Show me Logs.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: case_log
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - case_log
+  - admin
+  - ip_case
+  - gc_case
+- custom_report_id: 41
+  report_title: Contact Note
+  prompt: Show me Contact Note.
+  patterns:
+  - contact_directory
+  grain: one_row_per_case
+  anchor: contact
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - contact
+  - contact_note
+- custom_report_id: 42
+  report_title: Case Notes - Testing January 2026
+  prompt: Show IP case notes with created date, pinned flag, and note body.
+  patterns:
+  - case_notes_list
+  grain: one_row_per_case_note
+  anchor: ip_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - ip_case
+  - case_note
+- custom_report_id: 44
+  report_title: Favorited EDS
+  prompt: Show me Favorited EDS.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: ip_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - ip_case
+  - favorites
+- custom_report_id: 45
+  report_title: No addresses
+  prompt: Show me No addresses.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: gc_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - gc_case
+  - contact
+- custom_report_id: 46
+  report_title: Test Preg
+  prompt: Show me Test Preg.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: gc_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - gc_case
+  - pregnancy
+- custom_report_id: 47
+  report_title: GC Case
+  prompt: Show me GC Case.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: gc_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - gc_case
+  - contact
+- custom_report_id: 48
+  report_title: gc workview
+  prompt: Show me gc workview.
+  patterns:
+  - workflow_task_status
+  grain: one_row_per_case
+  anchor: gc_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - gc_case
+  - contact
+  - template
+  - template_task
+- custom_report_id: 49
+  report_title: IP Intake Workview-ish
+  prompt: Show me IP Intake Workview-ish.
+  patterns:
+  - workflow_task_status
+  grain: one_row_per_case
+  anchor: ip_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - ip_case
+  - custom_sub_stage
+  - custom_task
+  - template_task
+- custom_report_id: 50
+  report_title: Admins that are "Active"
+  prompt: Show me Admins that are "Active".
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: admin
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - admin
+- custom_report_id: 51
+  report_title: '"NP User" lookup'
+  prompt: Show me "NP User" lookup.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: case_party
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - case_party
+  - user_np
+- custom_report_id: 52
+  report_title: GC Transfers
+  prompt: Show me GC Transfers.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: gc_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - gc_case
+  - transfer
+  - contact
+- custom_report_id: 53
+  report_title: Admin on GC Cases
+  prompt: Show me Admin on GC Cases.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: gc_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - gc_case
+  - case_party
+- custom_report_id: 54
+  report_title: Contact Statuses
+  prompt: Show me Contact Statuses.
+  patterns:
+  - contact_directory
+  grain: one_row_per_case
+  anchor: contact
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - contact
+  - status
+- custom_report_id: 55
+  report_title: Phone Numbers
+  prompt: Show me Phone Numbers.
+  patterns:
+  - contact_directory
+  grain: one_row_per_case
+  anchor: contact
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - contact
+- custom_report_id: 56
+  report_title: Admin Checklist
+  prompt: Show me a list of IPs who have the Admin Checklist form attached to their case and display the form answers.
+  patterns:
+  - form_answers_on_case
+  grain: one_row_per_case
+  anchor: ip_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - ip_case
+  - user_form
+  - user_form_answer
+  - family
+  - contact
+- custom_report_id: 57
+  report_title: Referral Source (from contact)
+  prompt: Show me Referral Source (from contact).
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: gc_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - gc_case
+  - contact
+- custom_report_id: 58
+  report_title: ED Profile Submitted
+  prompt: Show me when Egg Donor profiles were submitted and if they're approved, show that date as well.
+  patterns:
+  - case_activity_event
+  - ed_profile_submitted_approved_combo
+  grain: one_row_per_activity_event
+  anchor: gc_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - gc_case
+  - activity_feed
+  - status
+  - contact
+  notes: 'JMS custom_report #58 uses lower(activity_type) LIKE profile_submitted.'
+- custom_report_id: 59
+  report_title: Stage Updated
+  prompt: Show stage updates on GC cases — case file name, event date, and activity description.
+  patterns:
+  - case_activity_event
+  grain: one_row_per_activity_event
+  anchor: gc_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - gc_case
+  - activity_feed
+  date_semantic: stage_change
+  notes: 'JMS #59 filters stage_updated via LIKE — not full activity log.'
+- custom_report_id: 60
+  report_title: test gc
+  prompt: Show me test gc.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: gc_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - gc_case
+  - template
+  - custom_sub_stage
+  - template_sub_stage
+- custom_report_id: 63
+  report_title: IP Clinics
+  prompt: Show me IP Clinics.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: ip_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - ip_case
+  - family
+  - contact
+  - case_provider
+  - clinic
+- custom_report_id: 64
+  report_title: GC Cases Assigned Admin
+  prompt: Show me GC Cases Assigned Admin.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: gc_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - gc_case
+  - case_party
+- custom_report_id: 65
+  report_title: Archived GCs Unresponsive
+  prompt: Show me Archived GCs Unresponsive.
+  patterns:
+  - case_notes_list
+  grain: one_row_per_case
+  anchor: gc_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - gc_case
+  - case_note
+  - contact
+- custom_report_id: 66
+  report_title: Frozen Available
+  prompt: Show me Frozen Available.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: gc_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - gc_case
+  - contact
+  - ed_profile
+- custom_report_id: 67
+  report_title: I want to see new contacts from the last 30 days.
+  prompt: I want to see new contacts from the last 30 days.
+  patterns:
+  - contact_date_filter
+  grain: one_row_per_contact
+  anchor: contact
+  reference_sql_source: custom_report.report_query
+  assistant_saved: true
+  tables_in_sql:
+  - contact
+- custom_report_id: 68
+  report_title: Show me new contacts from the last week. Include their contact info and referral details.
+  prompt: Show me new contacts from the last week. Include their contact info and referral details.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: contact
+  reference_sql_source: custom_report.report_query
+  assistant_saved: true
+  tables_in_sql:
+  - contact
+- custom_report_id: 69
+  report_title: Show me new contacts from the last month.
+  prompt: Show me new contacts from the last month.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: contact
+  reference_sql_source: custom_report.report_query
+  assistant_saved: true
+  tables_in_sql:
+  - contact
+- custom_report_id: 70
+  report_title: Surrogates by GC case journey
+  prompt: Show me Surrogates by GC case journey.
+  patterns:
+  - matching_queue_status
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: gc_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: true
+  tables_in_sql:
+  - gc_case
+  - contact
+  - matching_queue
+- custom_report_id: 71
+  report_title: I want to see a list of all intended parents that shows their case name, first and last name, email, whether
+    their email is confirmed or not, and the date of th
+  prompt: List all intended parents with case name, name, email, email confirmation status, and last portal login.
+  patterns:
+  - journey_case_directory
+  - contact_directory
+  grain: one_row_per_contact
+  anchor: ip_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: true
+  tables_in_sql:
+  - ip_case
+  - family
+  - contact
+  - contact_lead
+  notes: 'Saved assistant report #71 uses contact_lead — bot should use user+user_type.'
+- custom_report_id: 73
+  report_title: EDs Confirmed Emails
+  prompt: Show me EDs Confirmed Emails.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: gc_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - gc_case
+  - contact
+  - user
+- custom_report_id: 74
+  report_title: GCs Confirmed Email
+  prompt: Show me GCs Confirmed Email.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: gc_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - gc_case
+  - contact
+  - user
+- custom_report_id: 75
+  report_title: Workflow Task Notifications
+  prompt: Show me Workflow Task Notifications.
+  patterns:
+  - workflow_task_status
+  grain: one_row_per_case
+  anchor: template
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - template
+  - template_task
+- custom_report_id: 76
+  report_title: IP Case Note (Embryo)
+  prompt: Show me IP Case Note (Embryo).
+  patterns:
+  - case_notes_list
+  grain: one_row_per_case
+  anchor: ip_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - ip_case
+  - case_note
+  - family
+  - contact
+- custom_report_id: 77
+  report_title: All IPs Contact Details + Admin
+  prompt: Give me a list of all IP families showing name, email, phone for each IP and the assigned admin on their case.
+  patterns:
+  - journey_case_directory
+  - contact_directory
+  grain: one_row_per_case
+  anchor: ip_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - ip_case
+  - family
+  - contact
+  - admin
+- custom_report_id: 78
+  report_title: GC Hellosigns Sent/Complete
+  prompt: Show me GC Hellosigns Sent/Complete.
+  patterns:
+  - workflow_task_status
+  grain: one_row_per_case
+  anchor: gc_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - gc_case
+  - contact
+  - custom_sub_stage
+  - custom_task
+  - hellosign
+  - template_task
+- custom_report_id: 79
+  report_title: Disqualification + Note
+  prompt: Show me Disqualification + Note.
+  patterns:
+  - contact_directory
+  grain: one_row_per_case
+  anchor: contact
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - contact
+  - contact_note
+- custom_report_id: 80
+  report_title: SD Calendar Events
+  prompt: Show me SD Calendar Events.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: gc_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - gc_case
+  - contact
+  - calendar_event
+- custom_report_id: 81
+  report_title: Third Party Logins
+  prompt: Show me Third Party Logins.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: third_party_user
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - third_party_user
+- custom_report_id: 82
+  report_title: 'SD Request Fee '
+  prompt: Show me SD Request Fee.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: gc_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - gc_case
+  - contact
+  - ed_profile
+- custom_report_id: 83
+  report_title: ED Name, cycle type, frozen egg count, comp, blood type
+  prompt: Show me ED Name, cycle type, frozen egg count, comp, blood type.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: gc_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - gc_case
+  - contact
+  - ed_profile
+  - template
+- custom_report_id: 84
+  report_title: Delivery Dates (SurroBabe Birthdays)
+  prompt: Show me Delivery Dates (SurroBabe Birthdays).
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: gc_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - gc_case
+  - delivery
+  - ip_case
+  - family
+- custom_report_id: 85
+  report_title: Case Notes
+  prompt: Show me Case Notes.
+  patterns:
+  - case_notes_list
+  grain: one_row_per_case
+  anchor: gc_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - gc_case
+  - contact
+  - case_note
+  - admin
+- custom_report_id: 86
+  report_title: GCs in Intake w/ Admin
+  prompt: Show me GCs in Intake w/ Admin.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: gc_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - gc_case
+  - contact
+  - admin
+  - status
+- custom_report_id: 87
+  report_title: Egg donor case journeys (unmatched)
+  prompt: Show me Egg donor case journeys (unmatched).
+  patterns:
+  - matching_queue_status
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: gc_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: true
+  tables_in_sql:
+  - gc_case
+  - contact
+  - matching_queue
+- custom_report_id: 88
+  report_title: Donor GC case journeys only (Donor GC Cases with Retrieval Added)
+  prompt: Show me Donor GC case journeys only (Donor GC Cases with Retrieval Added).
+  patterns:
+  - case_activity_event
+  grain: one_row_per_activity_event
+  anchor: gc_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: true
+  tables_in_sql:
+  - gc_case
+  - activity_feed
+  - contact
+- custom_report_id: 89
+  report_title: Donor Retrievals in June 2026
+  prompt: Show me Donor Retrievals in June 2026.
+  patterns:
+  - journey_case_directory
+  grain: one_row_per_case
+  anchor: gc_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - gc_case
+  - retrieval
+  - contact
+- custom_report_id: 91
+  report_title: Highly Motivated IPs
+  prompt: Show me Highly Motivated IPs.
+  patterns:
+  - workflow_task_status
+  grain: one_row_per_case
+  anchor: ip_case
+  reference_sql_source: custom_report.report_query
+  assistant_saved: false
+  tables_in_sql:
+  - ip_case
+  - status
+  - custom_sub_stage
+  - custom_task
+  - template_task

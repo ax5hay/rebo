@@ -57,6 +57,9 @@ async def main(cases: str, out: str) -> None:
                "escalated": sum(bool(c["usage"].get("escalated")) for c in res["cases"]),
                "median_seconds": sorted(c["seconds"] for c in res["cases"])[len(res["cases"]) // 2],
                "total_cost_usd": round(sum(costs), 4) if costs else None}
+    scored = [c["scores"]["ExecutionMatch"] for c in res["cases"] if "ExecutionMatch" in c["scores"]]
+    if scored:
+        summary["execution_match"] = f"{sum(bool(x) for x in scored)}/{len(scored)}"
     doc = {"run": time.strftime("%Y-%m-%d"), "model": app.settings.model, "escalate": app.settings.escalate_model,
            "database": "local synthetic copy of JMS staging (seed 7, cap 3000)", "summary": summary, "cases": res["cases"]}
     Path(out).write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
