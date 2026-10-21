@@ -141,13 +141,14 @@ do: When provenance is `new` and there are more than 2 assumptions, run the fast
 done when: offline tests cover both outcomes; with `llm`, demo gold before/after in a results file.
 result: 2026-10-21, `git log --grep B-013`; 115 passed. eval pending: needs llm (demo gold before/after).
 
-### [ ] B-014 · Draft real questions for the JMS gold reports
+### [x] B-014 · Draft real questions for the JMS gold reports
 needs: offline
 do: For each of the 67 `prompt_quality: title_only` rows in `fixtures/jms_staging/gold_custom_reports.jsonl`:
 1. Read its `gold_sql`, `title` and `headers`.
 2. Write the natural question a JMS admin would ask, into `draft_question` with `draft_by: agent`.
 3. Leave `question` unchanged. **Do not** mark the drafts as gold.
 done when: all 67 have `draft_question`; `tools/eval_run.py` gains `--use-drafts` to evaluate them, clearly labelled "draft questions, not PO-validated".
+result: 2026-10-21, `git log --grep B-014`; 67/67 drafted (22 with draft_note on SQL/title mismatches); --use-drafts added. eval pending: needs llm. B-015 (PO validation) can now start.
 
 ### [!] B-015 · Product owner validates the JMS gold questions
 needs: human
