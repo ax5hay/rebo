@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { call, get, when } from "../api";
 import { useToast } from "../shell";
 import { Md } from "../md";
+import { CodeEditor } from "../code";
 
 export default function ConfigPage() {
   const qc = useQueryClient();
@@ -22,7 +23,7 @@ export default function ConfigPage() {
         is never set here; ReBo learns it. Keys stay in the environment. Changes apply after a restart.</p>
       <div className="panel" style={{ padding: 16, marginTop: 16 }}>
         <div className="small muted" style={{ marginBottom: 8 }}>{cfg.data?.path}</div>
-        <textarea className="textarea code" rows={20} aria-label="Configuration file" value={yaml} onChange={(e) => { setYaml(e.target.value); setCheck(null); }} />
+        <CodeEditor lang="yaml" label="Configuration file" rows={20} value={yaml} onChange={(v) => { setYaml(v); setCheck(null); }} />
         <input className="input" style={{ marginTop: 10 }} aria-label="Why are you changing it" placeholder="Why are you changing it? Kept in the history." value={note} onChange={(e) => setNote(e.target.value)} />
         <div className="row" style={{ marginTop: 10 }}>
           <button className="btn" onClick={async () => { try { setCheck(await call("POST", "/admin/config/preview", { yaml })); } catch (e) { toast((e as Error).message); } }}><ShieldCheck />Check it</button>

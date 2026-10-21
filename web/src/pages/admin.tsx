@@ -2,6 +2,8 @@ import { Eye, FileDown, FileText, RefreshCcw } from "lucide-react";
 import { useState } from "react";
 import { call, get, getText } from "../api";
 import { useToast } from "../shell";
+import { CodeEditor } from "../code";
+import { Md } from "../md";
 
 export default function AdminPage() {
   const toast = useToast();
@@ -29,7 +31,7 @@ export default function AdminPage() {
             <span className="small muted">Set <code>status: verified</code> to share or <code>status: retired</code> to withdraw; new items need no id.</span></div>
         ) : (
           <>
-            <textarea className="textarea code" rows={16} aria-label="Knowledge file" value={yaml} onChange={(e) => { setYaml(e.target.value); setDiff(null); }} />
+            <CodeEditor lang="yaml" label="Knowledge file" value={yaml} onChange={(v) => { setYaml(v); setDiff(null); }} />
             <div className="row" style={{ marginTop: 10 }}>
               <button className="btn" onClick={async () => { try { setDiff(await call("POST", "/knowledge/import", { yaml, dry_run: true })); } catch (e) { toast((e as Error).message); } }}><Eye />Preview changes</button>
               <button className="btn primary" disabled={!diff || diff.errors.length > 0} onClick={async () => { try { toast((await call("POST", "/knowledge/import", { yaml })).message); setDiff(null); } catch (e) { toast((e as Error).message); } }}>Import</button>
@@ -38,7 +40,7 @@ export default function AdminPage() {
             </div>
             {diff && (
               <ul className="list" style={{ marginTop: 12, borderTop: "1px solid var(--border)" }}>
-                <li><div className="sub">{diff.message}</div><span /></li>
+                <li><Md className="sub">{diff.message}</Md><span /></li>
                 {diff.changes.map((c: any, i: number) => (
                   <li key={i}><div><div className="title">{c.title}</div>
                     {Object.entries(c.fields ?? {}).map(([k, [a, b]]: any) => <div className="sub" key={k}>{k}: <s>{String(a ?? "")}</s> → {String(b ?? "")}</div>)}</div>

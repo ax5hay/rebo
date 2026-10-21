@@ -6,6 +6,7 @@ import { call, get, when } from "../api";
 import { Sheet } from "../answer";
 import { useMe, useToast } from "../shell";
 import { Md } from "../md";
+import { CodeEditor, SqlCode } from "../code";
 
 const KIND: Record<string, string> = { example: "Saved report", term: "Meaning of a word", note: "Rule or fact", join: "How tables connect" };
 
@@ -56,7 +57,7 @@ export default function KnowledgePage() {
               <div className="title" style={{ marginTop: 6 }}>{i.title}</div>
               {i.question && <div className="sub">Asked as “{i.question}”</div>}
               {i.body && <Md className="sub">{i.body}</Md>}
-              {i.sql && <details className="query"><summary>Query</summary><pre className="code">{i.sql}</pre></details>}
+              {i.sql && <details className="query"><summary>Query</summary><SqlCode sql={i.sql} /></details>}
               <div className="sub small">Confirmed {i.confirmations}×, used {i.uses}×, reported wrong {i.rejections}×</div>
             </div>
             <div className="acts">
@@ -188,7 +189,7 @@ export function EditItem({ item, close }: { item: any | null; close: () => void 
       <div className="field"><label htmlFor="title">Name</label><input id="title" className="input" value={form.title} onChange={set("title")} /></div>
       {form.kind === "example" && <div className="field"><label htmlFor="question">The question it answers</label><input id="question" className="input" value={form.question} onChange={set("question")} /></div>}
       <div className="field"><label htmlFor="body">In plain words</label><textarea id="body" className="textarea" rows={3} value={form.body} onChange={set("body")} /></div>
-      <div className="field"><label htmlFor="sql">Query or condition (optional)</label><textarea id="sql" className="textarea code" rows={4} value={form.sql} onChange={set("sql")} /></div>
+      <div className="field"><label>Query or condition (optional)</label><CodeEditor lang="sql" label="Query or condition" rows={4} value={form.sql} onChange={(v) => setForm((f) => ({ ...f, sql: v }))} /></div>
       <div className="actions">
         <Button className="btn ghost" onPress={close}>Cancel</Button>
         <Button className="btn primary" isDisabled={!form.title.trim()} onPress={async () => {

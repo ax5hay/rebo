@@ -4,11 +4,13 @@ import { createRoot } from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router";
 import Shell from "./shell";
 import AskPage from "./pages/ask";
-import KnowledgePage from "./pages/knowledge";
-import ReviewPage from "./pages/review";
-import AdminPage from "./pages/admin";
-import ConfigPage from "./pages/config";
-const InsightsPage = lazy(() => import("./pages/insights"));  // charts: loaded only when opened
+// Everything but Ask is loaded when first opened (charts, editors, admin screens).
+const KnowledgePage = lazy(() => import("./pages/knowledge"));
+const ReviewPage = lazy(() => import("./pages/review"));
+const AdminPage = lazy(() => import("./pages/admin"));
+const ConfigPage = lazy(() => import("./pages/config"));
+const InsightsPage = lazy(() => import("./pages/insights"));
+const later = (page: React.ReactNode) => <Suspense fallback={<p className="empty">Loading…</p>}>{page}</Suspense>;
 import "./styles.css";
 
 const queries = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } } });
@@ -21,11 +23,11 @@ const router = createBrowserRouter(
       children: [
         { index: true, element: <AskPage /> },
         { path: "c/:conversationId", element: <AskPage /> },
-        { path: "knowledge", element: <KnowledgePage /> },
-        { path: "review", element: <ReviewPage /> },
-        { path: "admin", element: <AdminPage /> },
-        { path: "config", element: <ConfigPage /> },
-        { path: "insights", element: <Suspense fallback={<p className="empty">Loading…</p>}><InsightsPage /></Suspense> },
+        { path: "knowledge", element: later(<KnowledgePage />) },
+        { path: "review", element: later(<ReviewPage />) },
+        { path: "admin", element: later(<AdminPage />) },
+        { path: "config", element: later(<ConfigPage />) },
+        { path: "insights", element: later(<InsightsPage />) },
       ],
     },
   ],

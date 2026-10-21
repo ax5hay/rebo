@@ -327,3 +327,23 @@ details.query[open] > summary { margin-bottom: 6px; }
 @media (max-width: 900px) { .app::before { display: none; } }
 .kpis .value.warn { color: var(--warn); }
 @media (max-width: 600px) { .composer .foot span:last-child { display: none; } }
+
+/* ---------- code (code.tsx): CodeMirror editors and highlighted queries ---------- */
+.cm-host { border: 1px solid var(--border-strong); border-radius: var(--r-ctrl); background: var(--surface); overflow: hidden; }
+.cm-host:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.cm-host .cm-editor { max-height: 62vh; font: 400 12.5px/1.6 var(--mono); }
+.cm-host .cm-editor.cm-focused { outline: none; }
+.cm-host .cm-scroller { font-family: var(--mono); }
+.cm-host .cm-gutters { background: var(--subtle); color: var(--text-3); border-right: 1px solid var(--border); }
+.cm-host .cm-activeLine { background: color-mix(in srgb, var(--accent-soft) 45%, transparent); }
+.cm-host .cm-activeLineGutter { background: var(--accent-soft); color: var(--accent); }
+.cm-host .cm-content { caret-color: var(--accent); padding: 8px 0; }
+.cm-host .cm-cursor { border-left-color: var(--accent); }
+.cm-host .cm-selectionBackground, .cm-host .cm-focused .cm-selectionBackground { background: var(--marker-soft) !important; }
+.tok-keyword { color: var(--accent); font-weight: 600; }
+.tok-string, .tok-string2 { color: var(--warn); }
+.tok-number, .tok-bool, .tok-atom { color: var(--yours); }
+.tok-comment { color: var(--text-3); font-style: italic; }
+.tok-typeName, .tok-propertyName, .tok-definition { color: var(--yours); }
+.tok-operator, .tok-punctuation { color: var(--text-2); }
+.tok-meta { color: var(--text-3); }

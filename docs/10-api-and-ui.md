@@ -199,5 +199,13 @@ Streamdown 2.7 (Apache-2.0; built for token-by-token streaming, which ReBo does 
 Shiki/KaTeX/Mermaid weight) and markdown-to-jsx 9 (renders raw HTML unless configured). The model's
 context preview on Admin stays verbatim on purpose: it is what the model reads.
 
+Code surfaces (2026-10-21): the configuration and knowledge-file editors and the query field of
+"Teach" use CodeMirror 6 (MIT; @codemirror/view 6.43, lang-yaml 6.1, lang-sql 6.10) with line
+numbers, undo history and syntax colours from the theme tokens; every shown query is highlighted with
+the same Lezer SQL parser (`web/src/code.tsx`). Loaded on first use. Monaco was rejected (several MB,
+built for an IDE) and Shiki (grammar/WASM weight for read-only colour only). All pages but Ask are
+now loaded on first open (main bundle 913 → 697 kB). Toasts sit top-centre, over the empty middle of
+the title bar, so they never cover the composer or an answer's buttons.
+
 Tests: `npx playwright test` (Playwright 1.64, headless Chromium) against `tests/web_server.py`
 (shop DB, scripted model); CI runs them.

@@ -12,6 +12,7 @@ import {
 import { call, csvUrl, plural } from "./api";
 import { useMe, useToast } from "./shell";
 import { Md } from "./md";
+import { SqlCode } from "./code";
 
 export type Turn = { key: string; question: string; r: any };
 
@@ -154,7 +155,7 @@ export function Reading({ steps, assumptions, sql }: { steps?: string[]; assumpt
       )}
       <details className="query">
         <summary><Code2 size={14} />Show the query<ChevronRight size={14} /></summary>
-        <pre className="code">{sql}</pre>
+        <SqlCode sql={sql} />
       </details>
     </div>
   );

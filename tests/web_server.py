@@ -71,7 +71,7 @@ if __name__ == "__main__":
     ap.add_argument("--ui", action="store_true", help="also mount the NiceGUI pages (screenshots, B-043)")
     args = ap.parse_args()
     tmp = Path(tempfile.mkdtemp())
-    if args.ui:  # the owner's configuration page shows a throw-away copy of the example, not a real file
-        (tmp / "rebo.yaml").write_text((Path(__file__).parents[1] / "rebo.example.yaml").read_text())
-        os.environ["REBO_CONFIG"] = str(tmp / "rebo.yaml")
+    # the owner's configuration page shows (and saves to) a throw-away copy of the example, never rebo.yaml
+    (tmp / "rebo.yaml").write_text((Path(__file__).parents[1] / "rebo.example.yaml").read_text())
+    os.environ["REBO_CONFIG"] = str(tmp / "rebo.yaml")
     uvicorn.run(create_app(build(Path(tempfile.mkdtemp())), with_ui=args.ui), host="127.0.0.1", port=args.port)

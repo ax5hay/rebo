@@ -6,6 +6,7 @@ import { call, get, when } from "../api";
 import { useToast } from "../shell";
 import { EditItem } from "./knowledge";
 import { Md } from "../md";
+import { SqlCode } from "../code";
 
 export default function ReviewPage() {
   const qc = useQueryClient();
@@ -49,7 +50,7 @@ export default function ReviewPage() {
               <div className="title" style={{ marginTop: 6 }}>{i.title}</div>
               {i.question && <div className="sub">Asked as “{i.question}”</div>}
               {i.body && <Md className="sub">{i.body}</Md>}
-              {i.sql && <details className="query"><summary>Query</summary><pre className="code">{i.sql}</pre></details>}
+              {i.sql && <details className="query"><summary>Query</summary><SqlCode sql={i.sql} /></details>}
             </div>
             <div className="acts">
               <button className="btn" onClick={() => act(() => call("POST", `/knowledge/${i.id}/promote`, { scope: "org" }))}>Share with everyone</button>

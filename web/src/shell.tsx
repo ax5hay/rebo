@@ -68,7 +68,7 @@ export default function Shell() {
           </div>
         </div>
         {palette && m && <Palette me={m} close={() => setPalette(false)} />}
-        <Toaster position="bottom-right" toastOptions={{ style: { fontFamily: "var(--font)", borderRadius: 10 } }} />
+        <Toaster position="top-center" offset={10} toastOptions={{ style: { fontFamily: "var(--font)", borderRadius: 10 } }} />
       </PaletteContext.Provider>
     </MeContext.Provider>
   );
