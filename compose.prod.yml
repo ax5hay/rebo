@@ -1,0 +1,71 @@
+# Production stack (B-033): the bot behind oauth2-proxy, Postgres for its memory, Phoenix for traces.
+#   1. cp .env.example .env and fill in: an LLM key, REPORTSBOT_DATABASE_URL (read-only user on the
+#      database to report on), OAUTH2_PROXY_* (your identity provider, see oauth2-proxy docs),
+#      STATE_DB_PASSWORD.
+#   2. docker compose -f compose.prod.yml up -d          -> http://localhost:4180 (login first)
+#   Optional local embeddings server:  --profile tei  and  REPORTSBOT_EMBEDDINGS=http://tei:80
+# Only the proxy is published. Phoenix (traces) is bound to localhost:6006.
+services:
+  bot:
+    build: .
+    env_file: ${REPORTSBOT_ENV_FILE:-.env}
+    environment:
+      REPORTSBOT_STATE_URL: postgresql://reportsbot:${STATE_DB_PASSWORD:-change-me}@state-db:5432/reportsbot
+      REPORTSBOT_STATE_DIR: /data
+      REPORTSBOT_AUTH_MODE: headers          # identity comes from oauth2-proxy (X-Forwarded-User / -Email)
+    expose: ["8080"]
+    volumes: ["botdata:/data"]
+    depends_on:
+      state-db: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/api/health', timeout=3)"]
+      interval: 10s
+      retries: 30
+    restart: unless-stopped
+
+  state-db:
+    image: postgres:18.6
+    environment:
+      POSTGRES_USER: reportsbot
+      POSTGRES_PASSWORD: ${STATE_DB_PASSWORD:-change-me}
+      POSTGRES_DB: reportsbot
+    volumes: ["statedata:/var/lib/postgresql"]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "reportsbot"]
+      interval: 5s
+      retries: 30
+    restart: unless-stopped
+
+  auth:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.5
+    env_file: ${REPORTSBOT_ENV_FILE:-.env}   # OAUTH2_PROXY_PROVIDER, _CLIENT_ID, _CLIENT_SECRET, _COOKIE_SECRET, ...
+    environment:
+      OAUTH2_PROXY_HTTP_ADDRESS: 0.0.0.0:4180
+      OAUTH2_PROXY_UPSTREAMS: http://bot:8080/
+      OAUTH2_PROXY_PASS_USER_HEADERS: "true"
+      OAUTH2_PROXY_REVERSE_PROXY: "true"
+    ports: ["4180:4180"]
+    depends_on:
+      bot: {condition: service_healthy}
+    restart: unless-stopped
+
+  phoenix:
+    image: arizephoenix/phoenix:version-20.23.0
+    ports: ["127.0.0.1:6006:6006"]
+    volumes: ["phoenixdata:/mnt/data"]
+    environment:
+      PHOENIX_WORKING_DIR: /mnt/data
+    restart: unless-stopped
+
+  tei:
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.9   # amd64 image
+    profiles: ["tei"]
+    command: ["--model-id", "Snowflake/snowflake-arctic-embed-s"]
+    volumes: ["teidata:/data"]
+    restart: unless-stopped
+
+volumes:
+  botdata:
+  statedata:
+  phoenixdata:
+  teidata:

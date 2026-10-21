@@ -63,3 +63,16 @@ def test_example_config_stays_small():
     from reportsbot.settings import flatten_yaml
     text = (Path(__file__).resolve().parents[1] / "reportsbot.example.yaml").read_text(encoding="utf-8")
     assert len(flatten_yaml(text)) <= 20
+
+
+def test_identity_from_the_login_proxy_headers(app):
+    from fastapi.testclient import TestClient
+
+    from reportsbot.api import create_app
+    client = TestClient(create_app(app, with_ui=False))
+    assert client.get("/api/defaults", headers={"X-Forwarded-Email": "ann@example.com"}).status_code == 200
+    app.set_default(__import__("reportsbot.knowledge", fromlist=["User"]).User("ann@example.com"), "period", "2026")
+    mine = client.get("/api/defaults", headers={"X-Forwarded-Email": "ann@example.com",
+                                                "X-Forwarded-User": "ann"}).json()
+    assert mine and mine[0]["value"] == "2026"
+    assert client.get("/api/defaults").status_code == 401                     # no identity at all

@@ -77,8 +77,20 @@ needs AWS access and the VPN (doc 12 §1).
 
 ## 5. Deployment
 
-- `Dockerfile` (python:3.13-slim + uv, `--extra embed`), `docker compose --profile bot up`. State
-  goes in the `botstate` volume.
+- `Dockerfile` (python:3.13-slim + uv 0.13, `--extra embed --extra postgres`). Local trial:
+  `docker compose --profile bot up` (state in the `botstate` volume).
+- **Production stack: `compose.prod.yml`** (B-033). Services: `bot` (not published), `state-db`
+  (postgres:18.6, the bot's memory via `state_url`), `auth` (oauth2-proxy v7.15.5, the only
+  published port, 4180), `phoenix` (arizephoenix/phoenix 20.23.0 on 127.0.0.1:6006; traces are wired
+  in B-035), and `tei` under `--profile tei` (amd64 image). Health checks on bot, Postgres and the
+  proxy; named volumes for each. Fill `.env` (LLM key, `REPORTSBOT_DATABASE_URL`, `OAUTH2_PROXY_*`,
+  `STATE_DB_PASSWORD`; `REPORTSBOT_ENV_FILE` points elsewhere), then
+  `docker compose -f compose.prod.yml up -d`. Behind the proxy the bot takes the user from
+  `X-Forwarded-Email` / `X-Forwarded-User` when `X-User-Id` is absent (everyone is a `user` until
+  B-036 maps groups to roles). Verified on 2026-10-21 (arm64, Docker Desktop) with throw-away
+  OAuth values: `config` valid, all four services healthy, the proxy answers 403 without a login,
+  the bot is unreachable from the host, the state DB is at Alembic 0004, Phoenix answers on 6006.
+  A real sign-in was not tested (needs an identity provider).
 - **One bot process per target database.** For JMS's per-agency databases, run one instance per
   agency (or per agency DB URL), each with its own `state.db`. Knowledge is then naturally
   tenant-isolated: one agency's teaching can never reach another.
