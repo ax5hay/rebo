@@ -48,7 +48,7 @@ result: 2026-10-21, `git log --grep B-004`; also documents the B-002 pre-commit 
 
 ## Phase P1: accuracy, fewest turns, cost (product core)
 
-### [ ] B-005 · Grain check (fan-out warning)
+### [x] B-005 · Grain check (fan-out warning)
 needs: offline
 why: Haiku returned one row per sub-stage instead of one per case (doc 20 §5). The validator can't see it, because the SQL runs.
 do: In `agent.validate`, after a successful run:
@@ -58,6 +58,7 @@ do: In `agent.validate`, after a successful run:
 done when:
 - Offline tests (FunctionModel/MockTransport as in `tests/test_llm.py`): a fan-out report triggers exactly one retry, and a deliberate one-row-per-child report passes on the second attempt.
 - doc 04 §7 updated.
+result: 2026-10-21, `git log --grep B-005`; 94 passed. eval pending: needs llm (re-run the Haiku cascade set to see the fan-out case fixed).
 
 ### [ ] B-006 · Deterministic ask-gate
 needs: offline
