@@ -34,16 +34,52 @@ class ReasonIn(BaseModel):
     reason: str = ""
 
 
-def current_user(x_user_id: str = Header(...), x_user_role: str = Header("member"),
-                 x_user_team: str | None = Header(None)) -> User:
-    """Identity comes from the host app's gateway. Never expose this API without one."""
+def user_from_headers(x_user_id: str = Header(...), x_user_role: str = Header("member"),
+                      x_user_team: str | None = Header(None)) -> User:
+    """auth.mode=headers: identity comes from the host app's gateway. Never expose without one."""
     if x_user_role not in ("member", "curator"):
         raise HTTPException(400, "X-User-Role must be member or curator")
     return User(id=x_user_id, role=x_user_role, team=x_user_team)  # type: ignore[arg-type]
 
 
+def decode_jwt(token: str, settings) -> dict:
+    """HS256 bearer token signed by the host with REPORTSBOT_JWT_SECRET and issued by auth.issuer."""
+    import jwt
+
+    if not settings.jwt_secret:
+        raise HTTPException(500, "REPORTSBOT_JWT_SECRET is not set")
+    try:
+        claims = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"], options={"verify_aud": False})
+    except jwt.PyJWTError as e:
+        raise HTTPException(401, f"Invalid token: {e}") from e
+    if claims.get("iss") != settings.jwt_issuer:
+        raise HTTPException(401, "Invalid token issuer")
+    return claims
+
+
+def user_from_claims(claims: dict) -> User:
+    """Claim names: user id = sub | user_id; role = role (member|curator); team = team | tenant_id."""
+    uid = claims.get("sub") or claims.get("user_id")
+    if uid in (None, ""):
+        raise HTTPException(401, "Token has no user id (sub or user_id)")
+    role = "curator" if str(claims.get("role", "")).lower() == "curator" else "member"
+    team = claims.get("team") or claims.get("tenant_id")
+    return User(id=str(uid), role=role, team=str(team) if team is not None else None)
+
+
+def auth_dependency(app: App):
+    if app.settings.auth_mode == "jwt":
+        def user_from_jwt(authorization: str = Header(...)) -> User:
+            if not authorization.startswith("Bearer "):
+                raise HTTPException(401, "Missing Bearer token")
+            return user_from_claims(decode_jwt(authorization.removeprefix("Bearer ").strip(), app.settings))
+        return user_from_jwt
+    return user_from_headers
+
+
 def router(app: App) -> APIRouter:
     r = APIRouter(prefix="/api")
+    current_user = auth_dependency(app)
 
     def guard_errors(fn):
         try:
@@ -111,6 +147,9 @@ def router(app: App) -> APIRouter:
 def create_app(app: App, *, with_ui: bool = True) -> FastAPI:
     api = FastAPI(title="reportsbot")
     api.include_router(router(app))
+    for name in app.settings.adapters:  # optional host contracts (src/reportsbot/adapters/<name>.py)
+        import importlib
+        api.include_router(importlib.import_module(f".adapters.{name}", __package__).router(app))
     if with_ui:
         from .ui import mount_ui
         mount_ui(api, app)

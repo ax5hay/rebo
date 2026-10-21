@@ -31,6 +31,8 @@ auth:
   mode: headers                            # headers (X-User-* from a trusted gateway) | jwt
   issuer: orchid                           # expected "iss" claim when mode is jwt
 
+adapters: []                               # host contracts to expose, e.g. [jms] (needs auth.mode jwt)
+
 # Secrets (environment variables only):
 #   OPENROUTER_API_KEY   for openrouter:   (REPORTSBOT_OPENROUTER_API_KEY also accepted)
 #   ANTHROPIC_API_KEY    for anthropic:

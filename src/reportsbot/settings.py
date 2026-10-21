@@ -33,6 +33,7 @@ _YAML_KEYS = {
     ("embeddings",): "embeddings",
     ("auth", "mode"): "auth_mode",
     ("auth", "issuer"): "jwt_issuer",
+    ("adapters",): "adapters",
 }
 
 
@@ -95,6 +96,8 @@ class Settings(BaseSettings):
     # 6. Identity: "headers" (X-User-* from a trusted gateway) or "jwt" (HS256 bearer, e.g. JMS).
     auth_mode: str = "headers"
     jwt_issuer: str = "orchid"
+    # 7. Optional host adapters, e.g. ["jms"] for the JMS chat contract (src/reportsbot/adapters/).
+    adapters: list[str] = Field(default_factory=list)
 
     # Secrets: environment only, never in the YAML file.
     openrouter_api_key: str = ""
