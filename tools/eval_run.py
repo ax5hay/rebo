@@ -2,6 +2,10 @@
 token usage, escalations, estimated cost). Model choice comes from reportsbot.yaml / REPORTSBOT_* env.
 
     uv run python tools/eval_run.py fixtures/jms_staging/eval.jsonl fixtures/jms_staging/eval_results_<name>.json [limit]
+    uv run python tools/eval_run.py fixtures/jms_staging/gold_custom_reports.jsonl <out.json> --use-drafts
+
+--use-drafts asks each case's `draft_question` (agent-written, B-014) and labels the results file as
+draft questions, not PO-validated: not an accuracy result.
 """
 from __future__ import annotations
 
@@ -11,18 +15,18 @@ import sys
 import time
 from pathlib import Path
 
-from reportsbot.evals import cost, run_eval
+from reportsbot.evals import DRAFT_LABEL, cost, load_cases, run_eval
 from reportsbot.service import App
 
 
-async def main(cases: str, out: str, limit: int = 0) -> None:
+async def main(cases: str, out: str, limit: int = 0, use_drafts: bool = False) -> None:
     app = App()
     started = time.time()
-    res = await run_eval(app, cases, limit=limit)
+    res = await run_eval(app, cases, limit=limit, use_drafts=use_drafts)
     turns = app.store.all("SELECT question, kind, payload, usage FROM turn WHERE owner='eval' AND created_at >= ?",
                           (started,))
     by_q = {t["question"]: t for t in turns}
-    qs = {json.loads(l)["id"]: json.loads(l)["question"] for l in Path(cases).read_text(encoding="utf-8").splitlines() if l.strip()}
+    qs = {c["id"]: c["question"] for c in load_cases(cases, use_drafts=use_drafts)}
     for c in res["cases"]:
         t = by_q.get(qs[c["id"]]) or {}
         p = json.loads(t.get("payload") or "{}")
@@ -44,11 +48,14 @@ async def main(cases: str, out: str, limit: int = 0) -> None:
     scored = [c["scores"]["ExecutionMatch"] for c in res["cases"] if "ExecutionMatch" in c["scores"]]
     if scored:
         summary["execution_match"] = f"{sum(bool(x) for x in scored)}/{len(scored)}"
-    doc = {"run": time.strftime("%Y-%m-%d"), "model": app.settings.model, "escalate": app.settings.escalate_model,
+    doc = {"run": time.strftime("%Y-%m-%d"), "questions": DRAFT_LABEL if use_drafts else "as in the cases file",
+           "model": app.settings.model, "escalate": app.settings.escalate_model,
            "database": app.target.engine.url.render_as_string(hide_password=True), "summary": summary, "cases": res["cases"]}
     Path(out).write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
     print(json.dumps(summary))
 
 
 if __name__ == "__main__":
-    asyncio.run(main(sys.argv[1], sys.argv[2], int(sys.argv[3]) if len(sys.argv) > 3 else 0))
+    drafts = "--use-drafts" in sys.argv
+    args = [a for a in sys.argv[1:] if a != "--use-drafts"]
+    asyncio.run(main(args[0], args[1], int(args[2]) if len(args) > 2 else 0, use_drafts=drafts))

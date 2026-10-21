@@ -52,3 +52,15 @@ async def test_conversation_eval_counts_turns_to_the_first_correct_report(app, t
     assert by["never"]["turns"][1]["skipped"]
     summary = {k: v for k, v in res["summary"].items() if k != "total_cost_usd"}  # priced from the default model name
     assert summary == {"conversations": 3, "solved": 2, "mean_turns_to_first_correct": 2.0, "clarify_rate": 0.2}
+
+
+def test_use_drafts_asks_only_drafted_cases_with_the_draft(tmp_path):
+    import json
+
+    from reportsbot.evals import load_cases
+    path = tmp_path / "gold.jsonl"
+    path.write_text("\n".join(json.dumps(c) for c in [
+        {"id": "a", "question": "Show me A.", "draft_question": "Which a's are open?", "gold_sql": "SELECT 1"},
+        {"id": "b", "question": "Real question?", "gold_sql": "SELECT 1"}]), encoding="utf-8")
+    assert [c["question"] for c in load_cases(str(path))] == ["Show me A.", "Real question?"]
+    assert [(c["id"], c["question"]) for c in load_cases(str(path), use_drafts=True)] == [("a", "Which a's are open?")]

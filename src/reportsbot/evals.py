@@ -118,8 +118,21 @@ class ExecutionMatch(Evaluator):
         return columns_match(ref.rows, ctx.output["rows"], ref.columns)
 
 
-async def run_eval(app: App, path: str, *, limit: int = 0, user: str = "eval") -> dict[str, Any]:
+DRAFT_LABEL = "draft questions (agent-written, not PO-validated)"
+
+
+def load_cases(path: str, *, use_drafts: bool = False) -> list[dict[str, Any]]:
+    """Eval cases from JSONL. use_drafts: only rows with a `draft_question`, asked with it instead of
+    `question` (B-014). Results from drafts are not accuracy results until a PO validates them."""
     lines = [json.loads(l) for l in Path(path).read_text(encoding="utf-8").splitlines() if l.strip()]
+    if use_drafts:
+        lines = [{**c, "question": c["draft_question"]} for c in lines if c.get("draft_question")]
+    return lines
+
+
+async def run_eval(app: App, path: str, *, limit: int = 0, user: str = "eval",
+                   use_drafts: bool = False) -> dict[str, Any]:
+    lines = load_cases(path, use_drafts=use_drafts)
     if limit:
         lines = lines[:limit]
     cases = [Case(name=c["id"], inputs=c["question"], expected_output=c.get("gold_sql"),
