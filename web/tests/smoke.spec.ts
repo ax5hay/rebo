@@ -52,6 +52,21 @@ test("a grouped answer can be shown as a chart and back as a table", async ({ pa
   await expect(card.locator("tbody tr")).toHaveCount(9);
 });
 
+test("a value filter is switched from the Read as strip, without a model", async ({ page }) => {
+  await page.goto(`/app/?user=sam-${test.info().project.name}`);
+  await ask(page, "customers on hold, i.e. paused");
+  const card = page.getByTestId("report").first();
+  await card.getByRole("button", { name: /status: paused/ }).click();
+  await page.getByRole("radio", { name: "All except these" }).click();
+  await page.locator(".dist button", { hasText: "paused" }).click();   // unpick paused
+  await page.locator(".dist button", { hasText: "closed" }).click();
+  await page.getByRole("button", { name: "Run with this" }).click();
+  const second = page.getByTestId("report").nth(1);
+  await expect(second.locator("tbody tr")).toHaveCount(30);
+  await expect(second.getByRole("button", { name: /status: not closed/ })).toBeVisible();
+  await expect(second).toContainText("No model was asked");
+});
+
 test("every page opens without script errors, and the glass bar is there", async ({ page }) => {
   const errors: string[] = [];
   // WebKit reports requests cancelled by leaving a page as errors "... due to access control checks"

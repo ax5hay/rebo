@@ -2,12 +2,12 @@
 // one line of facts (rows, time, choices made, things to check), the data with its tools, then how the
 // question was read and what the query does, each foldable.
 import {
-  BarChart3, Check, ChevronRight, CircleCheck, Code2, Copy, Download, ExternalLink, Flag, MoreHorizontal, MousePointerClick, Pencil, Pin,
-  RotateCcw, Search, Table as TableIcon, Timer, TriangleAlert, Undo2, X, type LucideIcon,
+  BarChart3, Check, ChevronDown, ChevronRight, CircleCheck, Code2, Copy, Download, ExternalLink, Flag, MoreHorizontal, MousePointerClick, Pencil, Pin,
+  RotateCcw, Search, SlidersHorizontal, Table as TableIcon, Timer, TriangleAlert, Undo2, X, type LucideIcon,
 } from "lucide-react";
 import { lazy, Suspense, useMemo, useState } from "react";
 import {
-  Button, Cell, Column, Dialog, Heading, Menu, MenuItem, MenuTrigger, Modal, ModalOverlay, Popover, Row, Separator,
+  Button, Cell, Column, Dialog, DialogTrigger, Heading, Menu, MenuItem, MenuTrigger, Modal, ModalOverlay, Popover, Row, Separator,
   Table, TableBody, TableHeader, ToggleButton, ToggleButtonGroup, type SortDescriptor,
 } from "react-aria-components";
 import { call, csvUrl, plural } from "./api";
@@ -27,19 +27,26 @@ const ROUTE_NOTE: Record<string, string> = {
   reuse: "Adapted from a saved report.",
   rerun: "Run again on today's data.",
   drill: "The records behind a number.",
+  refine: "Your switch, run on today's data. No model was asked.",
 };
 const PILL: Record<string, string> = { verified: "Verified", yours: "Your report", adapted: "From saved knowledge", new: "New" };
 
-export function TurnView({ t, ask, onTurn, onFix, initial }: {
-  t: Turn; ask: (q: string) => void; onTurn: (question: string, r: any) => void; onFix: (turnId: string) => void; initial: string;
+export function Question({ n, text }: { n: number; text: string }) {
+  return (
+    <div className="ask">
+      <span className="node" aria-hidden>{n}</span>
+      <h2 className="text">{text}</h2>
+    </div>
+  );
+}
+
+export function TurnView({ t, n, ask, onTurn, onFix }: {
+  t: Turn; n: number; ask: (q: string) => void; onTurn: (question: string, r: any) => void; onFix: (turnId: string) => void;
 }) {
   const r = t.r;
   return (
-    <article aria-label={t.question}>
-      <div className="ask" style={{ marginBottom: 12 }}>
-        <span className="avatar" aria-hidden>{initial}</span>
-        <div className="text">{t.question}</div>
-      </div>
+    <article aria-label={t.question} className="turn">
+      <Question n={n} text={t.question} />
       {r.kind === "report" && <Report r={r} ask={ask} onTurn={onTurn} onFix={onFix} />}
       {r.kind === "clarify" && <Clarify r={r} ask={ask} />}
       {r.kind === "answer" && (
@@ -93,6 +100,9 @@ function Report({ r, ask, onTurn, onFix }: { r: any; ask: (q: string) => void; o
     catch { toast("Copying is blocked in this browser. Use Download CSV."); }
   };
   const checks = (r.assumptions ?? []).filter((a: string) => a.startsWith("Check:")).length;
+  // one row of one to four numbers (a total, a count, an average): shown as figures, not a 1-row table
+  const kpi = r.rows.length === 1 && r.columns.length <= 4 && r.rows[0].some((v: any) => typeof v === "number")
+    && r.rows[0].every((v: any, i: number) => typeof v === "number" || v === null || r.columns.length > 1 && i === 0);
 
   return (
     <section className="panel answer" data-testid="report">
@@ -136,6 +146,17 @@ function Report({ r, ask, onTurn, onFix }: { r: any; ask: (q: string) => void; o
         {checks > 0 && <li className="warn"><b>{checks}</b> to check</li>}
         {r.route && ROUTE_NOTE[r.route] && <li className="route">{ROUTE_NOTE[r.route]}</li>}
       </ul>
+      {r.filters?.length > 0 && (
+        <div className="readstrip" aria-label="Read as">
+          <span className="lead"><SlidersHorizontal />Read as</span>
+          {r.filters.map((f: any) => <FilterToken key={f.index} f={f} onPick={async (values, negated) => {
+            const res = await act(() => call("POST", `/turns/${r.turn_id}/refine`, { index: f.index, values, negated }));
+            if (res?.kind) onTurn(`${r.title}, ${f.column.replaceAll("_", " ")} ${negated ? "not " : ""}${values.join(" or ")}`, res);
+          }} />)}
+          <span className="hint">Not what you meant? Switch a value. No model is asked.</span>
+        </div>
+      )}
+      {kpi ? <Figures columns={r.columns} row={r.rows[0]} /> : (<>
       <div className="tabletools">
         {chartable && (
           <ToggleButtonGroup aria-label="Show as" selectionMode="single" disallowEmptySelection selectedKeys={[view]} className="segmented small"
@@ -157,9 +178,10 @@ function Report({ r, ask, onTurn, onFix }: { r: any; ask: (q: string) => void; o
                    const res = await act(() => call("POST", `/turns/${r.turn_id}/drill`, { row: i }));
                    if (res?.kind) onTurn(`The records behind row ${i + 1} of “${r.title}”`, res);
                  } : undefined} />}
+      </>)}
       <div className="table-foot">
         <span><Md inline>{r.provenance?.text}</Md></span>
-        {grouped && view === "table" && <span><MousePointerClick size={13} />Select a row to see the records behind it</span>}
+        {grouped && view === "table" && !kpi && <span><MousePointerClick size={13} />Select a row to see the records behind it</span>}
       </div>
       <Reading steps={r.steps} assumptions={r.assumptions} sql={r.sql} />
       {r.follow_ups?.length > 0 && (
@@ -172,6 +194,71 @@ function Report({ r, ask, onTurn, onFix }: { r: any; ask: (q: string) => void; o
       {dialog === "fix" && <RequestFix turnId={r.turn_id} close={() => setDialog(null)} />}
       {dialog === "schedule" && <Schedule turnId={r.turn_id} close={() => setDialog(null)} />}
     </section>
+  );
+}
+
+// A filter on stored values, as a switch: the column's values with how many rows hold each, "only these"
+// or "all except these", and one button that runs the report again with the new choice (no model).
+function FilterToken({ f, onPick }: { f: any; onPick: (values: string[], negated: boolean) => Promise<void> }) {
+  const [picked, setPicked] = useState<string[]>(f.values);
+  const [negated, setNegated] = useState<boolean>(f.negated);
+  const [busy, setBusy] = useState(false);
+  const max = Math.max(...f.options.map((o: any) => o.count), 1);
+  const label = f.column.replaceAll("_", " ");
+  const said = (f.negated ? "not " : "") + f.values.join(", ");
+  const same = negated === f.negated && picked.length === f.values.length && picked.every((v) => f.values.includes(v));
+  const toggle = (v: string) => setPicked((p) => (p.includes(v) ? p.filter((x) => x !== v) : [...p, v]));
+  return (
+    <DialogTrigger>
+      <Button className="token" aria-label={`${label}: ${said}. Change`}><span className="k">{label}</span><span className="v">{said}</span><ChevronDown /></Button>
+      <Popover placement="bottom start" offset={8} className="tokenpop">
+        <Dialog aria-label={`Change ${label}`}>
+          {({ close }) => (
+            <>
+              <ToggleButtonGroup aria-label="Keep" selectionMode="single" disallowEmptySelection className="segmented small"
+                                 selectedKeys={[negated ? "except" : "only"]} onSelectionChange={(k) => setNegated([...k][0] === "except")}>
+                <ToggleButton id="only">Only these</ToggleButton><ToggleButton id="except">All except these</ToggleButton>
+              </ToggleButtonGroup>
+              <ul className="dist" aria-label={`Values of ${label}`}>
+                {f.options.map((o: any) => {
+                  const on = picked.includes(o.value);
+                  return (
+                    <li key={o.value}>
+                      <button type="button" aria-pressed={on} className={on ? (negated ? "on out" : "on") : ""} onClick={() => toggle(o.value)}>
+                        <span className="box">{on && (negated ? <X /> : <Check />)}</span>
+                        <span className="name">{o.value}</span>
+                        <span className="dbar" style={{ ["--w" as any]: `${(o.count / max) * 100}%` }} />
+                        <span className="n">{o.count.toLocaleString()}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+              <div className="row end">
+                <span className="small muted grow">Counts are rows in the whole table.</span>
+                <button className="btn primary small" disabled={busy || same || picked.length === 0}
+                        onClick={async () => { setBusy(true); await onPick(picked, negated); setBusy(false); close(); }}>
+                  {busy ? "Running…" : "Run with this"}
+                </button>
+              </div>
+            </>
+          )}
+        </Dialog>
+      </Popover>
+    </DialogTrigger>
+  );
+}
+
+function Figures({ columns, row }: { columns: string[]; row: any[] }) {
+  const cells = columns.map((c, i) => ({ c, v: row[i] })).filter((x) => typeof x.v === "number" || x.v === null);
+  const lead = columns.length > cells.length ? String(row[0]) : null;
+  return (
+    <div className="figures">
+      {lead && <p className="figlead">{lead}</p>}
+      <dl>{cells.map(({ c, v }) => (
+        <div key={c}><dt>{c.replaceAll("_", " ")}</dt><dd>{v === null ? "none" : ID_COLUMN.test(c) ? String(v) : v.toLocaleString(undefined, { maximumFractionDigits: 2 })}</dd></div>
+      ))}</dl>
+    </div>
   );
 }
 

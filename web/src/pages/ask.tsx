@@ -1,9 +1,9 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, ArrowUp, CircleHelp, History, Pin, Sparkle } from "lucide-react";
+import { ArrowRight, ArrowUp, Check, CircleHelp, History, Pin, Sparkle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { askStream, call, get, when, type Step } from "../api";
-import { TurnView, type Turn } from "../answer";
+import { Question, TurnView, type Turn } from "../answer";
 import { Glass } from "../glass";
 import { useMe } from "../shell";
 
@@ -19,6 +19,7 @@ export default function AskPage() {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
+  const [trail, setTrail] = useState<string[]>([]);
   const [fixing, setFixing] = useState<string | null>(null);
   const end = useRef<HTMLDivElement>(null);
   const box = useRef<HTMLTextAreaElement>(null);
@@ -52,8 +53,13 @@ export default function AskPage() {
     setText("");
     setTurns((t) => [...t, { key: `pending-${Date.now()}`, question, r: { kind: "pending" } }]);
     setBusy("Reading your question…");
+    setTrail(["Reading your question"]);
     try {
-      const r = await askStream(sent, thread, (s: Step) => setBusy(String(s.say ?? "Working…")));
+      const r = await askStream(sent, thread, (s: Step) => {
+        const say = String(s.say ?? "Working…").replace(/…$/, "");
+        setBusy(say);
+        setTrail((t) => (t[t.length - 1] === say ? t : [...t, say].slice(-6)));
+      });
       setTurns((t) => [...t.filter((x) => x.r.kind !== "pending"), { key: r.turn_id, question, r }]);
       if (!conversationId) navigate(`/c/${thread}`, { replace: true });
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
@@ -65,19 +71,18 @@ export default function AskPage() {
   }
 
   const add = (question: string, r: any) => setTurns((t) => [...t, { key: r.turn_id, question, r }]);
-  const initial = (me?.id ?? "?").slice(0, 1);
   const empty = turns.length === 0 && !busy && !conversationId;
 
   return (
     <>
       {empty ? <Start ask={ask} name={me?.id ?? ""} /> : (
         <div className="thread">
-          {turns.map((t) => t.r.kind === "pending" ? (
-            <div key={t.key}>
-              <div className="ask" style={{ marginBottom: 12 }}><span className="avatar" aria-hidden>{initial}</span><div className="text">{t.question}</div></div>
-              <div className="working" role="status"><span className="spinner" aria-hidden />{busy}</div>
+          {turns.map((t, i) => t.r.kind === "pending" ? (
+            <div key={t.key} className="turn">
+              <Question n={i + 1} text={t.question} />
+              <Trail steps={trail} />
             </div>
-          ) : <TurnView key={t.key} t={t} ask={ask} onTurn={add} onFix={(id) => { setFixing(id); box.current?.focus(); }} initial={initial} />)}
+          ) : <TurnView key={t.key} t={t} n={i + 1} ask={ask} onTurn={add} onFix={(id) => { setFixing(id); box.current?.focus(); }} />)}
           <div ref={end} />
         </div>
       )}
@@ -98,6 +103,22 @@ export default function AskPage() {
         </Glass>
       </div>
     </>
+  );
+}
+
+// What ReBo is doing, as it happens: finished steps ticked, the current one live, with a running clock.
+function Trail({ steps }: { steps: string[] }) {
+  const [s, setS] = useState(0);
+  useEffect(() => { const t = setInterval(() => setS((x) => x + 1), 1000); return () => clearInterval(t); }, []);
+  return (
+    <div className="trail" role="status" aria-live="polite">
+      <ol>{steps.map((x, i) => (
+        <li key={i} className={i === steps.length - 1 ? "now" : "done"}>
+          {i === steps.length - 1 ? <span className="spinner" aria-hidden /> : <Check aria-hidden />}{x}
+        </li>
+      ))}</ol>
+      <span className="clock">{s}s</span>
+    </div>
   );
 }
 
