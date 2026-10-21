@@ -34,7 +34,7 @@ await page.goto(`${base}/config?user=alice`); await settle(); await shot(page, "
 // the React Ask page, if built
 const app = await page.goto(`${base}/app/?user=bob`);
 if (app && app.ok()) {
-  await page.getByLabel("Question").fill("show me customers");
+  await page.getByRole("textbox", { name: "Your question" }).fill("show me customers");
   await page.getByRole("button", { name: "Ask" }).click();
   await page.getByTestId("clarify").waitFor(); await shot(page, "11-react-clarify");
 }
