@@ -57,6 +57,16 @@ commercially usable. Add a reranker only if evals show retrieval recall is the b
 | Weaviate / Milvus / OpenSearch / Meilisearch / Typesense | — | mixed (Typesense GPL-3.0; Meilisearch EE BUSL) | Not needed |
 | sqlite-vec | 0.1.9 (2026-03) | MIT/Apache | Pre-1.0, slow-moving; not needed at our size |
 
+**Update 2026-10-21 (later the same day): pgvector adopted for the Postgres store.** Reason, found
+while making the stack production-grade: with vectors searched in-process, every bot process keeps
+its own copy of the vectors in memory, which goes stale when another process (a second server, the
+job worker in another container) writes new ones. With `pgvector/pgvector:0.8.7-pg18`, Alembic 0006
+adds `embedding.vec vector` when the extension is available and dense search runs in SQL (cosine
+distance), shared by every process. Exact search, no HNSW index yet (an HNSW index needs a fixed
+dimension per embedding model; add it past roughly 50k vectors). SQLite and plain Postgres keep the
+in-process path. Verified: the demo store's 64 arctic vectors copied into Postgres and searched there
+("maintenance request priority" → the maintenance columns); the suite passes on both backends.
+
 **Decision 2026-10-21 (B-026), re-researched on PyPI / GitHub / Docker Hub that day:** the
 Postgres backend ships **without extensions**: stock `postgres:18.6`, built-in `tsvector` +
 `ts_rank` for the three search tables (english config where SQLite used porter, simple where it

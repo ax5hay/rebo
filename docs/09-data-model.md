@@ -120,6 +120,9 @@ revision files; there is no downgrade (restore a backup instead).
 - `knowledge.pinned`: the owner's favourite (B-016).
 - `cat_column.pos`: column order (was SQLite's `rowid`; filled from it on upgrade).
 - `job`, `schedule` (revision 0003, B-030): background work with a lease, and report schedules (doc 13 §7).
+- `eval_run(id, at, kind, cases, model, summary, results_file)` (revision 0005): measured eval runs, shown in Insights.
+- `embedding.vec vector` (revision 0006, Postgres with the pgvector extension only): the same vector as
+  `embedding.vector`, searched in the database with cosine distance.
 - `answer_cache(key, owner, sql, report, hits, created_at)` (revision 0004, B-031): exact answer cache;
   `report` holds title, assumptions, follow-ups and used knowledge, never rows.
 - `request(id, kind, target, requester, item_id, turn_id, text, status, resolver, resolution, created_at, updated_at)`:

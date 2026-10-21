@@ -85,3 +85,30 @@ def test_lmstudio_embeddings_use_the_openai_compatible_endpoint_with_nomic_prefi
     emb.embed(["table customer"], kind="passage")
     assert [b["input"][0] for b in sent] == ["search_query: customer status", "search_document: table customer"]
     assert sent[0]["model"] == "text-embedding-nomic-embed-text-v1.5"
+
+
+def test_dense_search_on_both_state_backends(app):
+    """Vectors written and searched through the real Index: in-process on SQLite, pgvector on Postgres."""
+    import numpy as np
+
+    from rebo.retrieval import Embedder
+
+    class Words(Embedder):  # deterministic toy embedder: one dimension per known word
+        VOCAB = ["customer", "status", "order", "amount", "note", "paused"]
+
+        def __init__(self):
+            self.available, self._model, self.asymmetric, self.model_name = True, None, False, "toy"
+
+        def embed(self, texts, kind="passage"):
+            v = np.array([[float(w in t.lower()) for w in self.VOCAB] for t in texts], dtype=np.float32) + 1e-3
+            return v / np.linalg.norm(v, axis=1, keepdims=True)
+
+    app.index.embedder = Words()
+    app.index._matrix.clear()
+    app.index.put_vectors(["schema:customer.status", "schema:orders.amount", "schema:note.body"],
+                          ["customer status", "order amount", "note body"])
+    assert app.index._dense("schema:", "paused customer status", 3)[0] == "schema:customer.status"
+    assert app.index._dense("schema:", "order amount", 1) == ["schema:orders.amount"]
+    if app.store.dialect == "postgresql":
+        assert app.store.pgvector and app.store.one(
+            "SELECT COUNT(*) AS n FROM embedding WHERE vec IS NOT NULL")["n"] == 3

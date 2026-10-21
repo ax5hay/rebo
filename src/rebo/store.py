@@ -264,6 +264,16 @@ class Store:
             self.db.execute("PRAGMA journal_mode=WAL")  # persistent per file; cannot run inside a migration
         migrate(self)
 
+    @property
+    def pgvector(self) -> bool:
+        """True when dense search runs in the database (Postgres with the vector extension and column)."""
+        if self.dialect != "postgresql":
+            return False
+        if not hasattr(self, "_pgvector"):
+            self._pgvector = bool(self.one("SELECT 1 AS ok FROM information_schema.columns WHERE "
+                                           "table_name='embedding' AND column_name='vec' AND table_schema=current_schema()"))
+        return self._pgvector
+
     def schema_revision(self) -> str | None:
         """The Alembic revision this store is at."""
         from alembic.runtime.migration import MigrationContext

@@ -874,7 +874,9 @@ class App:
             if vectors < docs or not hits:
                 raise RuntimeError(f"{vectors} of {docs} documents have vectors and a probe found {hits}: "
                                    "run `rebo bootstrap` again")
-            return f"{docs} documents, {values} values, {vectors} vectors ({emb.model_name}); dense probe found {hits}"
+            where = "pgvector in the state database" if self.store.pgvector else "searched in-process"
+            return (f"{docs} documents, {values} values, {vectors} vectors ({emb.model_name}, {where}); "
+                    f"dense probe found {hits}")
         check("Search index", search)
 
         def model_ready(spec: str) -> str:

@@ -38,6 +38,14 @@ def copy(src: Store, dst: Store) -> dict[str, int]:
                 db.executemany(f"INSERT INTO {table}({', '.join(cols)}) VALUES({', '.join('?' * len(cols))})",
                                [tuple(r[c] for c in cols) for r in rows])
         counts[table] = len(rows)
+    if dst.pgvector:  # vectors searched in the database: fill the pgvector column from the copied bytes
+        import numpy as np
+
+        from rebo.retrieval import _pgvec
+        rows = dst.all("SELECT ref, vector FROM embedding")
+        with dst.tx() as db:
+            db.executemany("UPDATE embedding SET vec=?::vector WHERE ref=?",
+                           [(_pgvec(np.frombuffer(bytes(r["vector"]), dtype=np.float32)), r["ref"]) for r in rows])
     if dst.dialect == "postgresql":  # identity columns continue after the copied ids
         for table in ("knowledge_event", "config_event"):
             dst.db.execute(f"SELECT setval(pg_get_serial_sequence('{table}', 'id'), "

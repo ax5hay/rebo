@@ -142,6 +142,10 @@ def get_embedder(setting: bool | str, lmstudio_url: str = "http://127.0.0.1:1234
     return Embedder(setting is True or str(setting).lower() == "true")
 
 
+def _pgvec(v: np.ndarray) -> str:
+    return "[" + ",".join(f"{x:.7g}" for x in v.tolist()) + "]"
+
+
 class Index:
     def __init__(self, store: Store, embedder: Embedder):
         self.store = store
@@ -154,9 +158,14 @@ class Index:
             return
         vecs = self.embedder.embed(texts)
         with self.store.tx() as db:
-            db.executemany("INSERT INTO embedding(ref, vector) VALUES(?, ?) ON CONFLICT(ref) DO UPDATE SET "
-                           "vector=excluded.vector",
-                           [(r, v.tobytes()) for r, v in zip(refs, vecs)])
+            if self.store.pgvector:  # also as a pgvector value, searched in the database
+                db.executemany("INSERT INTO embedding(ref, vector, vec) VALUES(?, ?, ?::vector) ON CONFLICT(ref) DO "
+                               "UPDATE SET vector=excluded.vector, vec=excluded.vec",
+                               [(r, v.tobytes(), _pgvec(v)) for r, v in zip(refs, vecs)])
+            else:
+                db.executemany("INSERT INTO embedding(ref, vector) VALUES(?, ?) ON CONFLICT(ref) DO UPDATE SET "
+                               "vector=excluded.vector",
+                               [(r, v.tobytes()) for r, v in zip(refs, vecs)])
         self._matrix.clear()
 
     def drop_vectors(self, prefix: str) -> None:
@@ -168,6 +177,12 @@ class Index:
     def _dense(self, prefix: str, query: str, top: int) -> list[str]:
         if not self.embedder.available:
             return []
+        if self.store.pgvector:  # cosine distance in the database: every process sees the same vectors
+            q = _pgvec(self.embedder.embed([query], kind="query")[0])
+            rows = self.store.all("SELECT ref FROM embedding WHERE ref LIKE ? AND vec IS NOT NULL AND "
+                                  "1 - (vec <=> ?::vector) > 0.2 ORDER BY vec <=> ?::vector LIMIT ?",
+                                  (prefix + "%", q, q, top))
+            return [r["ref"] for r in rows]
         if prefix not in self._matrix:
             rows = self.store.all("SELECT ref, vector FROM embedding WHERE ref LIKE ?", (prefix + "%",))
             if not rows:

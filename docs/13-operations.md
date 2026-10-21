@@ -69,7 +69,7 @@ needs AWS access and the VPN (doc 12 §1).
 - **Postgres instead of the file** (B-026): `uv sync --extra postgres`, then set
   `state_url: postgresql://user:pw@host:5432/db` (or `REBO_STATE_URL`). The schema is created
   at start-up; any Postgres 13+ works, no extensions. Locally: `docker compose up -d state-db`
-  (postgres:18.6 on port 5433, user/password/db `rebo`). Back it up with `pg_dump`. There is no
+  (`pgvector/pgvector:0.8.7-pg18` on port 5433, user/password/db `rebo`). Back it up with `pg_dump`. There is no
   copy tool from an existing `state.db` yet: knowledge can move with `rebo knowledge export`
   / `import` (admin), conversations do not.
 - Tests on both backends: `REBO_TEST_STATE_URL=postgresql://rebo:rebo@127.0.0.1:5433/rebo uv run pytest`
