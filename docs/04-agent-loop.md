@@ -235,3 +235,23 @@ opinion reviews (a new report with more than 2 assumptions), `App._agreement` ru
 
 Sources: CHASE-SQL (ICLR'25), MaP-SQL (arXiv 2609.00834), "Two Surfaces of Ambiguity" (VLDB'26 AIDB);
 doc 16 §5.
+
+Measured 2026-10-21, demo gold (12 cases), Sonnet agent, Haiku candidates/judge/reviewer, flag on
+(`eval_results_sonnet_agreement_on_{1,2}.json`) against the two back-translation runs with it off
+(`eval_results_sonnet_backtranslate_{1,2}.json`). Gold verdicts for the wrong reports: gp-04 and gp-06.
+
+| Run | Content match | Clarify | Checked turns | Agreed | Disagreed (report / candidate / ambiguous) | Wrong reports noted by the check | Notes on correct reports | Main cost | Check cost | Median s |
+|---|---|---|---|---|---|---|---|---|---|---|
+| off, run 1 | 10/12 | 1 | – | – | – | – | – | $0.269 | – | 12.4 |
+| off, run 2 | 9/12 | 0 | – | – | – | – | – | $0.225 | – | 10.2 |
+| on, run 1 | 10/12 | 0 | 10 | 7 | 1 / 1 / 1 | 1 of 2 (gp-06; gp-04 agreed 2/2) | 1 (gp-03, "open" vs "not closed") | $0.264 | $0.0067 | 14.1 |
+| on, run 2 | 10/12 | 0 | 9 | 5 | 2 / 1 / 1 | 2 of 2 (gp-04 ambiguous, gp-06 candidate) | 0 | $0.287 | $0.0067 | 14.4 |
+
+Reading: content match does not move (by design: the answer is never swapped). As an error signal,
+disagreement noted 3 of the 4 wrong reports and put one note on a correct report whose question is
+genuinely two-way; one wrong report (gp-04, run 1) had all 3 queries agree on the same misreading, the
+known blind spot of self-agreement when the candidates see the same context. In these runs every wrong
+report the check noted had already drawn a reviewer concern, so the check added no new catch over the
+second opinion. Cost: about $0.0007 per checked turn (~2.5 % of the turn), +2 to 4 s median.
+**Verdict: kept behind the flag, default off.** Two runs per arm on a 12-case set cannot show a gain; the
+item asked for 3 runs each (not run: the third pair).
