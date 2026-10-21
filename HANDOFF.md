@@ -6,17 +6,18 @@ also in git history; this file is the short version a new session reads first.
 
 ## 1. Where things stand
 
-- **Working product.** Bot, learning lifecycle, roles, editable memory, undoable feedback, requests,
-  owner config editing, JMS adapter + mock, demo domain, evals, export bundle, doctor. Added on the
-  second machine (2026-10-21, B-001…B-034 except B-015): CI + pre-commit, domain-word guard, grain
-  check, ask-gate, no-model routes (direct / cache / params / rerun / drill), question masking,
-  cache-stable prefix, multi-turn eval, model profiles, second opinion, user aids (pins, defaults,
-  lookup, preview, bulk review, import diff, usage stats, config preview, webhook), Postgres state
-  backend + Alembic, embeddings setting (model or TEI) with a measured comparison, AG-UI streaming,
-  durable jobs + schedules + mocked JMS push, cost cap + rate limit, production compose, React Ask
-  page (`web/`). 144 offline tests (SQLite); 230+ with Postgres; 2 Playwright tests.
-- **Eval debt:** every item since B-005 that changes answers says `eval pending: needs llm` in
-  BACKLOG.md. With a key, run those measurements first (each item names its results file).
+- **Working product: ReBo** (renamed from reportsbot on 2026-10-21; package `rebo`, CLI `rebo`,
+  `REBO_*` env, `rebo.yaml`). Private repo **github.com/ax5hay/rebo**, CI green (SQLite, Postgres +
+  pgvector, web + Playwright, dependency audit), Dependabot weekly.
+- **Product UI** in `web/` (React; Ask, What I taught, Review, Admin, Insights, Configuration), served
+  at `/` by `rebo serve` when built. NiceGUI pages only with `--nicegui`.
+- **Observability on by default**: Phoenix traces (one trace per question), people's feedback and eval
+  verdicts as trace annotations, Insights page with live health checks, accuracy history, cost.
+- Everything from B-001…B-044 (not B-015/B-041, which need a person; B-045 blocked on the Gemini
+  free tier). 164 offline tests; 268 with Postgres.
+- **Measured with keys (2026-10-21b):** JMS 18 prompts Sonnet 13 reports / 5 clarify / 0 errors $2.68;
+  Haiku cascade $0.14; Gemini with profile 13 reports, 2 errors (504s); demo gold 8/10; conversations
+  4/5. Still unmeasured: B-008 (cost per repeat), B-009 retrieval effect, B-019 defaults effect.
 - **Next work:** `BACKLOG.md`. Left after the second machine: B-043 (visual check), B-044 (LM Studio,
   in progress), B-045 (needs a Gemini key), B-015 and B-041 (need a person), and every
   `eval pending: needs llm` measurement (B-005, 006, 008–013, 019, 042; each names its results file).
@@ -59,6 +60,10 @@ on gold answers, not on row counts of unconfirmed answers.
 - Postgres tests: `docker compose up -d state-db` then
   `REBO_TEST_STATE_URL=postgresql://rebo:rebo@127.0.0.1:5433/rebo uv run pytest`.
 - Web tests: `cd web && npm ci && npm run build && npx playwright test` (starts `tests/web_server.py`).
+- Chain shell commands with `set -o pipefail` before `pytest | tail`: a failing test once slipped into
+  a commit because the pipeline's exit code was tail's.
+- The Gemini free tier allows 5 requests/minute and 20/day per model; one ReBo turn needs about 10.
+- `fastembed` 0.9.0 caps Pillow < 13; `[tool.uv] override-dependencies` lifts it for the security fixes.
 - In Chrome 156 `scrollIntoView` returns a Promise: never return it from a React effect.
 - The domain-word guard (`tests/test_no_domain_words.py`) flags plain words that are also JMS table
   names (template, family, ...). Add genuine English words to `PLAIN_WORDS`; never JMS identifiers.
@@ -91,4 +96,4 @@ on gold answers, not on row counts of unconfirmed answers.
 | Date | Session | Done | Next |
 |---|---|---|---|
 | 2026-10-21 | original machine | everything up to the "continue" protocol; a fresh-machine simulation (unzip → `uv sync` → doctor) found and fixed two bugs: the demo config was never shipped, and keys in `.env` were invisible to the bot. Verified: history restored, 81 tests pass, NEXT = B-001 | B-001 |
-| 2026-10-21 | second machine (macOS) | installed uv (brew); CRLF noise stashed; B-001…B-034 (not B-015) done in small commits; all LLM measurements pending (no key); embedding comparison measured (keep arctic); production stack started and verified; fixed: conversations could be read by another user | B-035 |
+| 2026-10-21 | second machine (macOS) | installed uv (brew); CRLF noise stashed; B-001…B-044 done in small commits; keys arrived: pending measurements run; renamed to ReBo; private GitHub repo; full product UI in React; observability by default (Phoenix traces, annotations, Insights); pgvector; PatientModel for rate limits; Pillow 13 security override; fixed: conversation access by others, X-User-* spoofing behind the proxy | Gemini free-tier staggered runs; B-008/009/019 measurements; B-015/041 need a person |
