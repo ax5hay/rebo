@@ -29,12 +29,22 @@
 <table>
   <tr>
     <td width="50%" align="center">
-      <img src="docs/screenshots/05-clarification.png" alt="A clarification with options" width="100%"><br>
-      <sub><i>When a question has two readings, it asks once, with the options as buttons.</i></sub>
+      <img src="docs/screenshots/01-start.png" alt="The start page" width="100%"><br>
+      <sub><i>Start: Liquid Glass bar and composer, known reports, the AI notice in plain words.</i></sub>
     </td>
     <td width="50%" align="center">
-      <img src="docs/screenshots/06-what-i-taught.png" alt="What I taught" width="100%"><br>
-      <sub><i>What I taught: everything ReBo learned from you, editable and undoable.</i></sub>
+      <img src="docs/screenshots/15-dark-answer.png" alt="An answer in dark mode" width="100%"><br>
+      <sub><i>Dark mode: the same glass, solid readable content underneath.</i></sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <img src="docs/screenshots/12-you.png" alt="The You page" width="100%"><br>
+      <sub><i>You: role, pinned and scheduled reports, shortcuts, how ReBo looks for you.</i></sub>
+    </td>
+    <td width="50%" align="center">
+      <img src="docs/screenshots/13-help.png" alt="Help" width="100%"><br>
+      <sub><i>Help: every feature in short sections, with links and "Try it" questions.</i></sub>
     </td>
   </tr>
   <tr>
@@ -74,6 +84,7 @@ and can be undone.
 
 | Area | What you get |
 |------|--------------|
+| **Design** | Liquid Glass navigation (per-element lensing, pointer-lit rims, scroll-edge blur) over solid, readable content; light and dark; a Help page and a You page. [doc 25](docs/25-brand-and-design.md) |
 | **Asking** | Plain-language questions, live progress, sortable results, CSV, follow-up chips, one clarification when a question has two readings, answers rendered as Markdown. |
 | **Checking an answer** | A trust label (verified, yours, from saved knowledge, new), "What the query does" as plain steps generated from the query itself, "How I read your question", and the query on demand. |
 | **Learning** | Confirm or fix in words; "Remember this?" notes; personal defaults; terms, rules and joins taught in the chat. Personal first, shared by evidence. |
@@ -173,6 +184,7 @@ Claims cite a results file (`fixtures/*/eval_results_*.json`); details in [docs/
 | [Learning and trust](docs/05-learning-and-trust.md) | How knowledge is learned, shared, made stale and undone. |
 | [SQL safety](docs/07-sql-safety.md) | The walls between a question and a write. |
 | [Web app and API](docs/10-api-and-ui.md) | Every route, the UI, design decisions. |
+| [Brand and design](docs/25-brand-and-design.md) | The mark, colours, voice, Liquid Glass. |
 | [Evals and observability](docs/11-evals-and-observability.md) | How accuracy is measured and traced. |
 | [Operations](OPERATIONS.md) | Day-to-day running: start, back up, upgrade, roles. |
 | [Contributing](CONTRIBUTING.md) | Checks, evals, commit rules. |
@@ -187,7 +199,7 @@ Claims cite a results file (`fixtures/*/eval_results_*.json`); details in [docs/
 | Retrieval | SQLite FTS5 or Postgres full text, **fastembed** or LM Studio embeddings, **pgvector**, reciprocal rank fusion |
 | Server | **FastAPI**, AG-UI events, MCP, lease-based background jobs |
 | State | **SQLite** or **Postgres**, Alembic migrations run at start-up |
-| Web app | **React 19**, react-aria-components, TanStack Query, Observable Plot, cmdk, react-markdown |
+| Web app | **React 19**, Liquid Glass (SVG lensing), react-aria-components, TanStack Query, Observable Plot, cmdk, react-markdown |
 | Observability | **Arize Phoenix** over OpenTelemetry, feedback and eval verdicts as trace annotations |
 | Login | **oauth2-proxy** with any OIDC provider (Pocket ID example in `deploy/auth/`) |
 
