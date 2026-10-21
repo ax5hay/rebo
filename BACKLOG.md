@@ -235,13 +235,14 @@ result: 2026-10-21, `git log --grep B-025`; 129 passed; config at 19 settings (t
 
 ## Phase P2: production plumbing
 
-### [ ] B-026 · Postgres state backend
+### [x] B-026 · Postgres state backend
 needs: docker
 do: **Research first** (AGENTS.md §4; doc 19 §3 suggests Postgres 18 + pgvector + pg_textsearch). Then:
 1. Add a `state_url` key (default: SQLite file).
 2. Abstract `Store` SQL differences: FTS5 → tsvector or pg_textsearch, BLOB vectors → pgvector.
 3. Run the whole test suite against both backends (pytest param; Postgres via docker compose service `state-db`).
 done when: tests are green on both backends; doc 09 and doc 13 updated.
+result: 2026-10-21, 3 commits (`git log --grep B-026`); 212 passed locally (130 SQLite + 82 Postgres 18.6). Built-in tsvector + BYTEA vectors (no extensions), decision in doc 19 §3. No state.db -> Postgres copy tool (knowledge moves via export/import).
 
 ### [ ] B-027 · Schema migrations with Alembic
 needs: offline
