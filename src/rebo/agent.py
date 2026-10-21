@@ -101,6 +101,7 @@ class Deps:
     final_sql: str | None = None
     zero_row_retry: bool = False
     grain_retry: bool = False
+    trap_retry: bool = False
     probes: int = 0
 
 
@@ -166,6 +167,66 @@ def entity_key(sql: str, dialect: str, pks: dict[str, list[str]]) -> tuple[int, 
             owners = [t for t in tables.values() if pk.get(t.lower(), "").lower() == col.name.lower()]
         if len(owners) == 1 and pk.get(owners[0].lower(), "").lower() == col.name.lower():
             return i, owners[0]
+    return None
+
+
+def sql_trap(sql: str, dialect: str, pks: dict[str, list[str]]) -> str | None:
+    """A query that runs but very likely answers a different question (research basis: doc 16 §5). Checks,
+    on the syntax tree only: comparison with NULL; NOT IN over a subquery (one NULL empties the result);
+    a LEFT JOIN undone by a WHERE filter on the joined table; SUM/AVG of a column repeated by a
+    one-to-many join. Returns what is wrong in words, or None."""
+    try:
+        tree = sqlglot.parse_one(sql, read=dialect)
+    except sqlglot.errors.ParseError:
+        return None
+    for cmp in tree.find_all(exp.EQ, exp.NEQ):
+        if isinstance(cmp.left, exp.Null) or isinstance(cmp.right, exp.Null):
+            return "it compares with NULL using = or <>, which is never true. Use IS NULL / IS NOT NULL."
+    for n in tree.find_all(exp.Not):
+        if isinstance(n.this, exp.In) and n.this.args.get("query"):
+            return ("it uses NOT IN with a subquery: if the subquery returns any NULL, no rows match. Use NOT EXISTS, "
+                    "or filter the subquery with IS NOT NULL.")
+    for sel in tree.find_all(exp.Select):
+        joins = sel.args.get("joins") or []
+        where = sel.args.get("where")
+        if where is not None:
+            conjuncts = list(where.this.flatten()) if isinstance(where.this, exp.And) else [where.this]
+            for j in joins:
+                if j.side.upper() != "LEFT" or not isinstance(j.this, exp.Table):
+                    continue
+                alias = j.this.alias_or_name.lower()
+                for c in conjuncts:
+                    if isinstance(c, (exp.Is, exp.Or)) or c.find(exp.Coalesce, exp.Is):
+                        continue
+                    if any(col.table.lower() == alias for col in c.find_all(exp.Column)):
+                        return (f"it LEFT JOINs {j.this.name} but then filters on it in WHERE, which drops the rows "
+                                "without a match, as an inner join would. Move the condition into the ON clause, or use "
+                                "an inner join if that is intended.")
+        if not joins or not sel.args.get("from_") or not isinstance(sel.args["from_"].this, exp.Table):
+            continue
+        tables = {t.alias_or_name.lower(): t.name.lower() for t in [sel.args["from_"].this, *(j.this for j in joins)]
+                  if isinstance(t, exp.Table)}
+        pk = {t.lower(): cols[0].lower() for t, cols in pks.items() if len(cols) == 1}
+        repeated = set()  # aliases whose rows a join repeats: the "one" side of a one-to-many join
+        for j in joins:
+            on = j.args.get("on")
+            for eq in (on.find_all(exp.EQ) if on is not None else []):
+                a, b = eq.left, eq.right
+                if not (isinstance(a, exp.Column) and isinstance(b, exp.Column)):
+                    continue
+                for one, many in ((a, b), (b, a)):
+                    ot, mt = tables.get(one.table.lower()), tables.get(many.table.lower())
+                    if ot and mt and pk.get(ot) == one.name.lower() and pk.get(mt) != many.name.lower():
+                        repeated.add(one.table.lower())
+        for agg in sel.find_all(exp.Sum, exp.Avg):
+            if agg.find(exp.Distinct):
+                continue
+            cols = list(agg.find_all(exp.Column))
+            if cols and all(c.table.lower() in repeated for c in cols):
+                t = tables[cols[0].table.lower()]
+                return (f"it sums or averages a column of {t} after joining a table with several rows per {t}, so each "
+                        f"value is counted once per joined row. Aggregate the joined table in a subquery first, or "
+                        "sum before joining. If the repetition is intended, present it again and say so.")
     return None
 
 
@@ -287,6 +348,10 @@ def build_agent(model: Model, output: Literal["tool", "prompted"] = "tool", retr
         for check in app.sql_checks:  # host adapter rules, e.g. JMS Report Builder compatibility
             if problem := check(g.sql):
                 raise ModelRetry(f"The report SQL is valid but {problem}")
+        trap = None if deps.trap_retry else sql_trap(g.sql, app.target.dialect, app.catalog.primary_keys)
+        if trap:
+            deps.trap_retry = True
+            raise ModelRetry(f"The report SQL runs, but {trap}")
         if not res.rows and not deps.zero_row_retry:
             deps.zero_row_retry = True
             raise ModelRetry("The report returned 0 rows. Check each literal filter with search_values and each "

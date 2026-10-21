@@ -542,3 +542,35 @@ async def test_each_question_is_one_traced_span_and_the_turn_keeps_its_trace_id(
     assert r["trace_id"] == format(spans[-1].context.trace_id, "032x")
     usage = json.loads(app.store.one("SELECT usage FROM turn WHERE id=?", (r["turn_id"],))["usage"])
     assert usage["trace_id"] == r["trace_id"]
+
+
+C_O = "FROM customer c JOIN orders o ON o.customer_id = c.customer_id"
+
+
+@pytest.mark.parametrize("sql, trap", [
+    ("SELECT full_name FROM customer WHERE email = NULL", "NULL"),
+    ("SELECT full_name FROM customer WHERE customer_id NOT IN (SELECT customer_id FROM orders)", "NOT IN"),
+    ("SELECT c.full_name, o.amount FROM customer c LEFT JOIN orders o ON o.customer_id = c.customer_id "
+     "WHERE o.amount > 10", "LEFT JOIN"),
+    (f"SELECT SUM(c.customer_id) {C_O}", "sums"),
+    # not traps
+    ("SELECT full_name FROM customer WHERE email IS NULL", None),
+    ("SELECT full_name FROM customer WHERE customer_id NOT IN (1, 2)", None),
+    ("SELECT c.full_name FROM customer c LEFT JOIN orders o ON o.customer_id = c.customer_id "
+     "WHERE o.order_id IS NULL", None),                                                   # anti-join
+    (f"SELECT SUM(o.amount) {C_O}", None),                                               # many side
+    (f"SELECT SUM(DISTINCT c.customer_id) {C_O}", None),
+])
+def test_sql_trap(app, sql, trap):
+    from rebo.agent import sql_trap
+    found = sql_trap(sql, "sqlite", app.catalog.primary_keys)
+    assert (found is None) if trap is None else (trap in found)
+
+
+async def test_sql_trap_gets_one_retry_before_the_zero_row_retry(app):
+    trap = {"title": "Paused", "sql": "SELECT full_name FROM customer WHERE status = 'paused' AND email <> NULL",
+            "assumptions": []}
+    seen = _scripted(app, [_completion("present_report", trap)])
+    r = await app.ask(User("alice"), "paused customers with an email")
+    # the trap is named first (it explains the 0 rows); the 0-row retry follows; the third attempt stands
+    assert r["kind"] == "report" and len(seen) == 3 and "compares with NULL" in seen[1]

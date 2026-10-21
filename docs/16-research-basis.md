@@ -84,7 +84,26 @@ persistence can corrupt), Qdrant local mode (dev/test only), SDV (BUSL-1.1; sche
 is Enterprise-only), Snowfakery (archived), Synth (dormant), Gretel (acquired; library archived),
 Atlas (views/triggers/routines are Pro-only), Chainlit (archived).
 
-## 5. Primary sources
+## 5. Accuracy research pass, 2026-10-21
+
+Sources were read on the primary page where marked ✓; the rest come from search summaries and are
+**not verified**. The demo gold set has 10 cases (one case = 10 points), so every change is measured
+against `eval_results_sonnet_2026-10-21b.json`, and gains under ~20 points need repeat runs.
+
+| Idea | Source | Verdict |
+|---|---|---|
+| Deterministic SQL-trap checks: `= NULL`, `NOT IN (subquery)`, LEFT JOIN undone by WHERE, SUM/AVG over a one-to-many join | known failure classes; VLDB'26 verification paper (unverified) | **adopted** (`agent.sql_trap`, one retry like the grain check, no model cost when silent). Demo gold, Sonnet: 8/10 before and after, $0.236 → $0.242, no trap fired (`eval_results_sonnet_traps.json`); the gain is protection against these classes, not measured accuracy |
+| Fuzzy value matching when full-text finds nothing | CHESS value retrieval (unverified); RapidFuzz 3.14.6, MIT ✓ | **adopted**: `Index.fuzzy_values`, used by `search_values` when full text finds nothing (WRatio ≥ 85, cached value list); not measured on gold (no misspelled case yet) |
+| Low-confidence turns: 2 extra candidate SQLs, compare executed results, judge or clarify on disagreement | CHASE-SQL ICLR'25, MaP-SQL arXiv 2609.00834 ✓ (training-free listwise selector, +2.02 EX, 2.92× fewer tokens), "Two Surfaces of Ambiguity" VLDB'26 AIDB ✓ (sampled-SQL disagreement finds schema ambiguity, ≥6 pt recall) | prototype behind a flag, default off |
+| LLM judge rather than self-consistency or a trained verifier | arXiv 2607.06799 ✓: Claude judge AUROC 0.78, two-provider ensemble 0.82, trained verifiers ~0.66 on unseen schemas | keeps `_second_opinion` as is; add back-translation (restate SQL, then compare) as a prototype |
+| SQL-skeleton similarity for picking confirmed examples | DAIL-SQL, UCS-SQL ACL'25 (unverified) | prototype after a draft SQL exists |
+| Cross-encoder rerank of the RRF top 30 | fastembed 0.9 `TextCrossEncoder` ✓; ms-marco-MiniLM-L-6 (Apache, 80 MB) | prototype, measure recall@5 first (`tools/embed_compare.py`) |
+| Separate schema-linking stage | RSL-SQL arXiv 2411.00073, SchemaGraphSQL (unverified) | rejected: the agent already explores with `search_schema`/`describe_table`; on enterprise schemas (BEAVER) knowledge, not linking, is the bottleneck |
+| MinHash/LSH value index | datasketch 2.0 (MIT) ✓ | rejected for now: only for high-cardinality free text, which is deliberately not indexed |
+| SQL-specialised open models (Arctic-Text2SQL-R1-7B, OmniSQL-7B, XiYanSQL-QwenCoder-7B; all Apache-2.0 ✓) | HF model cards | rejected as the agent (single-shot, no tool calling); possible offline candidate generator later |
+| ragas, DeepEval | ragas 0.4.3 ✓ has no SQL metrics | rejected: pydantic-evals + Phoenix annotations cover it |
+
+## 6. Primary sources
 
 spider2-sql.github.io · bird-bench.github.io · bird-interact.github.io · livesqlbench.ai ·
 arxiv.org/abs/2505.19988 · arxiv.org/pdf/2606.05836 · arxiv.org/abs/2511.17190 · arxiv.org/abs/2410.01943 ·
