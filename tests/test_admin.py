@@ -115,3 +115,36 @@ def test_bulk_review_shares_or_rejects_several_with_one_note(app):
     assert app.knowledge.get(c["id"])["status"] == "retired"
     assert client.post("/api/review/bulk", json={"item_ids": [a["id"]], "action": "reject"},
                        headers={"X-User-Id": "alice"}).status_code == 403
+
+
+def test_usage_stats_on_seeded_turns(app):
+    import json
+
+    t0 = 1_793_000_000.0  # 2026-10-26 UTC, ISO week 44
+    usage = {"model": "openrouter:anthropic/claude-sonnet-5.5", "requests": 2, "input_tokens": 1_000_000,
+             "output_tokens": 100_000, "cache_read_tokens": 0}
+    seeds = [("paused customers", "report", "verified", "correct", usage, t0),
+             ("Paused  customers", "report", "new", "wrong", usage, t0 + 3600),
+             ("orders", "report", "new", None, {"model": "lmstudio:m", "requests": 1}, t0 + 8 * 86400),
+             ("hello", "answer", None, None, {}, t0 + 8 * 86400)]
+    with app.store.tx() as db:
+        db.execute("INSERT INTO conversation(id, owner, created_at, updated_at) VALUES('c','alice',?,?)", (t0, t0))
+        for n, (q, kind, label, fb, u, ts) in enumerate(seeds):
+            db.execute("INSERT INTO turn(id, conversation_id, owner, question, kind, payload, provenance, feedback, "
+                       "usage, created_at) VALUES(?,?,?,?,?,?,?,?,?,?)",
+                       (f"t{n}", "c", "alice", q, kind, "{}", json.dumps({"label": label}) if label else None, fb,
+                        json.dumps(u), ts))
+    item = app.add_knowledge(USER, kind="note", title="flaky", body="x")["item"]
+    app.store.db.execute("UPDATE knowledge SET rejections=3 WHERE id=?", (item["id"],))
+    app.store.db.commit()
+    app.create_request(USER, kind="fix_knowledge", text="please fix", item_id=item["id"])
+    with pytest.raises(PermissionError):
+        app.stats(USER)
+    st = app.stats(ADMIN, days=100_000)
+    assert st["confirmation_by_week"]["2026-W44"] == {"reports": 2, "confirmed": 1, "rejected": 1,
+                                                      "confirmation_rate": 0.5}
+    assert st["provenance"] == {"new": 2, "verified": 1}
+    assert st["top_questions"][0] == {"question": "paused customers", "count": 2}
+    assert st["most_reported_wrong"][0]["title"] == "flaky"
+    assert st["open_requests"][0]["age_days"] >= 0 and st["unpriced_model_turns"] == 1
+    assert st["cost_per_day_usd"] == {"2026-10-26": 2 * (2.00 + 1.00)}   # 1M in at $2 + 0.1M out at $10, twice

@@ -19,6 +19,7 @@ from pydantic_evals import Case, Dataset
 from pydantic_evals.evaluators import Evaluator, EvaluatorContext
 
 from .knowledge import User
+from .llm import cost  # noqa: F401  (re-exported for tools/eval_run.py)
 from .safety import guard, tables_in
 from .service import App
 
@@ -152,25 +153,6 @@ async def run_eval(app: App, path: str, *, limit: int = 0, user: str = "eval",
                     "scores": {k: v.value for k, v in c.assertions.items()},
                     "seconds": round(c.task_duration, 1)})
     return {"cases": out, "failures": [f.name for f in report.failures]}
-
-
-# USD per 1M tokens (input, cache read, output), OpenRouter list prices checked 2026-10-21 (docs/20).
-PRICES = {
-    "anthropic/claude-haiku-5.5": (0.10, 0.01, 0.50),
-    "anthropic/claude-sonnet-5.5": (2.00, 0.10, 10.00),
-    "google/gemini-3.8-flash": (0.825, 0.0825, 4.125),
-    "google/gemini-3.5-flash-lite": (0.30, 0.03, 2.50),
-}
-
-
-def cost(usage: dict) -> float | None:
-    name = (usage.get("model") or "").split(":", 1)[-1]
-    if name not in PRICES:
-        return None
-    pin, pcache, pout = PRICES[name]
-    cached = usage.get("cache_read_tokens") or 0
-    fresh = max((usage.get("input_tokens") or 0) - cached, 0)
-    return round((fresh * pin + cached * pcache + (usage.get("output_tokens") or 0) * pout) / 1e6, 5)
 
 
 def _step_text(step: dict[str, Any], prev: dict[str, Any] | None) -> str | None:

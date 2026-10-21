@@ -447,6 +447,25 @@ def mount_ui(api: FastAPI, app: App) -> None:
                     ui.checkbox(f"select “{item['title']}”", on_change=lambda e, i=item["id"]: (
                         selected.add(i) if e.value else selected.discard(i))).props("dense")
                     queue_card(item)
+                with ui.expansion("Usage (last 90 days)").classes("w-full mt-4"):
+                    st = app.stats(u)
+                    ui.label(f"{st['turns']} questions · provenance: " + ", ".join(
+                        f"{k} {v}" for k, v in st["provenance"].items())).classes("text-sm")
+                    for wk, v in st["confirmation_by_week"].items():
+                        ui.label(f"{wk}: {v['reports']} reports, {v['confirmed']} confirmed, {v['rejected']} "
+                                 f"reported wrong").classes("text-sm")
+                    ui.label("Top questions: " + "; ".join(f"{q['question']} ({q['count']})"
+                                                          for q in st["top_questions"])).classes("text-sm")
+                    for w in st["most_reported_wrong"]:
+                        ui.label(f"Reported wrong {w['rejections']}×: {w['kind']} “{w['title']}” ({w['status']})"
+                                 ).classes("text-sm")
+                    for r in st["open_requests"]:
+                        ui.label(f"Open request {r['kind']} from {r['requester']}: {r['age_days']} days old").classes(
+                            "text-sm")
+                    ui.label("Cost per day (USD, list prices): " + ", ".join(
+                        f"{d} ${c:.2f}" for d, c in st["cost_per_day_usd"].items())
+                        + (f" · {st['unpriced_model_turns']} turns on unpriced models" if st["unpriced_model_turns"]
+                           else "")).classes("text-sm")
                 with ui.expansion("See as user X: what another person's question would be given").classes(
                         "w-full mt-4"):
                     with ui.row().classes("items-center gap-2 w-full"):

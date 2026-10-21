@@ -23,7 +23,7 @@ from . import messages as msg
 from .agent import Clarify, Deps, Report, Reply, build_agent
 from .catalog import Catalog, bootstrap
 from .knowledge import Knowledge, User
-from .llm import build_model, credentials_present, profile
+from .llm import build_model, cost, credentials_present, profile
 from .observability import setup_tracing
 from .retrieval import Index, fts_query, get_embedder
 from .safety import canonical_hash, drill_sql, fill_params, guard
@@ -559,6 +559,48 @@ class App:
         o = self.knowledge.promote(user, item_id, scope)
         where = "your team" if o.item["scope"] == "team" else "the whole organisation"
         return {"message": msg.say("promoted", scope=where, title=o.item["title"]), "item": o.item}
+
+    def stats(self, user: User, days: int = 90) -> dict[str, Any]:
+        """Usage dashboard for admins and owners (docs/22 §2), over the last `days` days. Cost uses the
+        list prices in llm.PRICES; turns on unpriced models count as unknown."""
+        if not user.is_admin:
+            raise PermissionError("Only admins and owners can see usage.")
+        since = now() - days * 86400
+        turns = self.store.all("SELECT question, kind, provenance, feedback, usage, created_at FROM turn "
+                               "WHERE created_at >= ? AND owner != 'eval'", (since,))
+        day = lambda ts: dt.datetime.fromtimestamp(ts, dt.timezone.utc).date()  # noqa: E731
+        weeks: dict[str, dict[str, int]] = {}
+        prov: Counter = Counter()
+        cost_by_day: dict[str, float] = {}
+        unpriced = 0
+        for t in turns:
+            if t["kind"] == "report":
+                y, w, _ = day(t["created_at"]).isocalendar()
+                wk = weeks.setdefault(f"{y}-W{w:02d}", {"reports": 0, "confirmed": 0, "rejected": 0})
+                wk["reports"] += 1
+                wk["confirmed"] += t["feedback"] == "correct"
+                wk["rejected"] += t["feedback"] == "wrong"
+                prov[json.loads(t["provenance"] or "{}").get("label", "unknown")] += 1
+            c = cost(json.loads(t["usage"] or "{}"))
+            if c is None:
+                unpriced += bool(json.loads(t["usage"] or "{}").get("requests"))
+            else:
+                key = day(t["created_at"]).isoformat()
+                cost_by_day[key] = round(cost_by_day.get(key, 0.0) + c, 5)
+        for wk in weeks.values():
+            wk["confirmation_rate"] = round(wk["confirmed"] / wk["reports"], 3) if wk["reports"] else None
+        top = Counter(" ".join(t["question"].lower().split()) for t in turns).most_common(10)
+        wrong = self.store.all("SELECT id, kind, title, status, rejections FROM knowledge WHERE rejections > 0 "
+                               "ORDER BY rejections DESC, updated_at DESC LIMIT 10")
+        reqs = self.store.all("SELECT id, kind, target, requester, created_at FROM request WHERE status='open' "
+                              "ORDER BY created_at")
+        return {"days": days, "turns": len(turns),
+                "confirmation_by_week": dict(sorted(weeks.items())),
+                "provenance": dict(prov.most_common()),
+                "top_questions": [{"question": q, "count": n} for q, n in top],
+                "most_reported_wrong": wrong,
+                "open_requests": [{**r, "age_days": round((now() - r["created_at"]) / 86400, 1)} for r in reqs],
+                "cost_per_day_usd": dict(sorted(cost_by_day.items())), "unpriced_model_turns": unpriced}
 
     def bulk_review(self, user: User, item_ids: list[str], action: str, note: str = "") -> dict[str, Any]:
         """Share (org) or reject several queued items with one note. Each item is handled on its own;

@@ -55,7 +55,7 @@ uv run python tools/eval_conversations.py fixtures/demo_property/conversations.j
     fixtures/demo_property/eval_conversations_sonnet.json
 ```
 
-Prices for the cost estimate live in `evals.PRICES` (shared with `tools/eval_run.py`).
+Prices for the cost estimate live in `llm.PRICES` (shared with `tools/eval_run.py` and the usage dashboard).
 
 ## 2. The eval set grows from use
 

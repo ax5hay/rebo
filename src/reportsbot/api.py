@@ -242,6 +242,10 @@ def router(app: App) -> APIRouter:
     def review_bulk(body: BulkReviewIn, user: User = Depends(current_user)):
         return guard_errors(lambda: app.bulk_review(user, body.item_ids, body.action, body.note))
 
+    @r.get("/admin/stats")
+    def stats(days: int = 90, user: User = Depends(current_user)):
+        return guard_errors(lambda: app.stats(user, days))
+
     @r.get("/admin/preview")
     def preview(user_id: str = Query(..., alias="user"), q: str = "", team: str | None = None,
                 user: User = Depends(current_user)):
