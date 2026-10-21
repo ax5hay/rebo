@@ -16,13 +16,15 @@ Lifecycle (docs/04-learning-and-trust.md has the full state machine):
 """
 from __future__ import annotations
 
+from collections import Counter
+
 import json
 from dataclasses import dataclass, field
 from typing import Any, Callable, Literal
 
 from .catalog import Catalog
 from .retrieval import Index
-from .safety import GuardError, canonical_hash, parameterize, tables_in
+from .safety import GuardError, canonical_hash, join_edges, parameterize, tables_in
 from .store import Store, new_id, now
 
 Role = Literal["user", "admin", "owner"]
@@ -120,6 +122,15 @@ class Knowledge:
             seen.add(key)
             out.append(i)
         return out
+
+    def confirmed_joins(self, user: User) -> list[dict[str, Any]]:
+        """Joins proved by the saved reports this person may use (B-055): every column = column join in
+        their SQL, with how many reports use it. Preferred over declared and inferred joins."""
+        counts: Counter = Counter()
+        for item in self.visible(user, "example"):
+            if item.get("sql") and item["status"] in USABLE:
+                counts.update(join_edges(item["sql"], self.dialect))
+        return confirmed_join_rows(counts)
 
     def learned_joins(self, user: User) -> list[dict[str, Any]]:
         out = []
@@ -470,3 +481,15 @@ class Knowledge:
                     self._set_status(item["id"], "stale", actor="system", note=f"schema changed: {str(e)[:200]}")
                 counts["stale"] += 1
         return counts
+
+
+def confirmed_join_rows(counts: Counter) -> list[dict[str, Any]]:
+    """Join-path rows (the shape of cat_join) for joins counted across confirmed reports. Only table pairs
+    that every confirming report joins the same way: when reports join two tables on different columns,
+    the right one depends on the question, and preferring either made join paths worse (doc 08, B-055)."""
+    by_pair: dict[tuple[str, str], set] = {}
+    for e in counts:
+        by_pair.setdefault((e[0], e[2]), set()).add(e)
+    return [{"from_table": ft, "from_cols": fc, "to_table": tt, "to_cols": tc, "source": "confirmed",
+             "confidence": 1.0, "reports": n} for (ft, fc, tt, tc), n in counts.most_common()
+            if len(by_pair[(ft, tt)]) == 1]

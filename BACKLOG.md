@@ -418,9 +418,10 @@ do: Haiku as the agent by default; escalate to Sonnet when a trap, grain, second
 ### [ ] B-054 · Tool result budgets
 do: per-tool token budgets; describe_table returns the columns relevant to the question first (by retrieval score) and a count of the rest. Measure input tokens per question and schema recall@5 (doc 08).
 
-### [~] B-055 · Learned part library (doc 26 §3)
+### [x] B-055 · Learned part library (doc 26 §3)
 do: offline first: decompose gold reports (entity/grain, filters, measures, dimensions, join paths), count recurring parts, and measure leave-one-out coverage. Build the compiler only if coverage is meaningful.
 step 1, 2026-10-21: JMS 72 reports: 69 % of parts recur (joins 93/144, entities 63/72, filters 5/16); 30/72 fully composable. Demo 12: 61 %, 1/12. Next: join-and-entity library, agent writes filters only (doc 26 §3).
+result: 2026-10-21. Join library offline: 134/145 today vs 128/145 (all confirmed joins preferred) vs 133/145 (consistent pairs only): no gain, not wired into the agent. Filters/measures need a larger confirmed history to test. Fixed a join_path crash on ties.
 
 ### [ ] B-056 · Clarify only the part that disagrees
 needs: llm

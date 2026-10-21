@@ -412,3 +412,30 @@ def skeleton_similarity(a: dict[str, float], b: dict[str, float]) -> float:
     top = sum(min(a.get(k, 0.0), b.get(k, 0.0)) for k in keys)
     bottom = sum(max(a.get(k, 0.0), b.get(k, 0.0)) for k in keys)
     return top / bottom if bottom else 0.0
+
+
+def join_edges(sql: str, dialect: str) -> list[tuple[str, str, str, str]]:
+    """Join conditions of a query as (table, column, table, column), aliases resolved to table names and
+    each pair in a fixed order: the joins a confirmed report proves (B-055). Only column = column
+    conditions between two different tables; anything else (literals, functions) is not a join path."""
+    try:
+        tree = sqlglot.parse_one(sql, read=dialect)
+    except ParseError:
+        return []
+    out: set[tuple[str, str, str, str]] = set()
+    for sel in tree.find_all(exp.Select):
+        if not sel.args.get("from_"):
+            continue
+        sources = [sel.args["from_"].this, *(j.this for j in sel.args.get("joins") or [])]
+        aliases = {t.alias_or_name.lower(): t.name.lower() for t in sources if isinstance(t, exp.Table)}
+        for j in sel.args.get("joins") or []:
+            on = j.args.get("on")
+            for eq in (on.find_all(exp.EQ) if on is not None else []):
+                a, b = eq.left, eq.right
+                if not (isinstance(a, exp.Column) and isinstance(b, exp.Column) and a.table and b.table):
+                    continue
+                ta, tb = aliases.get(a.table.lower()), aliases.get(b.table.lower())
+                if ta and tb and ta != tb:
+                    l, r = sorted([(ta, a.name.lower()), (tb, b.name.lower())])
+                    out.add((l[0], l[1], r[0], r[1]))
+    return sorted(out)

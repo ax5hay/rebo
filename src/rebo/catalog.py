@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import heapq
+import itertools
 import json
 import logging
 import re
@@ -305,17 +306,19 @@ class Catalog:
                           for j in joins]}
 
     def join_path(self, start: str, goal: str, learned: list[dict] | None = None) -> list[dict] | None:
-        """Cheapest join path. Cost: declared FK 1.0, learned 0.8, inferred 1.5 (lower = preferred)."""
-        cost = {"fk": 1.0, "learned": 0.8, "inferred": 1.5}
+        """Cheapest join path. Cost: confirmed in saved reports 0.6, learned 0.8, declared FK 1.0, inferred 1.5
+        (lower = preferred)."""
+        cost = {"confirmed": 0.6, "learned": 0.8, "fk": 1.0, "inferred": 1.5}
         edges: dict[str, list[tuple[float, str, dict]]] = {}
         for j in [*self.store.all("SELECT * FROM cat_join"), *(learned or [])]:
             w = cost.get(j["source"], 1.5)
             edges.setdefault(j["from_table"], []).append((w, j["to_table"], j))
             edges.setdefault(j["to_table"], []).append((w, j["from_table"], j))
-        heap: list[tuple[float, str, list[dict]]] = [(0.0, start, [])]
+        tie = itertools.count()  # equal cost and node would otherwise compare the paths (dicts): TypeError
+        heap: list[tuple[float, str, int, list[dict]]] = [(0.0, start, next(tie), [])]
         seen: set[str] = set()
         while heap:
-            d, node, path = heapq.heappop(heap)
+            d, node, _, path = heapq.heappop(heap)
             if node == goal:
                 return path
             if node in seen:
@@ -325,5 +328,5 @@ class Catalog:
                 continue
             for w, nxt, j in edges.get(node, []):
                 if nxt not in seen:
-                    heapq.heappush(heap, (d + w, nxt, [*path, j]))
+                    heapq.heappush(heap, (d + w, nxt, next(tie), [*path, j]))
         return None

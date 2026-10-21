@@ -1,0 +1,878 @@
+{
+ "run": "2026-10-21",
+ "joins": 145,
+ "right_today": "134/145",
+ "right_with_library": "133/145",
+ "rows": [
+  {
+   "id": "cr-4",
+   "join": "case_party.gc_case_id = gc_case.case_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-4",
+   "join": "case_party.np_user_id = user_np.np_user_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-5",
+   "join": "contact.contact_id = family.ip_1_id",
+   "today": false,
+   "with_library": false
+  },
+  {
+   "id": "cr-5",
+   "join": "contract_rel.parent_id = hellosign.hellosign_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-5",
+   "join": "custom_sub_stage.ip_case_id = ip_case.case_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-5",
+   "join": "custom_sub_stage.sub_stage_id = custom_task.custom_substage_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-5",
+   "join": "custom_task.contract_parent_id = hellosign.hellosign_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-5",
+   "join": "custom_task.current_task_version_id = template_task.task_id",
+   "today": false,
+   "with_library": false
+  },
+  {
+   "id": "cr-5",
+   "join": "family.family_id = ip_case.family_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-6",
+   "join": "contact.contact_id = gc_case.gc_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-6",
+   "join": "contract_rel.parent_id = hellosign.hellosign_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-6",
+   "join": "custom_sub_stage.gc_case_id = gc_case.case_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-6",
+   "join": "custom_sub_stage.sub_stage_id = custom_task.custom_substage_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-6",
+   "join": "custom_task.contract_parent_id = hellosign.hellosign_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-6",
+   "join": "custom_task.current_task_version_id = template_task.task_id",
+   "today": false,
+   "with_library": false
+  },
+  {
+   "id": "cr-7",
+   "join": "campaign.campaign_id = case_campaign.campaign_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-7",
+   "join": "case_campaign.case_campaign_id = ip_case.case_campaign_id",
+   "today": false,
+   "with_library": false
+  },
+  {
+   "id": "cr-7",
+   "join": "contact.contact_id = family.ip_1_id",
+   "today": false,
+   "with_library": false
+  },
+  {
+   "id": "cr-7",
+   "join": "family.family_id = ip_case.family_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-8",
+   "join": "campaign.campaign_id = case_campaign.campaign_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-8",
+   "join": "case_campaign.assigned_gc_case = gc_case.case_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-9",
+   "join": "contact.contact_id = gc_case.gc_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-9",
+   "join": "contact.contact_id = user.contact_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-11",
+   "join": "case_party.np_user_id = user_np.np_user_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-12",
+   "join": "ip_case.template_id = template.template_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-13",
+   "join": "ip_case.template_id = template.template_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-15",
+   "join": "contact.contact_id = gc_case.gc_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-15",
+   "join": "gc_case.case_id = pregnancy.gc_case_id",
+   "today": true,
+   "with_library": false
+  },
+  {
+   "id": "cr-16",
+   "join": "contact.contact_id = family.ip_1_id",
+   "today": false,
+   "with_library": false
+  },
+  {
+   "id": "cr-16",
+   "join": "contact.contact_id = family.ip_2_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-16",
+   "join": "family.family_id = ip_case.family_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-17",
+   "join": "contact.contact_id = gc_case.gc_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-18",
+   "join": "agency.agency_id = calculator_custom_response.agency_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-19",
+   "join": "gc_case.case_id = matching_queue.gc_case_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-19",
+   "join": "ip_case.case_id = matching_queue.case_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-20",
+   "join": "contact.contact_id = gc_case.gc_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-20",
+   "join": "gc_case.case_id = lab.gc_case_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-22",
+   "join": "gc_case.case_id = matching_queue.gc_case_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-22",
+   "join": "ip_case.case_id = matching_queue.case_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-25",
+   "join": "gc_case.case_id = matching_queue.gc_case_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-25",
+   "join": "ip_case.case_id = matching_queue.case_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-26",
+   "join": "contact.contact_id = gc_case.gc_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-27",
+   "join": "contact.contact_id = gc_case.gc_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-28",
+   "join": "contact.contact_id = gc_case.gc_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-28",
+   "join": "gc_case.status_id = status.status_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-30",
+   "join": "email_template.email_template_id = template_task.email_template_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-30",
+   "join": "form.form_id = template_task.form_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-30",
+   "join": "template.template_id = template_stage.template_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-30",
+   "join": "template_stage.stage_id = template_sub_stage.template_stage_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-30",
+   "join": "template_sub_stage.sub_stage_id = template_task.template_sub_stage_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-31",
+   "join": "admin.admin_id = case_note.created_by_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-31",
+   "join": "case_note.gc_case_id = gc_case.case_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-32",
+   "join": "contact.contact_id = gc_case.gc_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-33",
+   "join": "contact.contact_id = user_form.contact_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-38",
+   "join": "activity_feed.contact_id = contact.contact_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-40",
+   "join": "admin.admin_id = case_log.created_by_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-40",
+   "join": "case_log.gc_case_id = gc_case.case_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-40",
+   "join": "case_log.ip_case_id = ip_case.case_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-41",
+   "join": "contact.contact_id = contact_note.contact_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-42",
+   "join": "case_note.ip_case_id = ip_case.case_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-44",
+   "join": "favorites.ip_case_id = ip_case.case_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-45",
+   "join": "contact.contact_id = gc_case.gc_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-46",
+   "join": "gc_case.case_id = pregnancy.ed_case_id",
+   "today": false,
+   "with_library": false
+  },
+  {
+   "id": "cr-47",
+   "join": "contact.contact_id = gc_case.gc_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-48",
+   "join": "contact.contact_id = gc_case.gc_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-48",
+   "join": "gc_case.template_id = template.template_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-48",
+   "join": "template.template_id = template_task.template_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-49",
+   "join": "custom_sub_stage.ip_case_id = ip_case.case_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-49",
+   "join": "custom_sub_stage.sub_stage_id = custom_task.custom_substage_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-49",
+   "join": "custom_task.base_task_id = template_task.task_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-51",
+   "join": "case_party.np_user_id = user_np.np_user_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-52",
+   "join": "contact.contact_id = gc_case.gc_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-52",
+   "join": "gc_case.case_id = transfer.gc_case_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-53",
+   "join": "case_party.gc_case_id = gc_case.case_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-54",
+   "join": "contact.status_id = status.status_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-56",
+   "join": "contact.contact_id = family.ip_1_id",
+   "today": false,
+   "with_library": false
+  },
+  {
+   "id": "cr-56",
+   "join": "contact.contact_id = family.ip_2_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-56",
+   "join": "family.family_id = ip_case.family_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-56",
+   "join": "ip_case.case_id = user_form.ip_case_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-56",
+   "join": "user_form.user_form_id = user_form_answer.user_form_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-57",
+   "join": "contact.contact_id = gc_case.gc_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-58",
+   "join": "activity_feed.gc_case_id = gc_case.case_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-58",
+   "join": "contact.contact_id = gc_case.gc_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-58",
+   "join": "gc_case.status_id = status.status_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-59",
+   "join": "activity_feed.gc_case_id = gc_case.case_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-60",
+   "join": "custom_sub_stage.base_sub_stage_id = template_sub_stage.sub_stage_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-60",
+   "join": "custom_sub_stage.gc_case_id = gc_case.case_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-60",
+   "join": "gc_case.template_id = template.template_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-63",
+   "join": "case_provider.clinic_id = clinic.clinic_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-63",
+   "join": "case_provider.ip_case_id = ip_case.case_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-63",
+   "join": "contact.contact_id = family.ip_1_id",
+   "today": false,
+   "with_library": false
+  },
+  {
+   "id": "cr-63",
+   "join": "contact.contact_id = family.ip_2_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-63",
+   "join": "family.family_id = ip_case.family_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-64",
+   "join": "case_party.gc_case_id = gc_case.case_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-65",
+   "join": "case_note.gc_case_id = gc_case.case_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-65",
+   "join": "contact.contact_id = gc_case.gc_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-66",
+   "join": "contact.contact_id = ed_profile.contact_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-66",
+   "join": "contact.contact_id = gc_case.gc_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-70",
+   "join": "contact.contact_id = gc_case.gc_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-70",
+   "join": "gc_case.case_id = matching_queue.gc_case_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-71",
+   "join": "contact.contact_id = contact_lead.contact_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-71",
+   "join": "contact.contact_id = family.ip_1_id",
+   "today": false,
+   "with_library": false
+  },
+  {
+   "id": "cr-71",
+   "join": "contact.contact_id = family.ip_2_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-71",
+   "join": "family.family_id = ip_case.family_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-73",
+   "join": "contact.contact_id = gc_case.gc_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-73",
+   "join": "contact.contact_id = user.contact_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-74",
+   "join": "contact.contact_id = gc_case.gc_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-74",
+   "join": "contact.contact_id = user.contact_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-75",
+   "join": "template.template_id = template_task.template_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-76",
+   "join": "case_note.ip_case_id = ip_case.case_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-76",
+   "join": "contact.contact_id = family.ip_2_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-76",
+   "join": "family.family_id = ip_case.family_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-77",
+   "join": "admin.admin_id = ip_case.assigned_admin",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-77",
+   "join": "contact.contact_id = family.ip_2_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-77",
+   "join": "family.family_id = ip_case.family_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-78",
+   "join": "contact.contact_id = gc_case.gc_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-78",
+   "join": "custom_sub_stage.gc_case_id = gc_case.case_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-78",
+   "join": "custom_sub_stage.sub_stage_id = custom_task.custom_substage_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-78",
+   "join": "custom_task.base_task_id = template_task.task_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-78",
+   "join": "custom_task.contract_parent_id = hellosign.hellosign_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-79",
+   "join": "contact.contact_id = contact_note.contact_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-80",
+   "join": "calendar_event.gc_case_id = gc_case.case_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-80",
+   "join": "contact.contact_id = gc_case.gc_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-82",
+   "join": "contact.contact_id = ed_profile.contact_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-82",
+   "join": "contact.contact_id = gc_case.gc_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-83",
+   "join": "contact.contact_id = ed_profile.contact_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-83",
+   "join": "contact.contact_id = gc_case.gc_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-83",
+   "join": "gc_case.template_id = template.template_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-84",
+   "join": "delivery.case_id = ip_case.case_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-84",
+   "join": "delivery.gc_case_id = gc_case.case_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-84",
+   "join": "family.family_id = ip_case.family_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-85",
+   "join": "admin.admin_id = case_note.created_by_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-85",
+   "join": "case_note.gc_case_id = gc_case.case_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-85",
+   "join": "contact.contact_id = gc_case.gc_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-86",
+   "join": "admin.admin_id = gc_case.assigned_admin",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-86",
+   "join": "contact.contact_id = gc_case.gc_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-86",
+   "join": "gc_case.status_id = status.status_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-87",
+   "join": "contact.contact_id = gc_case.gc_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-87",
+   "join": "gc_case.case_id = matching_queue.gc_case_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-88",
+   "join": "activity_feed.gc_case_id = gc_case.case_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-88",
+   "join": "contact.contact_id = gc_case.gc_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-91",
+   "join": "custom_sub_stage.ip_case_id = ip_case.case_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-91",
+   "join": "custom_sub_stage.sub_stage_id = custom_task.custom_substage_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-91",
+   "join": "custom_task.base_task_id = template_task.task_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "cr-91",
+   "join": "ip_case.status_id = status.status_id",
+   "today": false,
+   "with_library": false
+  }
+ ]
+}

@@ -1,0 +1,122 @@
+{
+ "run": "2026-10-21",
+ "joins": 19,
+ "right_today": "18/19",
+ "right_with_library": "18/19",
+ "rows": [
+  {
+   "id": "gp-01",
+   "join": "building.building_id = unit.building_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "gp-01",
+   "join": "lease.status_id = lease_status.status_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "gp-02",
+   "join": "lease.status_id = lease_status.status_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "gp-02",
+   "join": "lease.tenant_id = tenant.tenant_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "gp-02",
+   "join": "lease.unit_id = unit.unit_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "gp-03",
+   "join": "building.building_id = unit.building_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "gp-03",
+   "join": "maintenance.unit_id = unit.unit_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "gp-04",
+   "join": "lease.lease_id = payment.lease_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "gp-04",
+   "join": "lease.tenant_id = tenant.tenant_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "gp-05",
+   "join": "building.building_id = unit.building_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "gp-05",
+   "join": "building.region_id = region.region_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "gp-05",
+   "join": "lease.lease_id = payment.lease_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "gp-05",
+   "join": "lease.unit_id = unit.unit_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "gp-06",
+   "join": "maintenance.assigned_to = staff.staff_id",
+   "today": false,
+   "with_library": false
+  },
+  {
+   "id": "gp-08",
+   "join": "lease.tenant_id = tenant.tenant_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "gp-09",
+   "join": "building.building_id = unit.building_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "gp-10",
+   "join": "lease.status_id = lease_status.status_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "gp-10",
+   "join": "lease.tenant_id = tenant.tenant_id",
+   "today": true,
+   "with_library": true
+  },
+  {
+   "id": "gp-12",
+   "join": "maintenance.unit_id = unit.unit_id",
+   "today": true,
+   "with_library": true
+  }
+ ]
+}

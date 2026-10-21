@@ -63,3 +63,11 @@ def test_skeleton_ignores_values_aliases_and_order_but_not_shape():
     assert skeleton_similarity(a, same_shape) == 1.0
     assert skeleton_similarity(a, other) < 0.2
     assert "P:status:eq" in a and "T:customer" in a and skeleton("not sql at all (", "sqlite") == {}
+
+
+def test_join_edges_resolve_aliases_and_order_pairs():
+    from rebo.safety import join_edges
+    sql = ("SELECT c.full_name FROM orders o JOIN customer c ON o.customer_id = c.customer_id "
+           "LEFT JOIN note n ON n.author_id = c.customer_id AND n.body = 'x'")
+    assert join_edges(sql, "sqlite") == [("customer", "customer_id", "note", "author_id"),
+                                         ("customer", "customer_id", "orders", "customer_id")]

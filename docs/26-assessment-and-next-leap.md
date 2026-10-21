@@ -113,3 +113,14 @@ filters, and full composition where coverage allows (42 % of the JMS reports). F
 Backlog: B-052 (caching measurement), B-053 (cascade), B-054 (tool budgets), B-055 (part library,
 offline coverage first), B-056 (part-level clarification), B-057 (metamorphic proofs), B-058
 (EXPLAIN gate, RLS passthrough), B-059 (nightly regression from confirmed reports).
+
+**Step 2 (2026-10-21, `tools/join_library_compare.py`, no model): joins learned from confirmed reports
+do not beat the catalog.** Leaving each JMS report out, the bot's join paths reproduce its joins
+134/145 today (declared + inferred at bootstrap); with the other reports' joins preferred, 128/145,
+and 133/145 when only table pairs that every report joins the same way are trusted. Demo: 18/19 either
+way. Two lessons: the catalog already knows the joins (92 %); and the same two tables are joined on
+different columns depending on meaning, so "what another report did" is not a safe default. The join
+library is kept as a function (`Knowledge.confirmed_joins`), **not wired into the agent**. The parts
+idea stands or falls on filters and measures, which recur far less (filters 5/16 on JMS): it needs
+a larger confirmed history than this repository has before it can be tested honestly. Found on the
+way: `Catalog.join_path` crashed on equal-cost ties (fixed, test added).

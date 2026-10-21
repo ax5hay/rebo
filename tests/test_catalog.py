@@ -119,3 +119,12 @@ def test_value_search_falls_back_to_spelling_when_full_text_finds_nothing(app):
     assert hits and hits[0]["value"] == "shipped" and hits[0]["table"] == "orders" and "spelled like" in hits[0]["match"]
     assert app.index.search_values("zzzzqqq") == []                # nothing close: nothing invented
     assert "match" not in app.index.search_values("paused")[0]     # exact hits stay exact
+
+
+def test_join_path_survives_ties_between_equal_paths(app):
+    # two learned joins of equal cost between the same tables used to make the heap compare dicts
+    learned = [{"from_table": "orders", "from_cols": "customer_id", "to_table": "customer", "to_cols": "customer_id", "source": "learned"},
+               {"from_table": "note", "from_cols": "author_id", "to_table": "customer", "to_cols": "customer_id", "source": "learned"},
+               {"from_table": "note", "from_cols": "author_id", "to_table": "orders", "to_cols": "customer_id", "source": "learned"}]
+    path = app.catalog.join_path("note", "customer", learned)
+    assert path is not None and len(path) == 1
