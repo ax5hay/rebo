@@ -135,10 +135,11 @@ done when:
 - doc 20 §5 updated with the numbers.
 result: 2026-10-21, `git log --grep B-012`; 112 passed; research recorded in doc 20 §2.1. eval pending: needs llm (eval_results_gemini_profile.json on the 18 prompts, then doc 20 §5).
 
-### [ ] B-013 · Low-confidence second opinion
+### [x] B-013 · Low-confidence second opinion
 needs: offline
 do: When provenance is `new` and there are more than 2 assumptions, run the fast model as a reviewer on question + SQL + assumptions + 10 rows. It returns `{ok: bool, concern: str}`; a concern is shown as an extra assumption marked "Check: …". Record `review: ok|concern` in usage.
 done when: offline tests cover both outcomes; with `llm`, demo gold before/after in a results file.
+result: 2026-10-21, `git log --grep B-013`; 115 passed. eval pending: needs llm (demo gold before/after).
 
 ### [ ] B-014 · Draft real questions for the JMS gold reports
 needs: offline
