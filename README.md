@@ -19,10 +19,11 @@ JMS is the first test database (`fixtures/jms_staging/`). Nothing in `src/` is J
 uv sync --all-extras
 docker compose up -d db                                  # MySQL 8.0.44 with the JMS staging structure
 uv run --extra synth python tools/synth/synth.py         # synthetic rows (≈88k, ≈5 min)
-cp .env.example .env                                     # set REPORTSBOT_OPENROUTER_API_KEY
+cp reportsbot.example.yaml reportsbot.yaml               # the whole config (~10 values)
+cp .env.example .env                                     # API keys only
 uv run reportsbot bootstrap --describe                   # learn the database
 uv run reportsbot serve                                  # http://127.0.0.1:8080/?user=alice
-uv run pytest                                            # 36 offline tests
+uv run pytest                                            # 56 offline tests (no network, no LLM)
 ```
 
 Curator view: `http://127.0.0.1:8080/review?user=cora&role=curator`.
@@ -39,6 +40,9 @@ tools/localdb/       read-only DB user for the local test database
 fixtures/jms_staging/ JMS staging snapshot, 18 PO-validated eval prompts, measured eval results
 docs/                design and operations documentation (start at docs/README.md)
 ```
+
+Models: Claude (OpenRouter or Anthropic), Gemini, LM Studio (offline) or OpenAI: see docs/20.
+JMS integration without JMS: `mocks/jms/` + `adapters: [jms]`: see docs/18 §4.
 
 ## Documentation
 

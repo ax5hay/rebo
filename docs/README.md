@@ -21,3 +21,7 @@ Read in order the first time. Each document names the code it describes (`file.p
 | 15 | [Roadmap](15-roadmap.md) | Built vs designed, next steps in order of value, known gaps |
 | 16 | [Research basis](16-research-basis.md) | Benchmarks, papers, product designs and versions behind each decision |
 | 17 | [JMS as guinea pig](17-jms-guinea-pig.md) | Measured results on JMS, learning walkthrough, pilot script |
+| 18 | [Production build](18-production-build.md) | **How to continue**: separate repo, the ~10-value config, JMS mocks, phased plan of small commits with gates |
+| 19 | [Self-hosted alternatives](19-self-hosted-alternatives.md) | Open-source, Docker/local options for every component, verdicts, production and lean stacks |
+| 20 | [LLM providers](20-llm-providers.md) | Claude / Gemini / LM Studio / OpenRouter, routing, prices, measured comparison |
+| 21 | [Direction audit](21-direction-audit.md) | Every requirement vs what is built, with evidence and gaps |

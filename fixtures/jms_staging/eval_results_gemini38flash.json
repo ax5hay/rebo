@@ -1,0 +1,415 @@
+{
+ "run": "2026-10-21",
+ "model": "openrouter:google/gemini-3.8-flash",
+ "escalate": "",
+ "database": "local synthetic copy of JMS staging (seed 7, cap 3000)",
+ "summary": {
+  "reports": 3,
+  "clarify": 5,
+  "errors": 10,
+  "escalated": 0,
+  "median_seconds": 91.7,
+  "total_cost_usd": 0.8614
+ },
+ "cases": [
+  {
+   "id": "validated-01",
+   "kind": "error",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 93.9,
+   "question": "Show me all active surrogates in Screening and list their current substage.",
+   "usage": {},
+   "cost_usd": null
+  },
+  {
+   "id": "validated-02",
+   "kind": "report",
+   "rows": 12,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 103.1,
+   "question": "Which IP cases are in matching right now? Include the names and emails for both IPs.",
+   "usage": {
+    "requests": 24,
+    "input_tokens": 479592,
+    "output_tokens": 5129,
+    "cache_read_tokens": 375957,
+    "tool_calls": 23,
+    "model": "openrouter:google/gemini-3.8-flash",
+    "escalated": false
+   },
+   "cost_usd": 0.13767,
+   "title": "IP Cases Currently in Matching",
+   "sql": "SELECT\n    ipc.case_id AS `Case ID`,\n    ipc.case_file_name AS `Case Name`,\n    ipc.stage AS `Stage`,\n    s.status AS `Status`,\n    NULLIF(CONCAT_WS(' ', c1.first_name, c1.last_name), '') AS `IP 1 Name`,\n    c1.email AS `IP 1 Email`,\n    NULLIF(CONCAT_WS(' ', c2.first_name, c2.last_name), '') AS `IP 2 Name`,\n    c2.email AS `IP 2 Email`\nFROM ip_case ipc\nLEFT JOIN status s\n    ON ipc.status_id = s.status_id\nLEFT JOIN family f\n    ON ipc.family_id = f.family_id\nLEFT JOIN contact c1\n    ON f.ip_1_id = c1.contact_id\nLEFT JOIN contact c2\n    ON f.ip_2_id = c2.contact_id\nWHERE ipc.stage = 'matching'\n  AND ipc.active = 1\nORDER BY ipc.case_id ASC",
+   "assumptions": [
+    "Identified cases 'in matching right now' as active intended-parent (IP) cases currently in the 'matching' workflow stage.",
+    "Retrieved primary and secondary intended parents from the family profile associated with each IP case.",
+    "Displayed secondary intended parent details as blank when a case only has a single intended parent."
+   ]
+  },
+  {
+   "id": "validated-03",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 69.9,
+   "question": "List every active case assigned to [admin name].",
+   "usage": {
+    "requests": 15,
+    "input_tokens": 156606,
+    "output_tokens": 4104,
+    "cache_read_tokens": 71409,
+    "tool_calls": 14,
+    "model": "openrouter:google/gemini-3.8-flash",
+    "escalated": false
+   },
+   "cost_usd": 0.09311,
+   "questions": [
+    {
+     "question": "Which administrator would you like to see active cases for?",
+     "options": [
+      "Margaret Little",
+      "Nancy Rodriguez",
+      "Linda Lee",
+      "All administrators"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "validated-04",
+   "kind": "error",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 79.8,
+   "question": "Which cases have had their profiles approved in the last 30 days?",
+   "usage": {},
+   "cost_usd": null
+  },
+  {
+   "id": "validated-05",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 107.4,
+   "question": "Show me the most recent notes on this journey, pinned ones first.",
+   "usage": {
+    "requests": 21,
+    "input_tokens": 319976,
+    "output_tokens": 7822,
+    "cache_read_tokens": 224173,
+    "tool_calls": 20,
+    "model": "openrouter:google/gemini-3.8-flash",
+    "escalated": false
+   },
+   "cost_usd": 0.1298,
+   "questions": [
+    {
+     "question": "Which journey would you like to see notes for?",
+     "options": [
+      "All journeys (show notes across all cases)",
+      "A specific Intended Parent (IP) case",
+      "A specific Gestational Carrier (GC) case"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "validated-06",
+   "kind": "error",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 88.6,
+   "question": "List all overdue tasks across my journeys.",
+   "usage": {},
+   "cost_usd": null
+  },
+  {
+   "id": "validated-07",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 42.2,
+   "question": "What tasks are included in the [template name] workflow?",
+   "usage": {
+    "requests": 9,
+    "input_tokens": 44432,
+    "output_tokens": 1781,
+    "cache_read_tokens": 3378,
+    "tool_calls": 8,
+    "model": "openrouter:google/gemini-3.8-flash",
+    "escalated": false
+   },
+   "cost_usd": 0.04149,
+   "questions": [
+    {
+     "question": "Which workflow template would you like to see tasks for?",
+     "options": [
+      "Gestational Carrier Workflow (DEFAULT)",
+      "Intended Parent Workflow - (IP/ED)  (DEFAULT)",
+      "Intended Parent Workflow - Welcome (Fast Track)  (DEFAULT)",
+      "IP/GC Case Management (DEFAULT)"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "validated-08",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 63.1,
+   "question": "Which contacts came in through [marketing source] and haven't completed a form since intake?",
+   "usage": {
+    "requests": 17,
+    "input_tokens": 240513,
+    "output_tokens": 3737,
+    "cache_read_tokens": 127946,
+    "tool_calls": 16,
+    "model": "openrouter:google/gemini-3.8-flash",
+    "escalated": false
+   },
+   "cost_usd": 0.11884,
+   "questions": [
+    {
+     "question": "Which marketing (referral) source would you like to report on?",
+     "options": [
+      "Facebook",
+      "Search Engine",
+      "Blog",
+      "Personal Referral"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "validated-09",
+   "kind": "error",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 133.4,
+   "question": "List egg donors available for a cycle who haven't donated before.",
+   "usage": {},
+   "cost_usd": null
+  },
+  {
+   "id": "validated-10",
+   "kind": "error",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 91.7,
+   "question": "Which contracts are still waiting on a signature?",
+   "usage": {},
+   "cost_usd": null
+  },
+  {
+   "id": "validated-11",
+   "kind": "report",
+   "rows": 39,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 103.2,
+   "question": "Show me which intended parents have never logged into their portal.",
+   "usage": {
+    "requests": 26,
+    "input_tokens": 574337,
+    "output_tokens": 5552,
+    "cache_read_tokens": 475001,
+    "tool_calls": 25,
+    "model": "openrouter:google/gemini-3.8-flash",
+    "escalated": false
+   },
+   "cost_usd": 0.14404,
+   "title": "Intended Parents Who Have Never Logged In",
+   "sql": "SELECT \n    u.user_id AS `User ID`,\n    u.first_name AS `First Name`,\n    u.last_name AS `Last Name`,\n    u.email AS `Email`,\n    u.created AS `Account Created`,\n    CASE \n        WHEN u.active = 1 THEN 'Active' \n        ELSE 'Inactive' \n    END AS `Account Status`,\n    CASE \n        WHEN u.confirmed_email = 1 THEN 'Yes' \n        ELSE 'No' \n    END AS `Email Confirmed`\nFROM user u\nWHERE u.user_type = 'IP'\n  AND u.last_login IS NULL\nORDER BY u.created DESC",
+   "assumptions": [
+    "Intended parents are identified by user accounts categorized as 'IP' (Intended Parent).",
+    "Users who have never logged in are determined by having no recorded last login date.",
+    "Both active and inactive accounts are included, with their active status and email confirmation status displayed."
+   ]
+  },
+  {
+   "id": "validated-12",
+   "kind": "error",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 64.3,
+   "question": "Which cases have active, incomplete campaigns right now?",
+   "usage": {},
+   "cost_usd": null
+  },
+  {
+   "id": "validated-13",
+   "kind": "error",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 186.1,
+   "question": "How many open To Dos does each admin currently have assigned to them?",
+   "usage": {},
+   "cost_usd": null
+  },
+  {
+   "id": "validated-14",
+   "kind": "report",
+   "rows": 129,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 102.1,
+   "question": "Which surrogates are still waiting on their profile to be approved?",
+   "usage": {
+    "requests": 22,
+    "input_tokens": 528302,
+    "output_tokens": 6126,
+    "cache_read_tokens": 408675,
+    "tool_calls": 21,
+    "model": "openrouter:google/gemini-3.8-flash",
+    "escalated": false
+   },
+   "cost_usd": 0.15768,
+   "title": "Surrogates Awaiting Profile Approval",
+   "sql": "SELECT\n    gc.case_id AS case_id,\n    COALESCE(NULLIF(TRIM(CONCAT(COALESCE(c.first_name, ''), ' ', COALESCE(c.last_name, ''))), ''), gc.case_file_name) AS surrogate_name,\n    c.email AS email,\n    c.phone_number AS phone_number,\n    gc.stage AS stage,\n    s.status AS status,\n    NULLIF(TRIM(CONCAT(COALESCE(a.first_name, ''), ' ', COALESCE(a.last_name, ''))), '') AS assigned_admin,\n    gc.created AS case_created_at\nFROM gc_case gc\nJOIN contact c ON gc.gc_id = c.contact_id\nLEFT JOIN status s ON gc.status_id = s.status_id\nLEFT JOIN admin a ON gc.assigned_admin = a.admin_id\nWHERE gc.case_type = 'surrogate'\n  AND c.gc_profile_approved IS NULL\n  AND gc.active = 1\n  AND gc.closed IS NULL\nORDER BY gc.created DESC",
+   "assumptions": [
+    "Identified surrogates through case records marked with a case type of 'surrogate' linked to their contact profiles.",
+    "Interpreted 'waiting on profile approval' as contacts whose gestational carrier profile approval date has not been set (is empty/null).",
+    "Filtered to active, unclosed cases to reflect surrogates currently progressing through the workflow."
+   ]
+  },
+  {
+   "id": "validated-15",
+   "kind": "error",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 79.4,
+   "question": "Show me egg donor profiles that haven't been approved by the agency yet.",
+   "usage": {},
+   "cost_usd": null
+  },
+  {
+   "id": "validated-16",
+   "kind": "error",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 89.6,
+   "question": "Pull a list of sperm donors whose profiles are pending approval.",
+   "usage": {},
+   "cost_usd": null
+  },
+  {
+   "id": "validated-17",
+   "kind": "error",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 100.1,
+   "question": "Show me intended parents whose profile has been approved.",
+   "usage": {},
+   "cost_usd": null
+  },
+  {
+   "id": "validated-18",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 36.4,
+   "question": "Which [GC or IP] cases are missing [specific form]?",
+   "usage": {
+    "requests": 8,
+    "input_tokens": 45637,
+    "output_tokens": 2079,
+    "cache_read_tokens": 10015,
+    "tool_calls": 7,
+    "model": "openrouter:google/gemini-3.8-flash",
+    "escalated": false
+   },
+   "cost_usd": 0.03879,
+   "questions": [
+    {
+     "question": "Which case type would you like to check?",
+     "options": [
+      "Gestational Carrier (GC) cases",
+      "Intended Parent (IP) cases",
+      "Both GC and IP cases"
+     ]
+    },
+    {
+     "question": "Which specific form should be checked for missing submissions?",
+     "options": [
+      "Basic IP Intake Form",
+      "Identification Card",
+      "A: Basic Info",
+      "GC - Gather Form"
+     ]
+    }
+   ]
+  }
+ ]
+}

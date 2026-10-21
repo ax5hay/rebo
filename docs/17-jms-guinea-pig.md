@@ -76,8 +76,9 @@ Use this to exercise the full lifecycle with three testers and one curator:
    bootstrap → it is restored automatically.
    *Measured 2026-10-21:* the first half ran live. Alice's example went `stale` with the note
    "schema changed: Unknown column: ordering". The column was renamed back, but the restoring bootstrap
-   was stopped by the host (low memory) before it finished, so the automatic restore was **not observed
-   live**. It is covered by `tests/test_learning.py::test_schema_change_marks_stale_then_repairs`. The
+   was stopped by the host (low memory). The next bootstrap completed and **restored the item to
+   `active` automatically** (observed live). It is also covered by
+   `tests/test_learning.py::test_schema_change_marks_stale_then_repairs`. The
    same run found and fixed a bug: a bootstrap without `--describe` used to wipe drafted descriptions.
 
 ## 5. Repeat the measurements

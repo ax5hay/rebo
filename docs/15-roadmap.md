@@ -1,5 +1,8 @@
 # 15 · What is built, what is designed, what is next
 
+> The phased, commit-by-commit continuation plan is **doc 18**; this page records the slim build's
+> state and the original design backlog that doc 18 schedules.
+
 This branch is a **slim but working** implementation. "Built" items are in `src/` and exercised by
 tests or the live runs in doc 17.
 

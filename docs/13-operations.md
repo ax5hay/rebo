@@ -1,27 +1,32 @@
 # 13 · Operations
 
-## 1. Configuration (environment only)
+## 1. Configuration: `reportsbot.yaml` + secrets in the environment
 
-| Variable | Default | Kind | Meaning |
+The whole configuration is one small YAML file (template `reportsbot.example.yaml`; path from
+`REPORTSBOT_CONFIG`, default `./reportsbot.yaml`). Unknown keys are errors. Precedence:
+`REPORTSBOT_*` environment variables > YAML > defaults.
+
+| YAML key | Env override | Default | Meaning |
 |---|---|---|---|
-| `REPORTSBOT_DATABASE_URL` | — (required) | wiring | SQLAlchemy URL of the database to report on. **Use a read-only user.** |
-| `REPORTSBOT_OPENROUTER_API_KEY` | empty | wiring | Needed for chat and `bootstrap --describe` |
-| `REPORTSBOT_MODEL` | `anthropic/claude-sonnet-5.5` | wiring | Agent model (any OpenRouter model with tool calling) |
-| `REPORTSBOT_FAST_MODEL` | `anthropic/claude-haiku-5.5` | wiring | Description drafting |
-| `REPORTSBOT_STATE_DIR` | `data` | wiring | Where `state.db` lives |
-| `REPORTSBOT_ROW_LIMIT` | 500 | limit | Rows returned per report |
-| `REPORTSBOT_PROBE_ROW_LIMIT` | 20 | limit | Rows per exploratory query |
-| `REPORTSBOT_QUERY_TIMEOUT_S` | 30 | limit | Per-statement timeout in the DB |
-| `REPORTSBOT_ALLOW_TABLES` | empty (all) | limit | Comma-separated table allowlist |
-| `REPORTSBOT_DENY_COLUMNS` | empty | limit | Regex on `table.column` to protect, on top of auto-detection |
-| `REPORTSBOT_MAX_TOOL_CALLS` | 25 | limit | Per user turn |
-| `REPORTSBOT_SHARE_THRESHOLD` | 3 | learning | Distinct confirmers before auto-propose |
-| `REPORTSBOT_EMBEDDINGS` | true | feature | Use fastembed if installed |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | unset | feature | Turn on tracing (doc 11) |
-| `REPORTSBOT_TRACE_CONTENT` | false | feature | Include prompts/results in traces |
+| `database` | `REPORTSBOT_DATABASE_URL` | required | SQLAlchemy URL; **read-only user** |
+| `models.agent` | `REPORTSBOT_MODEL` | `openrouter:anthropic/claude-sonnet-5.5` | new questions (doc 20) |
+| `models.fast` | `REPORTSBOT_FAST_MODEL` | `openrouter:anthropic/claude-haiku-5.5` | reuse turns, descriptions |
+| `models.escalate` | `REPORTSBOT_ESCALATE_MODEL` | empty | one retry of failed turns |
+| `models.fallback` | `REPORTSBOT_FALLBACK_MODELS` (JSON list) | `[]` | API-outage fallbacks |
+| `lmstudio_url` | `REPORTSBOT_LMSTUDIO_URL` | `http://127.0.0.1:1234/v1` | offline inference |
+| `state_dir` | `REPORTSBOT_STATE_DIR` | `data` | where `state.db` lives |
+| `limits.rows` / `probe_rows` / `query_timeout_s` / `tool_calls` | `REPORTSBOT_ROW_LIMIT` / `…PROBE_ROW_LIMIT` / `…QUERY_TIMEOUT_S` / `…MAX_TOOL_CALLS` | 500 / 20 / 30 / 25 | safety and cost ceilings |
+| `allowed_tables` | `REPORTSBOT_ALLOW_TABLES` (comma list) | all | allowlist |
+| `protected_columns` | `REPORTSBOT_DENY_COLUMNS` | empty | regex on `table.column`, added to auto-detected secrets |
+| `sharing.threshold` | `REPORTSBOT_SHARE_THRESHOLD` | 3 | distinct people before auto-propose |
+| `embeddings` | `REPORTSBOT_EMBEDDINGS` | true | local vectors |
+| `auth.mode` / `auth.issuer` | `REPORTSBOT_AUTH_MODE` / `REPORTSBOT_JWT_ISSUER` | `headers` / `orchid` | identity source (doc 10) |
+| `adapters` | `REPORTSBOT_ADAPTERS` (JSON list) | `[]` | host contracts, e.g. `[jms]` |
 
-Read from the process environment or `.env` in the working directory (`settings.py`). The only
-setting with business meaning (`DENY_COLUMNS`) is a safety control, not domain knowledge.
+Secrets (environment or `.env` only): `OPENROUTER_API_KEY` (or `REPORTSBOT_OPENROUTER_API_KEY`),
+`ANTHROPIC_API_KEY`, `GEMINI_API_KEY`/`GOOGLE_API_KEY`, `OPENAI_API_KEY`, `REPORTSBOT_JWT_SECRET`.
+Tracing: `OTEL_EXPORTER_OTLP_ENDPOINT`, `REPORTSBOT_TRACE_CONTENT` (doc 11).
+The only setting with business meaning (`protected_columns`) is a safety control, not domain knowledge.
 
 ## 2. CLI
 
@@ -43,7 +48,8 @@ git init && git add -A && git commit -m "reports bot"      # optional: make it i
 uv sync --all-extras                                        # Python 3.13 is fetched by uv if missing
 docker compose up -d db                                     # MySQL 8.0.44 with the JMS staging structure
 uv run --extra synth python tools/synth/synth.py            # ~88k synthetic rows (≈5 min)
-cp .env.example .env                                        # then fill REPORTSBOT_OPENROUTER_API_KEY
+cp reportsbot.example.yaml reportsbot.yaml                 # ~10 values
+cp .env.example .env                                        # API keys
 uv run reportsbot bootstrap --describe                      # ≈4 min (≈1.5 min without --describe)
 uv run reportsbot serve                                     # open http://127.0.0.1:8080/?user=alice
 uv run pytest                                               # offline tests, no network needed
