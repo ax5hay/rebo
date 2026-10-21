@@ -596,7 +596,7 @@ def mount_ui(api: FastAPI, app: App) -> None:
                     return
                 cfg = admin_ops.get_config(app, u)
                 ui.label(f"Configuration · {cfg['path']}").classes("text-lg font-semibold")
-                ui.label("About 10 values. Meaning is never configured here; the bot learns it. API keys stay in "
+                ui.label("About 20 values. Meaning is never configured here; the bot learns it. API keys stay in "
                          "environment variables. Changes are validated, kept in history, and apply after a restart.").classes("text-sm")
                 text = ui.textarea(value=cfg["yaml"]).classes("w-full font-mono").props("rows=22")
                 note = ui.input("Why are you changing it?").classes("w-full")
