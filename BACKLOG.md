@@ -312,10 +312,11 @@ do: Add `deploy/auth/`: oauth2-proxy in front of the bot (`auth.mode: headers`),
 done when: compose example plus a doc 13 section.
 result: 2026-10-21, `git log --grep B-036`; header stripping verified against oauth2-proxy; also fixed X-User-* spoofing behind the proxy. Pocket ID sign-in not run end to end.
 
-### [ ] B-037 · Operator runbook
+### [x] B-037 · Operator runbook
 needs: offline
 do: Write `docs/24-runbook.md`: backup/restore of `state.db`, upgrade, revalidate after target-DB migrations, rotating keys, moving to Postgres, exporting knowledge.
 done when: the doc exists and is linked.
+result: 2026-10-21, `git log --grep B-037`; plus tools/copy_state.py for the Postgres move (verified on the JMS catalogue).
 
 ## Phase P4: JMS track (all against the mock; no JMS access)
 
