@@ -8,7 +8,12 @@ also in git history; this file is the short version a new session reads first.
 
 - **Working product, slim build.** Bot, learning lifecycle, roles (user/admin/owner), editable memory,
   undoable feedback, requests, owner config editing, JMS adapter + mock, demo domain, evals, export
-  bundle, doctor. 81 offline tests passing.
+  bundle, doctor. Since 2026-10-21 (second machine): CI + pre-commit, domain-word guard, grain check,
+  ask-gate, remembered clarifications, no-model routes (direct/params/rerun), question masking,
+  cache-stable prefix, multi-turn eval, model profiles, second opinion, pins, JMS draft questions.
+  117 offline tests passing.
+- **Eval debt:** every item since B-005 that changes answers says `eval pending: needs llm` in
+  BACKLOG.md. With a key, run those measurements first (each item names its results file).
 - **Next work:** `BACKLOG.md`, in order, starting at the first `[ ]` item the machine can do
   (`tools/doctor.py` prints it). B-001 … B-045 cover every proposed item from docs 15, 18 and 22.
 - **Direction and rules:** `AGENTS.md`. Plan and gates: `docs/18-production-build.md`.
@@ -41,6 +46,10 @@ on gold answers, not on row counts of unconfirmed answers.
 - sqlglot 30: `NOT LIKE` is `Like(negate=True)`, not `Not(Like)`.
 - MySQL 8 `information_schema` returns upper-case column names unless aliased.
 - SQLite/Postgres `TEXT` is the normal string type: decide "free text" by average length, not by type.
+- On macOS the copied tree had CRLF line endings on some files: `git status` showed them modified with
+  no content change (`git diff --ignore-cr-at-eol` empty). They were stashed, not committed.
+- The domain-word guard (`tests/test_no_domain_words.py`) flags plain words that are also JMS table
+  names (template, family, ...). Add genuine English words to `PLAIN_WORDS`; never JMS identifiers.
 - When killing a process by command-line match, the pattern can match your own shell. Kill by port
   or PID instead.
 - The host stopped long background jobs under memory pressure. Run heavy jobs (bootstrap with
@@ -70,3 +79,4 @@ on gold answers, not on row counts of unconfirmed answers.
 | Date | Session | Done | Next |
 |---|---|---|---|
 | 2026-10-21 | original machine | everything up to the "continue" protocol; a fresh-machine simulation (unzip → `uv sync` → doctor) found and fixed two bugs: the demo config was never shipped, and keys in `.env` were invisible to the bot. Verified: history restored, 81 tests pass, NEXT = B-001 | B-001 |
+| 2026-10-21 | second machine (macOS) | installed uv (brew); CRLF noise stashed; B-001…B-014 and B-016 done in small commits; all LLM measurements pending (no key) | B-017 |
