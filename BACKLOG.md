@@ -26,10 +26,11 @@ do: `.github/workflows/ci.yml` runs on push and PR: `uv sync --frozen --all-extr
 done when: the workflow file exists, and running the same commands locally is green.
 result: 2026-10-21, 3854d05 205d27c. Local: 81 passed, ruff clean (after fixing B017/F401). Not run on GitHub (not pushed).
 
-### [ ] B-002 · Pre-commit hooks
+### [x] B-002 · Pre-commit hooks
 needs: offline
 do: `.pre-commit-config.yaml` with ruff (same rules as B-001) and a local hook running `python tools/export_bundle.py --out <tmp>` in check mode. Add a `--check-only` flag to `export_bundle.py` that scans without writing a zip. Document in CONTRIBUTING (B-004).
 done when: `uv run python tools/export_bundle.py --check-only` exits 0 on a clean tree and 1 when a fake key is planted (test).
+result: 2026-10-21, see `git log --grep B-002`; 82 passed; pre-commit run --all-files passes. CONTRIBUTING mention left to B-004.
 
 ### [ ] B-003 · Guard: no domain words in src/
 needs: offline
