@@ -134,9 +134,13 @@ confirmation needs an identified person. Example Claude Code config:
    `X-User-Role` = `curator` for admins with the reports-admin permission, and `X-User-Team` = agency id.
 2. JMS UI renders the `/api/ask` payload with its own components, using the `messages.py` texts
    returned in the payload.
-3. Optional **"Save to Report Builder"** button: the host converts `sql` with its own translator
-   (`orchid/utils/report_query.py`). This stays in the host, so the bot stays database-agnostic
-   (doc 14).
+3. Optional **"Save to Report Builder"** (B-039): with `adapters: {jms: {save_url: <host URL>}}`
+   every report answer also offers the option `save`. Choosing it POSTs the `custom_report` fields
+   (`title`, `sql`, `created_by` = the JWT user id; fixtures/jms_contract README §4) to that URL and
+   tells the user whether the saved report opens **editable** or **view-only** (with the host's
+   reason). The host still translates the SQL with its own reader, so the bot stays
+   database-agnostic. Tested against `mocks/jms/server.py` (`POST /mock/custom-reports`); combine
+   with `builder_compatible: true` (B-038) so saved reports open editable.
 
 **Report Builder profile (B-038).** `adapters: {jms: {builder_compatible: true}}` (instead of
 `adapters: [jms]`) makes every report SQL the staging Report Builder can open as editable: one flat

@@ -117,6 +117,31 @@ def to_jms(contact_id: int, r: dict[str, Any]) -> dict[str, Any]:
 
 def router(app: App) -> APIRouter:
     r = APIRouter()
+    save_url = app.settings.adapter_options("jms").get("save_url")
+
+    def with_save(resp: dict[str, Any]) -> dict[str, Any]:
+        """With save_url set, a report also offers "Save to Report Builder" (README §4)."""
+        if save_url and resp.get("reports_phase") == "result":
+            resp["reports_options"].append(_option("save", "Save to Report Builder"))
+        return resp
+
+    def save_to_builder(user: User, turn: dict[str, Any]) -> str:
+        """POST the custom_report fields to the host; say whether the report opens editable."""
+        import httpx2
+        client = getattr(app, "host_client", None) or httpx2.Client(timeout=10)
+        body = {"title": json.loads(turn["payload"])["title"], "sql": turn["sql"],
+                "created_by": int(user.id) if user.id.isdigit() else None}
+        try:
+            r = client.post(save_url, json=body)
+            r.raise_for_status()
+            saved = r.json()
+        except Exception as e:
+            return f"Saving to the Report Builder failed ({str(e)[:120]}). Nothing was saved."
+        rid = saved.get("custom_report_id")
+        if saved.get("editable"):
+            return f"Saved to the Report Builder as report #{rid}. It opens editable there."
+        return (f"Saved to the Report Builder as report #{rid}, but it opens view-only: "
+                f"{saved.get('uneditable_reason') or 'the Builder cannot edit this query'}.")
     if app.settings.adapter_options("jms").get("builder_compatible"):
         app.sql_checks.append(lambda sql: (f"the host's Report Builder cannot open it as an editable report: {p}. "
                                            "Use one flat SELECT with plain columns, INNER or LEFT joins and AND-ed "
@@ -150,6 +175,10 @@ def router(app: App) -> APIRouter:
             return {"contact_id": contact_id, "message": res["message"], "reports_session_id": conv,
                     "reports_phase": "feedback", "reports_awaiting": awaiting, "reports_options": [],
                     "reports_allow_freetext": True, "columns": [], "rows": []}
+        if opt == "save":
+            return {"contact_id": contact_id, "message": save_to_builder(user, last_turn(user, conv, "report")),
+                    "reports_session_id": conv, "reports_phase": "feedback", "reports_awaiting": "freetext",
+                    "reports_options": [], "reports_allow_freetext": True, "columns": [], "rows": []}
         if opt.startswith("remember:"):
             res = app.remember(user, opt.split(":", 1)[1], True)
             return {"contact_id": contact_id, "message": res["message"], "reports_session_id": conv,
@@ -181,7 +210,7 @@ def router(app: App) -> APIRouter:
                     "reports_options": [], "reports_allow_freetext": False, "columns": [], "rows": [],
                     "job_id": job}
         try:
-            return to_jms(contact_id, await app.ask(user, text, conv))
+            return with_save(to_jms(contact_id, await app.ask(user, text, conv)))
         except PermissionError as e:
             raise HTTPException(403, str(e)) from e
         except RateLimited as e:

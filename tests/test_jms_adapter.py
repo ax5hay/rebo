@@ -136,3 +136,27 @@ def test_builder_compatible_reports_retry_until_the_builder_can_open_them(app, m
         assert len(seen) == 2 and "Report Builder" in seen[1] and "GROUP" in seen[1] and r["row_count"] == 10
     else:
         assert len(seen) == 1 and r["row_count"] == 3
+
+
+@pytest.mark.parametrize("sql, editable", [
+    ("SELECT full_name AS customer FROM customer WHERE status = 'paused'", True),
+    ("SELECT status, COUNT(*) AS n FROM customer GROUP BY status", False)])
+def test_save_to_report_builder_reports_editable_or_view_only(app, monkeypatch, sql, editable):
+    monkeypatch.setenv("REPORTSBOT_JWT_SECRET", SECRET)
+    app.settings.auth_mode, app.settings.jwt_secret = "jwt", SECRET
+    app.settings.adapters = {"jms": {"save_url": "http://jms/mock/custom-reports"}}
+    app.__dict__["agent"] = build_agent(build_model("lmstudio:m", app.settings, http_client=httpx2.AsyncClient(
+        transport=httpx2.MockTransport(lambda req: httpx2.Response(200, json=_completion(
+            "present_report", {"title": "Customers", "assumptions": [], "sql": sql}))))))
+    jms = TestClient(mock_jms.app)
+    app.host_client = httpx2.Client(transport=httpx2.MockTransport(
+        lambda r: httpx2.Response(200, json=jms.post("/mock/custom-reports", json=json.loads(r.content)).json())))
+    client = TestClient(create_app(app, with_ui=False))
+    first = client.post("/api/v1/chat/0", headers=token(), json={"message": "customers"}).json()
+    assert "save" in [o["option_id"] for o in first["reports_options"]]
+    saved = client.post("/api/v1/chat/0", headers=token(), json={"message": "", "reports": {
+        "action": "select_option", "option_id": "save", "reports_session_id": first["reports_session_id"]}}).json()
+    assert "Saved to the Report Builder as report #" in saved["message"]
+    assert ("opens editable" in saved["message"]) == editable and ("view-only" in saved["message"]) != editable
+    stored = jms.get(f"/mock/custom-reports/{saved['message'].split('#')[1].split('.')[0].split(',')[0]}").json()
+    assert stored["report_query"] == sql and stored["created_by"] == 7
