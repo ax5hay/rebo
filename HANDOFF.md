@@ -8,7 +8,7 @@ also in git history; this file is the short version a new session reads first.
 
 - **Working product, slim build.** Bot, learning lifecycle, roles (user/admin/owner), editable memory,
   undoable feedback, requests, owner config editing, JMS adapter + mock, demo domain, evals, export
-  bundle, doctor. 80 offline tests passing.
+  bundle, doctor. 81 offline tests passing.
 - **Next work:** `BACKLOG.md`, in order, starting at the first `[ ]` item the machine can do
   (`tools/doctor.py` prints it). B-001 … B-045 cover every proposed item from docs 15, 18 and 22.
 - **Direction and rules:** `AGENTS.md`. Plan and gates: `docs/18-production-build.md`.
@@ -69,4 +69,4 @@ on gold answers, not on row counts of unconfirmed answers.
 
 | Date | Session | Done | Next |
 |---|---|---|---|
-| 2026-10-21 | original machine | everything up to `BACKLOG.md` creation (see git log) | B-001 |
+| 2026-10-21 | original machine | everything up to the "continue" protocol; a fresh-machine simulation (unzip → `uv sync` → doctor) found and fixed two bugs: the demo config was never shipped, and keys in `.env` were invisible to the bot. Verified: history restored, 81 tests pass, NEXT = B-001 | B-001 |
