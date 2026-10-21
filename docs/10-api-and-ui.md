@@ -138,6 +138,15 @@ confirmation needs an identified person. Example Claude Code config:
    (`orchid/utils/report_query.py`). This stays in the host, so the bot stays database-agnostic
    (doc 14).
 
+**Report Builder profile (B-038).** `adapters: {jms: {builder_compatible: true}}` (instead of
+`adapters: [jms]`) makes every report SQL the staging Report Builder can open as editable: one flat
+SELECT, plain or aliased columns, INNER/LEFT joins, AND-ed simple filters, `lower(col) LIKE` as the
+only function (`adapters/jms.py::builder_grammar_problem`; the JMS mock uses the same check). The
+adapter registers it in `App.sql_checks`; the report validator turns a violation into one more
+`ModelRetry` naming the problem. Consequence: totals, counts and grouped reports cannot be
+produced in this mode (the Builder cannot express them); the bot then explains or asks. Off by
+default, so core behaviour is unchanged (decision in HANDOFF §4).
+
 ## React Ask page (`web/`, B-034)
 
 `web/` is a Vite 8 + React 19 + TypeScript app for people who ask questions: report cards (provenance

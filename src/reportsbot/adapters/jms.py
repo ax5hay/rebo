@@ -19,6 +19,9 @@ from __future__ import annotations
 import json
 from typing import Any
 
+import sqlglot
+from sqlglot import exp
+
 from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -26,6 +29,42 @@ from ..api import decode_jwt, user_from_claims
 from ..knowledge import User
 from ..service import App, RateLimited
 from ..store import new_id
+
+
+# ---- Report Builder grammar (README §4): with adapters: {jms: {builder_compatible: true}} every report
+# must be SQL the staging Report Builder can open as an editable report.
+_ALLOWED_OPS = (exp.EQ, exp.NEQ, exp.GT, exp.GTE, exp.LT, exp.LTE, exp.Is, exp.Like)
+_REJECTED = (exp.With, exp.Union, exp.Intersect, exp.Except, exp.Distinct, exp.Group, exp.Having, exp.Order,
+             exp.Case, exp.In, exp.Between, exp.Or, exp.Subquery, exp.Window)
+
+
+def builder_grammar_problem(sql: str) -> str | None:
+    """Approximates the staging Report Builder reader (orchid/utils/report_query.py
+    translate_sql_to_query_dict): one flat SELECT, plain or aliased columns, INNER/LEFT joins,
+    AND-ed simple filters, no functions except LOWER(col) LIKE. None = editable."""
+    try:
+        tree = sqlglot.parse_one(sql, read="mysql")
+    except Exception as e:
+        return f"does not parse: {e}"
+    if not isinstance(tree, exp.Select):
+        return "not a single SELECT"
+    for node in tree.walk():
+        if isinstance(node, _REJECTED):
+            return f"{node.key.upper()} is not supported by the Report Builder"
+        if (isinstance(node, exp.Not) and isinstance(node.this, exp.Like)) or (
+                isinstance(node, exp.Like) and node.args.get("negate")):  # sqlglot 30: Like(negate=True)
+            return "NOT LIKE is not supported"
+        if isinstance(node, exp.Func) and not isinstance(node, (exp.Lower, *_ALLOWED_OPS, exp.And, exp.Not)):
+            if not isinstance(node, (exp.Column, exp.Literal, exp.Star)):
+                return f"function {node.sql_name()} is not supported"
+    for j in tree.args.get("joins") or []:
+        if (j.side or "").upper() not in ("", "LEFT") or (j.kind or "").upper() not in ("", "INNER", "OUTER"):
+            return f"{j.side} {j.kind} JOIN is not supported"
+    for col in tree.expressions:
+        inner = col.this if isinstance(col, exp.Alias) else col
+        if not isinstance(inner, exp.Column):
+            return "only plain columns can be selected"
+    return None
 
 
 class ReportsInteraction(BaseModel):
@@ -78,6 +117,10 @@ def to_jms(contact_id: int, r: dict[str, Any]) -> dict[str, Any]:
 
 def router(app: App) -> APIRouter:
     r = APIRouter()
+    if app.settings.adapter_options("jms").get("builder_compatible"):
+        app.sql_checks.append(lambda sql: (f"the host's Report Builder cannot open it as an editable report: {p}. "
+                                           "Use one flat SELECT with plain columns, INNER or LEFT joins and AND-ed "
+                                           "simple filters." if (p := builder_grammar_problem(sql)) else None))
     # Background answers (jobs.py) reach JMS through notify_url as report_ready with this ChatResponse.
     app.deliver_formatters["jms"] = lambda deliver, result: to_jms(deliver["contact_id"], result)
 

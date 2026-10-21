@@ -284,6 +284,9 @@ def build_agent(model: Model, output: Literal["tool", "prompted"] = "tool") -> A
             raise ModelRetry(f"The report SQL was rejected: {e}") from e
         except Exception as e:
             raise ModelRetry(f"The report SQL failed in the database: {str(getattr(e, 'orig', e))[:400]}") from e
+        for check in app.sql_checks:  # host adapter rules, e.g. JMS Report Builder compatibility
+            if problem := check(g.sql):
+                raise ModelRetry(f"The report SQL is valid but {problem}")
         if not res.rows and not deps.zero_row_retry:
             deps.zero_row_retry = True
             raise ModelRetry("The report returned 0 rows. Check each literal filter with search_values and each "

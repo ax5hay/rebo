@@ -9,6 +9,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from reportsbot.agent import build_agent
+from reportsbot.adapters.jms import builder_grammar_problem
 from reportsbot.api import create_app
 from reportsbot.knowledge import User
 from reportsbot.llm import build_model
@@ -92,7 +93,7 @@ def test_core_api_uses_jwt_identity_when_configured(client):
     ("SELECT case_id FROM gc_case WHERE case_file_name NOT LIKE '%x%'", "NOT LIKE"),
 ])
 def test_mock_builder_grammar(sql, problem):
-    got = mock_jms.builder_grammar_problem(sql)
+    got = builder_grammar_problem(sql)
     assert (got is None) if problem is None else (got and re.search(problem, got))
 
 
@@ -110,3 +111,28 @@ async def test_async_answer_reaches_the_browser_as_reports_ready(client, app):
         pushed = ws.receive_json()
     assert pushed["type"] == "reports.ready" and pushed["payload"]["contact_id"] == 5
     assert pushed["payload"]["row_count"] == 10 and pushed["payload"]["reports_session_id"] == body["reports_session_id"]
+
+
+@pytest.mark.parametrize("compatible", [True, False])
+def test_builder_compatible_reports_retry_until_the_builder_can_open_them(app, monkeypatch, compatible):
+    monkeypatch.setenv("REPORTSBOT_JWT_SECRET", SECRET)
+    app.settings.auth_mode, app.settings.jwt_secret = "jwt", SECRET
+    app.settings.adapters = {"jms": {"builder_compatible": compatible}}
+    grouped = _completion("present_report", {"title": "By status", "assumptions": [],
+                                             "sql": "SELECT status, COUNT(*) AS n FROM customer GROUP BY status"})
+    flat = _completion("present_report", {"title": "Paused", "assumptions": [],
+                                          "sql": "SELECT full_name AS customer FROM customer WHERE status = 'paused'"})
+    seen = []
+
+    def handler(req):
+        seen.append(req.content.decode())
+        return httpx2.Response(200, json=grouped if len(seen) == 1 else flat)
+
+    app.__dict__["agent"] = build_agent(build_model("lmstudio:m", app.settings, http_client=httpx2.AsyncClient(
+        transport=httpx2.MockTransport(handler))))
+    client = TestClient(create_app(app, with_ui=False))
+    r = client.post("/api/v1/chat/0", headers=token(), json={"message": "customers by status"}).json()
+    if compatible:
+        assert len(seen) == 2 and "Report Builder" in seen[1] and "GROUP" in seen[1] and r["row_count"] == 10
+    else:
+        assert len(seen) == 1 and r["row_count"] == 3

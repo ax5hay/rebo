@@ -87,7 +87,9 @@ class App:
         self.knowledge.on_status = self._status_changed
         # Adapters add formatters for where background results go, e.g. {"jms": fn(deliver, result)}.
         self.deliver_formatters: dict[str, Callable[[dict, dict], Any]] = {}
-        self._recent: dict[str, deque] = {}  # per-user question times for per_user_per_minute
+        self._recent: dict[str, deque] = {}
+        # Extra rules a host adapter puts on report SQL: fn(sql) -> problem or None (enforced by the agent).
+        self.sql_checks: list[Callable[[str], str | None]] = []  # per-user question times for per_user_per_minute
         setup_tracing()
 
     @cached_property

@@ -20,47 +20,13 @@ import os
 import time
 
 import jwt
-import sqlglot
 from fastapi import FastAPI, HTTPException, WebSocket
 from pydantic import BaseModel
 from sqlalchemy import create_engine, text
-from sqlglot import exp
+
+from reportsbot.adapters.jms import builder_grammar_problem  # the same check the bot's guard uses (B-038)
 
 DB_URL = os.environ.get("MOCK_JMS_DATABASE_URL", "mysql+pymysql://reports_ro:reports_ro@127.0.0.1:3307/jms")
-_ALLOWED_OPS = (exp.EQ, exp.NEQ, exp.GT, exp.GTE, exp.LT, exp.LTE, exp.Is, exp.Like)
-_REJECTED = (exp.With, exp.Union, exp.Intersect, exp.Except, exp.Distinct, exp.Group, exp.Having, exp.Order,
-             exp.Case, exp.In, exp.Between, exp.Or, exp.Subquery, exp.Window)
-
-
-def builder_grammar_problem(sql: str) -> str | None:
-    """Approximates the staging Report Builder reader (orchid/utils/report_query.py
-    translate_sql_to_query_dict): one flat SELECT, plain or aliased columns, INNER/LEFT joins,
-    AND-ed simple filters, no functions except LOWER(col) LIKE. None = editable."""
-    try:
-        tree = sqlglot.parse_one(sql, read="mysql")
-    except Exception as e:
-        return f"does not parse: {e}"
-    if not isinstance(tree, exp.Select):
-        return "not a single SELECT"
-    for node in tree.walk():
-        if isinstance(node, _REJECTED):
-            return f"{node.key.upper()} is not supported by the Report Builder"
-        if (isinstance(node, exp.Not) and isinstance(node.this, exp.Like)) or (
-                isinstance(node, exp.Like) and node.args.get("negate")):  # sqlglot 30: Like(negate=True)
-            return "NOT LIKE is not supported"
-        if isinstance(node, exp.Func) and not isinstance(node, (exp.Lower, *_ALLOWED_OPS, exp.And, exp.Not)):
-            if not isinstance(node, (exp.Column, exp.Literal, exp.Star)):
-                return f"function {node.sql_name()} is not supported"
-    for j in tree.args.get("joins") or []:
-        if (j.side or "").upper() not in ("", "LEFT") or (j.kind or "").upper() not in ("", "INNER", "OUTER"):
-            return f"{j.side} {j.kind} JOIN is not supported"
-    for col in tree.expressions:
-        inner = col.this if isinstance(col, exp.Alias) else col
-        if not isinstance(inner, exp.Column):
-            return "only plain columns can be selected"
-    return None
-
-
 class TokenIn(BaseModel):
     user_id: int
     role: str = "user"          # user | admin (JMS would derive this from admin permissions)

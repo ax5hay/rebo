@@ -132,13 +132,17 @@ class Settings(BaseSettings):
     auth_mode: str = "headers"
     jwt_issuer: str = "orchid"
     # 7. Optional host adapters, e.g. ["jms"] for the JMS chat contract (src/reportsbot/adapters/).
-    adapters: list[str] = Field(default_factory=list)
+    adapters: list[str] | dict[str, dict[str, Any]] = Field(default_factory=list)  # [jms] or {jms: {option: …}}
     # 8. Optional webhook: POST {event, ...} on request created/resolved and item promoted/stale.
     notify_url: str = ""
 
     # Secrets: environment only, never in the YAML file.
     openrouter_api_key: str = ""
     jwt_secret: str = ""
+
+    def adapter_options(self, name: str) -> dict[str, Any]:
+        """An adapter's own options, from `adapters: {name: {...}}` (a plain list gives none)."""
+        return dict((self.adapters.get(name) or {}) if isinstance(self.adapters, dict) else {})
 
     @property
     def state_db(self) -> Path:
