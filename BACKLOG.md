@@ -273,10 +273,11 @@ do: **Research first** (DBOS). Then:
 done when: offline tests, including a restart in the middle of a job.
 result: 2026-10-21, `git log --grep B-030`; 139 passed (228 with Postgres). Own job table instead of DBOS (reasons in jobs.py). No schedule UI yet; one worker per store.
 
-### [ ] B-031 · Exact answer cache
+### [x] B-031 · Exact answer cache
 needs: offline
 do: Key: normalised question + knowledge version + user scope + catalog version. A hit returns the same SQL with fresh execution and no model call. Never a semantic cache.
 done when: offline test (second identical ask makes 0 model requests; cache invalidates after a knowledge edit).
+result: 2026-10-21, `git log --grep B-031`; 140 passed (SQLite) and on Postgres 18.6.
 
 ### [ ] B-032 · Budgets and rate limits
 needs: offline
