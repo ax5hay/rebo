@@ -1,0 +1,220 @@
+{
+ "run": "2026-10-21",
+ "questions": "as in the cases file",
+ "model": "openrouter:openai/gpt-6-luna-pro",
+ "escalate": "",
+ "database": "mysql+pymysql://reports_ro:***@127.0.0.1:3307/jms",
+ "summary": {
+  "reports": 1,
+  "clarify": 5,
+  "clarify_rate": 0.833,
+  "gate_answered": 0,
+  "errors": 0,
+  "escalated": 0,
+  "median_seconds": 96.0,
+  "total_cost_usd": 0.0529
+ },
+ "cases": [
+  {
+   "id": "validated-01",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 94.9,
+   "question": "Show me all active surrogates in Screening and list their current substage.",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 137311,
+    "output_tokens": 6386,
+    "cache_read_tokens": 97666,
+    "tool_calls": 10,
+    "model": "openrouter:openai/gpt-6-luna-pro",
+    "escalated": false,
+    "route": "new",
+    "gate": "asked",
+    "trace_id": "cf20b9e6ffe1fe320a2e44b312223b1f"
+   },
+   "cost_usd": 0.00813,
+   "questions": [
+    {
+     "question": "For each active surrogate in Screening, how should I identify the \u201ccurrent substage\u201d?",
+     "options": [
+      "List every unfinished Screening substage for each case (some cases may have more than one).",
+      "List only the unfinished Screening substage with the highest workflow order for each case; show blank if all are complete."
+     ]
+    }
+   ]
+  },
+  {
+   "id": "validated-02",
+   "kind": "report",
+   "rows": 12,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 80.2,
+   "question": "Which IP cases are in matching right now? Include the names and emails for both IPs.",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 165361,
+    "output_tokens": 6035,
+    "cache_read_tokens": 105528,
+    "tool_calls": 13,
+    "model": "openrouter:openai/gpt-6-luna-pro",
+    "escalated": false,
+    "route": "new",
+    "trace_id": "99c15ebd8aec11887d4b5375ed043ae5"
+   },
+   "cost_usd": 0.01006,
+   "title": "IP cases currently in matching",
+   "sql": "SELECT ic.case_id AS `Case ID`, COALESCE(ic.case_file_name, CONCAT('IP case ', ic.case_id)) AS `Case name`, CONCAT_WS(' ', c1.first_name, c1.last_name) AS `IP 1 name`, c1.email AS `IP 1 email`, CONCAT_WS(' ', c2.first_name, c2.last_name) AS `IP 2 name`, c2.email AS `IP 2 email` FROM ip_case ic JOIN family f ON f.family_id = ic.family_id LEFT JOIN contact c1 ON c1.contact_id = f.ip_1_id LEFT JOIN contact c2 ON c2.contact_id = f.ip_2_id WHERE ic.stage = 'matching' AND ic.active = 1 ORDER BY ic.case_file_name, ic.case_id",
+   "assumptions": [
+    "\u201cIn matching right now\u201d means active IP cases whose current workflow stage is matching.",
+    "IP names and email addresses come from the two contact records linked to each family; a blank second-IP entry means no second IP contact is recorded."
+   ]
+  },
+  {
+   "id": "validated-03",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 113.7,
+   "question": "List every active case assigned to [admin name].",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 115671,
+    "output_tokens": 7699,
+    "cache_read_tokens": 75546,
+    "tool_calls": 8,
+    "model": "openrouter:openai/gpt-6-luna-pro",
+    "escalated": false,
+    "route": "new",
+    "gate": "asked",
+    "trace_id": "2b096815008195fdfbf5465ac4410417"
+   },
+   "cost_usd": 0.00862,
+   "questions": [
+    {
+     "question": "Which administrator should I use? \u201c[admin name]\u201d is still a placeholder. Choose a listed name or provide another admin\u2019s full name.",
+     "options": [
+      "Angela Moore",
+      "Anthony Jenkins",
+      "Another admin \u2014 I\u2019ll provide the full name"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "validated-04",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 62.5,
+   "question": "Which cases have had their profiles approved in the last 30 days?",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 71424,
+    "output_tokens": 4327,
+    "cache_read_tokens": 34849,
+    "tool_calls": 9,
+    "model": "openrouter:openai/gpt-6-luna-pro",
+    "escalated": false,
+    "route": "new",
+    "gate": "asked",
+    "trace_id": "e859134b929980dc784b2cff43d58e02"
+   },
+   "cost_usd": 0.00617,
+   "questions": [
+    {
+     "question": "Which type of case do you mean by \u201cprofiles approved\u201d?",
+     "options": [
+      "Intended-parent (IP) cases, using the linked family\u2019s profile approval date",
+      "Surrogate/donor cases, using the linked contact\u2019s GC, ED, or SD profile approval date"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "validated-05",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 96.0,
+   "question": "Show me the most recent notes on this journey, pinned ones first.",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 101718,
+    "output_tokens": 6666,
+    "cache_read_tokens": 57554,
+    "tool_calls": 13,
+    "model": "openrouter:openai/gpt-6-luna-pro",
+    "escalated": false,
+    "route": "new",
+    "gate": "asked",
+    "trace_id": "6eff5d32aba194b713fe207d7b69fe8b"
+   },
+   "cost_usd": 0.00832,
+   "questions": [
+    {
+     "question": "I can\u2019t match the host account ID to a case in these records. Which journey should I use?",
+     "options": [
+      "An intended-parent journey (please provide its case name or ID)",
+      "A gestational-carrier journey (please provide its case name or ID)"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "validated-06",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 121.5,
+   "question": "List all overdue tasks across my journeys.",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 174050,
+    "output_tokens": 8653,
+    "cache_read_tokens": 112274,
+    "tool_calls": 14,
+    "model": "openrouter:openai/gpt-6-luna-pro",
+    "escalated": false,
+    "route": "new",
+    "gate": "asked",
+    "trace_id": "333c7679b3e582adf645d1fd9498ca3b"
+   },
+   "cost_usd": 0.01163,
+   "questions": [
+    {
+     "question": "Which case type do you mean by \u201cmy journeys\u201d? The database does not contain your host-app ID, so I can\u2019t reliably filter the cases to your account; I can list overdue tasks for one of these journey types.",
+     "options": [
+      "Intended-parent journeys",
+      "GC / donor / surrogate journeys"
+     ]
+    }
+   ]
+  }
+ ]
+}

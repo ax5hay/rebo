@@ -1,0 +1,403 @@
+{
+ "run": "2026-10-21",
+ "questions": "as in the cases file",
+ "model": "openrouter:openai/gpt-6-luna-pro",
+ "escalate": "",
+ "database": "sqlite:///fixtures/demo_property/greenleaf.db",
+ "summary": {
+  "reports": 12,
+  "clarify": 0,
+  "clarify_rate": 0.0,
+  "gate_answered": 0,
+  "errors": 0,
+  "escalated": 0,
+  "median_seconds": 44.3,
+  "total_cost_usd": 0.0282,
+  "execution_match": "9/12"
+ },
+ "cases": [
+  {
+   "id": "gp-01",
+   "kind": "report",
+   "rows": 50,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 49.9,
+   "question": "Which units are vacant right now?",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 31981,
+    "output_tokens": 2405,
+    "cache_read_tokens": 17671,
+    "tool_calls": 8,
+    "model": "openrouter:openai/gpt-6-luna-pro",
+    "escalated": false,
+    "route": "new",
+    "trace_id": "6564f5555309ea510bf8b738d5ea5d17"
+   },
+   "cost_usd": 0.00281,
+   "title": "Vacant units right now",
+   "sql": "SELECT b.name AS building, b.street AS street_address, b.city AS city, u.unit_number AS unit_number, u.bedrooms AS bedrooms, u.unit_type AS unit_type, u.monthly_rent AS monthly_rent FROM unit u JOIN building b ON b.building_id = u.building_id WHERE NOT EXISTS (SELECT 1 FROM lease l JOIN lease_status ls ON ls.status_id = l.status_id WHERE l.unit_id = u.unit_id AND ls.is_current = 1) ORDER BY b.name, u.unit_number",
+   "assumptions": [
+    "I treated a unit as vacant when it has no lease in a status marked current. This includes leases with notice given as current, and excludes pending signatures as well as ended or evicted leases.",
+    "I applied no date-range or location default; current status is determined by the system\u2019s current-status flag."
+   ]
+  },
+  {
+   "id": "gp-02",
+   "kind": "report",
+   "rows": 109,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 61.0,
+   "question": "List tenants who currently have a lease, with their unit and monthly rent.",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 43700,
+    "output_tokens": 2720,
+    "cache_read_tokens": 26024,
+    "tool_calls": 8,
+    "model": "openrouter:openai/gpt-6-luna-pro",
+    "escalated": false,
+    "route": "new",
+    "trace_id": "1a9fc3ac8495f93961b53ecf3e82abd4"
+   },
+   "cost_usd": 0.00339,
+   "title": "Tenants with Current Leases",
+   "sql": "SELECT t.first_name || ' ' || t.last_name AS tenant_name, b.name AS building, u.unit_number AS unit_number, u.monthly_rent AS monthly_rent\nFROM lease AS l\nJOIN lease_status AS ls ON ls.status_id = l.status_id\nJOIN tenant AS t ON t.tenant_id = l.tenant_id\nJOIN unit AS u ON u.unit_id = l.unit_id\nJOIN building AS b ON b.building_id = u.building_id\nWHERE ls.is_current = 1\nORDER BY t.last_name, t.first_name, b.name, u.unit_number;",
+   "assumptions": [
+    "\u201cCurrently have a lease\u201d means the lease status is flagged as current in the system, including statuses such as \u201cNotice Given.\u201d",
+    "Monthly rent means the listed rent for the leased unit."
+   ]
+  },
+  {
+   "id": "gp-03",
+   "kind": "report",
+   "rows": 12,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 15.6,
+   "question": "How many maintenance requests are still open in each building?",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 14134,
+    "output_tokens": 1280,
+    "cache_read_tokens": 7251,
+    "tool_calls": 4,
+    "model": "openrouter:openai/gpt-6-luna-pro",
+    "escalated": false,
+    "route": "new",
+    "trace_id": "13faf67eb3d102530688258dd61d64ac"
+   },
+   "cost_usd": 0.0014,
+   "title": "Open maintenance requests by building",
+   "sql": "SELECT b.name AS \"Building\", COUNT(m.request_id) AS \"Open maintenance requests\" FROM building b LEFT JOIN unit u ON u.building_id = b.building_id LEFT JOIN maintenance m ON m.unit_id = u.unit_id AND m.state = 'open' GROUP BY b.building_id, b.name ORDER BY b.name",
+   "assumptions": [
+    "\u201cStill open\u201d means maintenance requests whose current status is open.",
+    "Every building is included, including buildings with no open maintenance requests."
+   ]
+  },
+  {
+   "id": "gp-04",
+   "kind": "report",
+   "rows": 135,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 68.1,
+   "question": "Which tenants paid rent late at least once in 2026?",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 47873,
+    "output_tokens": 4322,
+    "cache_read_tokens": 27799,
+    "tool_calls": 8,
+    "model": "openrouter:openai/gpt-6-luna-pro",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "The SQL returns the distinct first name, last name and email of every tenant who has at least one rent payment, reached through their lease, where the payment date is after its due date and falls within 2026, sorted by last name, first name and email.",
+    "trace_id": "d21feb4777854aaa2c2f3fdaed8341b9"
+   },
+   "cost_usd": 0.00445,
+   "title": "Tenants who paid rent late in 2026",
+   "sql": "SELECT DISTINCT t.first_name AS \"First name\", t.last_name AS \"Last name\", t.email AS \"Email\" FROM payment p JOIN lease l ON p.lease_id = l.lease_id JOIN tenant t ON l.tenant_id = t.tenant_id WHERE p.paid_on > p.due_on AND p.paid_on >= '2026-01-01' AND p.paid_on < '2027-01-01' ORDER BY t.last_name, t.first_name, t.email",
+   "assumptions": [
+    "A rent payment counts as late when it was paid after its due date.",
+    "I treated \u201cin 2026\u201d as the payment date falling in 2026. Using the due date\u2019s year instead returned the same tenant set in this data.",
+    "Email is included to distinguish tenants who share the same name."
+   ]
+  },
+  {
+   "id": "gp-05",
+   "kind": "report",
+   "rows": 3,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 44.7,
+   "question": "Total rent collected per region in 2026.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 25458,
+    "output_tokens": 2580,
+    "cache_read_tokens": 12307,
+    "tool_calls": 8,
+    "model": "openrouter:openai/gpt-6-luna-pro",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For each region, the SQL adds up the amounts of all payments whose payment date is in 2026, going region to building to unit to lease to payment, and returns zero for regions with no such payments, one row per region sorted by name.",
+    "trace_id": "9893a20e9b06840a4853bd1e1d837bde"
+   },
+   "cost_usd": 0.00273,
+   "title": "Rent collected by region in 2026",
+   "sql": "SELECT r.name AS region, COALESCE(SUM(CASE WHEN p.paid_on >= '2026-01-01' AND p.paid_on < '2027-01-01' THEN p.amount ELSE 0 END), 0) AS total_rent_collected FROM region AS r LEFT JOIN building AS b ON b.region_id = r.region_id LEFT JOIN unit AS u ON u.building_id = b.building_id LEFT JOIN lease AS l ON l.unit_id = u.unit_id LEFT JOIN payment AS p ON p.lease_id = l.lease_id GROUP BY r.region_id, r.name ORDER BY r.name",
+   "assumptions": [
+    "\u201cCollected in 2026\u201d means payments whose recorded payment date falls in 2026, rather than rent due in 2026.",
+    "The payment amount represents rent collected.",
+    "All regions are included, including any region with no qualifying payments, shown with a total of zero."
+   ]
+  },
+  {
+   "id": "gp-06",
+   "kind": "report",
+   "rows": 14,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 42.2,
+   "question": "Urgent maintenance requests that are not closed, with the technician assigned.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 23682,
+    "output_tokens": 2357,
+    "cache_read_tokens": 13044,
+    "tool_calls": 4,
+    "model": "openrouter:openai/gpt-6-luna-pro",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "The SQL returns one row per maintenance request whose priority is exactly 'urgent', whose status is not 'closed', and which is assigned to a staff member with the role 'technician'. Each row shows the request ID, unit ID, date opened, category, current status and the technician's full name, sorted n",
+    "trace_id": "f3ba90b0a1e7347a06567e8d15e4eaea"
+   },
+   "cost_usd": 0.00237,
+   "title": "Urgent Open Maintenance Requests Assigned to Technicians",
+   "sql": "SELECT m.request_id AS \"Request ID\", m.unit_id AS \"Unit ID\", m.opened AS \"Date Opened\", m.category AS \"Category\", m.state AS \"Current Status\", s.first_name || ' ' || s.last_name AS \"Assigned Technician\" FROM maintenance AS m JOIN staff AS s ON m.assigned_to = s.staff_id WHERE m.priority = 'urgent' AND m.state <> 'closed' AND s.role = 'technician' ORDER BY m.opened DESC",
+   "assumptions": [
+    "\u201cNot closed\u201d includes requests in any status other than closed.",
+    "\u201cWith the technician assigned\u201d means include only requests assigned to a staff member whose role is technician; unassigned requests are excluded.",
+    "No date range was specified, so requests from all available dates are included."
+   ]
+  },
+  {
+   "id": "gp-07",
+   "kind": "report",
+   "rows": 1,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 21.9,
+   "question": "Average number of days to close a plumbing request.",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 13563,
+    "output_tokens": 1447,
+    "cache_read_tokens": 6803,
+    "tool_calls": 3,
+    "model": "openrouter:openai/gpt-6-luna-pro",
+    "escalated": false,
+    "route": "new",
+    "trace_id": "adc49b82a8302b6fd4919bd3abd6b162"
+   },
+   "cost_usd": 0.00147,
+   "title": "Average time to close plumbing requests",
+   "sql": "SELECT ROUND(AVG(julianday(closed) - julianday(opened)), 1) AS average_days_to_close\nFROM maintenance\nWHERE category = 'plumbing'\n  AND state = 'closed'\n  AND closed IS NOT NULL\n  AND TRIM(closed) <> '';",
+   "assumptions": [
+    "\u201cDays to close\u201d means calendar days between the request\u2019s opened date and closed date.",
+    "Only plumbing requests marked closed are included; requests without a recorded close date are excluded."
+   ]
+  },
+  {
+   "id": "gp-08",
+   "kind": "report",
+   "rows": 6,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 44.3,
+   "question": "Leases ending between 2026-10-01 and 2026-12-31.",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 38322,
+    "output_tokens": 2118,
+    "cache_read_tokens": 22126,
+    "tool_calls": 8,
+    "model": "openrouter:openai/gpt-6-luna-pro",
+    "escalated": false,
+    "route": "new",
+    "trace_id": "08913dca589fd92a476436b0e41d0205"
+   },
+   "cost_usd": 0.0029,
+   "title": "Leases Ending Oct\u2013Dec 2026",
+   "sql": "SELECT l.lease_id AS \"Lease ID\", t.first_name || ' ' || t.last_name AS \"Tenant\", b.name AS \"Building\", u.unit_number AS \"Unit\", l.end_date AS \"Lease End Date\", ls.label AS \"Lease Status\"\nFROM lease AS l\nJOIN tenant AS t ON l.tenant_id = t.tenant_id\nJOIN unit AS u ON l.unit_id = u.unit_id\nJOIN building AS b ON u.building_id = b.building_id\nJOIN lease_status AS ls ON l.status_id = ls.status_id\nWHERE l.end_date >= '2026-10-01'\n  AND l.end_date <= '2026-12-31'\nORDER BY l.end_date, b.name, u.unit_number;",
+   "assumptions": [
+    "The start and end dates are included in the requested range.",
+    "I treated leases with an end date in that range as matches regardless of their current status."
+   ]
+  },
+  {
+   "id": "gp-09",
+   "kind": "report",
+   "rows": 4,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 21.2,
+   "question": "Which buildings have an elevator and more than 10 units?",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 23825,
+    "output_tokens": 1304,
+    "cache_read_tokens": 13476,
+    "tool_calls": 4,
+    "model": "openrouter:openai/gpt-6-luna-pro",
+    "escalated": false,
+    "route": "new",
+    "trace_id": "577d427387a7f9510379d0beee86d65a"
+   },
+   "cost_usd": 0.00182,
+   "title": "Buildings with an elevator and more than 10 units",
+   "sql": "SELECT b.name AS building_name, b.city AS city, COUNT(u.unit_id) AS unit_count FROM building AS b JOIN unit AS u ON u.building_id = b.building_id WHERE b.has_elevator = 1 GROUP BY b.building_id, b.name, b.city HAVING COUNT(u.unit_id) > 10 ORDER BY b.name",
+   "assumptions": [
+    "\u201cHas an elevator\u201d means the building is marked as having an elevator.",
+    "\u201cMore than 10 units\u201d means 11 or more units currently listed for the building."
+   ]
+  },
+  {
+   "id": "gp-10",
+   "kind": "report",
+   "rows": 16,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 22.4,
+   "question": "Evicted tenants and their email addresses.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 21247,
+    "output_tokens": 1630,
+    "cache_read_tokens": 10593,
+    "tool_calls": 8,
+    "model": "openrouter:openai/gpt-6-luna-pro",
+    "escalated": false,
+    "route": "new",
+    "trace_id": "da756748581fddc051ea738348baba96"
+   },
+   "cost_usd": 0.00199,
+   "title": "Evicted Tenants and Email Addresses",
+   "sql": "SELECT DISTINCT t.first_name || ' ' || t.last_name AS \"Tenant Name\", t.email AS \"Email Address\"\nFROM tenant AS t\nJOIN lease AS l ON l.tenant_id = t.tenant_id\nJOIN lease_status AS ls ON ls.status_id = l.status_id\nWHERE ls.label = 'Evicted'\nORDER BY \"Tenant Name\";",
+   "assumptions": [
+    "A tenant is considered evicted when their lease status is labeled \u201cEvicted.\u201d",
+    "If a tenant has multiple matching lease records, they are listed only once."
+   ]
+  },
+  {
+   "id": "gp-11",
+   "kind": "report",
+   "rows": 1,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 17.6,
+   "question": "How many plumbin requests are waiting_part?",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 12519,
+    "output_tokens": 761,
+    "cache_read_tokens": 6515,
+    "tool_calls": 1,
+    "model": "openrouter:openai/gpt-6-luna-pro",
+    "escalated": false,
+    "route": "new",
+    "trace_id": "ae2c8478793fdd70022f8ad0ca862a80"
+   },
+   "cost_usd": 0.00105,
+   "title": "Plumbing Requests Waiting for Parts",
+   "sql": "SELECT COUNT(*) AS \"Request Count\"\nFROM maintenance\nWHERE category = 'plumbing'\n  AND state = 'waiting_parts';",
+   "assumptions": [
+    "I interpreted \u201cplumbin\u201d as plumbing and \u201cwaiting_part\u201d as the stored status \u201cwaiting_parts.\u201d"
+   ]
+  },
+  {
+   "id": "gp-12",
+   "kind": "report",
+   "rows": 5,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 46.6,
+   "question": "Show open electricle maintenance requests with their unit.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 22661,
+    "output_tokens": 1405,
+    "cache_read_tokens": 12716,
+    "tool_calls": 5,
+    "model": "openrouter:openai/gpt-6-luna-pro",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "This SQL returns the request ID, category, status, opened date and unit number for maintenance requests whose status is 'open' and whose category is 'electrical', each matched to its unit through the unit ID, sorted newest opened date first. It returns 5 rows.",
+    "trace_id": "3df45fa3c67bd832dc93341b22b5340f"
+   },
+   "cost_usd": 0.00182,
+   "title": "Open Electrical Maintenance Requests by Unit",
+   "sql": "SELECT m.request_id AS \"Request ID\", m.category AS \"Category\", m.state AS \"Status\", m.opened AS \"Opened Date\", u.unit_number AS \"Unit\"\nFROM maintenance AS m\nJOIN unit AS u ON m.unit_id = u.unit_id\nWHERE m.state = 'open' AND m.category = 'electrical'\nORDER BY m.opened DESC, m.request_id",
+   "assumptions": [
+    "I interpreted \u201celectricle\u201d as electrical maintenance.",
+    "\u201cOpen\u201d refers to requests whose status is open.",
+    "The unit is identified by its unit number."
+   ]
+  }
+ ]
+}

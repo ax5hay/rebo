@@ -444,3 +444,12 @@ result (RLS): 2026-10-21, decided by the user: PostgreSQL SET ROLE per user. `da
 needs: llm
 do: replay shared confirmed reports through the agent nightly (batch pricing), compare with columns_match, record an eval_run.
 result: 2026-10-21. `rebo eval --confirmed` (evals.run_regression), recorded as kind regression; offline test with a scripted model 1/1. Not run on real data (no shared confirmed reports in this state). doc 11.
+
+### [x] B-060 · Switch a value filter without a model ("Read as")
+why: the commonest wrong reading on the demo is a value filter ("still open" as state = 'open' instead of everything but closed). Asking first costs a turn; answering wrong costs trust.
+do: every filter on stored values comes with the column's values and counts; a switch rewrites the literal in the syntax tree and re-runs ($0). Web: Read as strip under the title.
+result: 2026-10-21. `safety.value_filters/refine_sql`, `App.filter_choices/refine`, POST /turns/{id}/refine; tests (pytest, Playwright Chromium + WebKit). `tools/refine_rescue.py`: on the latest demo run, 1 of 4 wrong reports becomes the gold answer with one switch (gp-03); the other 3 are structural.
+
+### [x] B-061 · Not Sonnet for everything: cheaper agent models and doubt-gated decide
+why: the user asked for a hybrid instead of Sonnet by default, without losing accuracy.
+result: 2026-10-21. `models.decide` (off): the agent model answers, the decide model settles turns with doubt (clarify, trap, grain, review) from its lookups. Demo: GPT-6 Luna Pro 9/12 $0.030, MiMo 9/12 $0.026, DeepSeek 8/12, Haiku 7/12, Sonnet 9–11/12 $0.19–0.25; tiered demo 9/12 $0.028 but JMS-6 $0.395 vs Sonnet $0.373 (cheap model unsure on 5/6). Explore-then-always-decide rejected (8/12, $0.243). Sonnet stays the default; doc 20 §5b, doc 27.

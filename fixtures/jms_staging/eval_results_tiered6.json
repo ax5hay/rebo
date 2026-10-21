@@ -1,0 +1,279 @@
+{
+ "run": "2026-10-21",
+ "questions": "as in the cases file",
+ "model": "openrouter:openai/gpt-6-luna-pro",
+ "escalate": "",
+ "database": "mysql+pymysql://reports_ro:***@127.0.0.1:3307/jms",
+ "summary": {
+  "reports": 5,
+  "clarify": 1,
+  "clarify_rate": 0.167,
+  "gate_answered": 0,
+  "errors": 0,
+  "escalated": 0,
+  "median_seconds": 90.8,
+  "total_cost_usd": 0.3951
+ },
+ "cases": [
+  {
+   "id": "validated-01",
+   "kind": "report",
+   "rows": 3,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 90.8,
+   "question": "Show me all active surrogates in Screening and list their current substage.",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 92588,
+    "output_tokens": 2184,
+    "cache_read_tokens": 58868,
+    "tool_calls": 3,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "decided_for": "clarify",
+    "explored_by": "openrouter:openai/gpt-6-luna-pro",
+    "before": {
+     "requests": 4,
+     "input_tokens": 101454,
+     "output_tokens": 4858,
+     "cache_read_tokens": 63400,
+     "tool_calls": 11,
+     "model": "openrouter:openai/gpt-6-luna-pro",
+     "escalated": false,
+     "route": "new"
+    },
+    "trace_id": "64329a9001ea6e26733d8b48df824f10"
+   },
+   "cost_usd": 0.10204,
+   "title": "Active surrogates in Screening with current substage(s)",
+   "sql": "SELECT g.case_file_name AS `Surrogate`, g.case_id AS `Case ID`, GROUP_CONCAT(t.title ORDER BY css.ordering, css.sub_stage_id SEPARATOR '; ') AS `Current screening substage(s) not yet completed`, COUNT(t.sub_stage_id) AS `Open substages` FROM gc_case AS g LEFT JOIN custom_sub_stage AS css ON css.gc_case_id = g.case_id AND css.stage = 'screening' AND css.completed IS NULL LEFT JOIN template_sub_stage AS t ON t.sub_stage_id = css.base_sub_stage_id WHERE g.active = 1 AND g.case_type = 'surrogate' AND g.stage = 'screening' GROUP BY g.case_id, g.case_file_name ORDER BY g.case_file_name",
+   "assumptions": [
+    "'Active surrogates' means surrogate cases that are marked active.",
+    "'In Screening' means the case's current stage is Screening.",
+    "'Current substage' means the Screening substages on the case that are not yet completed. They are shown together on one row per surrogate, in workflow order.",
+    "A surrogate with no open Screening substage shows a blank substage. This means all its Screening substages are complete."
+   ]
+  },
+  {
+   "id": "validated-02",
+   "kind": "report",
+   "rows": 12,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 58.3,
+   "question": "Which IP cases are in matching right now? Include the names and emails for both IPs.",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 165668,
+    "output_tokens": 4013,
+    "cache_read_tokens": 102647,
+    "tool_calls": 13,
+    "model": "openrouter:openai/gpt-6-luna-pro",
+    "escalated": false,
+    "route": "new",
+    "trace_id": "9897a16dd9efb1d728ee466a0a53bb7b"
+   },
+   "cost_usd": 0.00934,
+   "title": "IP cases currently in matching",
+   "sql": "SELECT i.case_id AS `Case ID`, i.case_file_name AS `Case name`, CONCAT_WS(' ', c1.first_name, c1.last_name) AS `IP 1 name`, c1.email AS `IP 1 email`, CONCAT_WS(' ', c2.first_name, c2.last_name) AS `IP 2 name`, c2.email AS `IP 2 email` FROM ip_case AS i LEFT JOIN family AS f ON f.family_id = i.family_id LEFT JOIN contact AS c1 ON c1.contact_id = f.ip_1_id LEFT JOIN contact AS c2 ON c2.contact_id = f.ip_2_id WHERE i.stage = 'matching' AND i.active = 1 ORDER BY i.case_file_name, i.case_id",
+   "assumptions": [
+    "I treated \u201cin matching right now\u201d as an active IP case whose current workflow stage is matching.",
+    "I used the case\u2019s linked family contacts as the first and second intended parents; some cases do not have a second linked IP, so those fields may be blank."
+   ]
+  },
+  {
+   "id": "validated-03",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 83.4,
+   "question": "List every active case assigned to [admin name].",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 42897,
+    "output_tokens": 1521,
+    "cache_read_tokens": 16161,
+    "tool_calls": 3,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "decided_for": "clarify",
+    "explored_by": "openrouter:openai/gpt-6-luna-pro",
+    "before": {
+     "requests": 2,
+     "input_tokens": 49660,
+     "output_tokens": 3447,
+     "cache_read_tokens": 25326,
+     "tool_calls": 5,
+     "model": "openrouter:openai/gpt-6-luna-pro",
+     "escalated": false,
+     "route": "new"
+    },
+    "gate": "asked",
+    "trace_id": "dde4fb7cbfa1c38b74125a6f29e4fb59"
+   },
+   "cost_usd": 0.07471,
+   "questions": [
+    {
+     "question": "Which admin should the report cover? Your request had a placeholder, [admin name], instead of a real name. Here are the admins with the most active cases. If you mean someone else, tell me their name.",
+     "options": [
+      "Autumn Wagner",
+      "Candice Miranda",
+      "William Pratt",
+      "Margaret Jones"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "validated-04",
+   "kind": "report",
+   "rows": 2,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 65.8,
+   "question": "Which cases have had their profiles approved in the last 30 days?",
+   "usage": {
+    "requests": 1,
+    "input_tokens": 10879,
+    "output_tokens": 716,
+    "cache_read_tokens": 3318,
+    "tool_calls": 0,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "decided_for": "review",
+    "explored_by": "openrouter:openai/gpt-6-luna-pro",
+    "before": {
+     "requests": 4,
+     "input_tokens": 112950,
+     "output_tokens": 4037,
+     "cache_read_tokens": 79861,
+     "tool_calls": 9,
+     "model": "openrouter:openai/gpt-6-luna-pro",
+     "escalated": false,
+     "route": "new",
+     "review": "concern",
+     "review_restated": "The SQL lists each intended-parent case linked to a family whose profile approval timestamp falls from 21 September 2026 at midnight up to, but not including, 22 October 2026 at midnight, sorted newest approval first."
+    },
+    "trace_id": "bc1e50014b427c39f2af576fd1917403"
+   },
+   "cost_usd": 0.02874,
+   "title": "Cases with profiles approved in the last 30 days",
+   "sql": "SELECT ip.case_id AS `Case ID`, ip.case_file_name AS `Case name`, f.family_id AS `Family ID`, f.profile_approved AS `Profile approved on` FROM ip_case AS ip JOIN family AS f ON f.family_id = ip.family_id WHERE f.profile_approved >= '2026-09-21 00:00:00' AND f.profile_approved < '2026-10-22 00:00:00' ORDER BY f.profile_approved DESC",
+   "assumptions": [
+    "Profile approval means the date the family's profile was approved. Every intended-parent case linked to that family is listed.",
+    "The last 30 days means 21 September 2026 up to now (today is 21 October 2026).",
+    "Cases are included whether or not they are currently active.",
+    "Only intended-parent cases are covered. Surrogate and donor cases and matching approvals are not."
+   ]
+  },
+  {
+   "id": "validated-05",
+   "kind": "report",
+   "rows": 319,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 120.9,
+   "question": "Show me the most recent notes on this journey, pinned ones first.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 45724,
+    "output_tokens": 1649,
+    "cache_read_tokens": 22306,
+    "tool_calls": 3,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "decided_for": "clarify",
+    "explored_by": "openrouter:openai/gpt-6-luna-pro",
+    "before": {
+     "requests": 4,
+     "input_tokens": 133127,
+     "output_tokens": 6521,
+     "cache_read_tokens": 89677,
+     "tool_calls": 13,
+     "model": "openrouter:openai/gpt-6-luna-pro",
+     "escalated": false,
+     "route": "new"
+    },
+    "trace_id": "030e00e8f6ef671e27b2269e42663d3d"
+   },
+   "cost_usd": 0.07406,
+   "title": "Most recent case notes, pinned first",
+   "sql": "SELECT CASE WHEN n.pinned = 1 THEN 'Pinned' ELSE '' END AS `Pinned`, n.created AS `Note date`, COALESCE(ip.case_file_name, gc.case_file_name) AS `Journey`, CASE WHEN n.ip_case_id IS NOT NULL THEN 'Intended parent' WHEN n.gc_case_id IS NOT NULL THEN 'Gestational carrier' ELSE 'Not linked' END AS `Journey type`, n.note AS `Note`, n.tags AS `Tags`, a.admin_id AS `Author admin`, n.updated AS `Last updated` FROM case_note n LEFT JOIN ip_case ip ON n.ip_case_id = ip.case_id LEFT JOIN gc_case gc ON n.gc_case_id = gc.case_id LEFT JOIN admin a ON n.created_by_id = a.admin_id ORDER BY n.pinned DESC, n.created DESC",
+   "assumptions": [
+    "No specific journey was identified in your request, so this shows notes across all journeys (intended-parent and gestational-carrier cases). Tell me the case name and I can narrow it to one.",
+    "A 'journey' is treated as a case, and 'notes on this journey' as case notes.",
+    "Most recent is based on the date the note was written, not when it was last edited.",
+    "Pinned notes come first, then newest to oldest within each group.",
+    "Some notes are not linked to any case; they are included and labelled 'Not linked'."
+   ]
+  },
+  {
+   "id": "validated-06",
+   "kind": "report",
+   "rows": 95,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 221.8,
+   "question": "List all overdue tasks across my journeys.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 63634,
+    "output_tokens": 1581,
+    "cache_read_tokens": 26661,
+    "tool_calls": 3,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "decided_for": "review",
+    "explored_by": "openrouter:openai/gpt-6-luna-pro",
+    "before": {
+     "requests": 6,
+     "input_tokens": 280045,
+     "output_tokens": 10135,
+     "cache_read_tokens": 213889,
+     "tool_calls": 16,
+     "model": "openrouter:openai/gpt-6-luna-pro",
+     "escalated": false,
+     "route": "new",
+     "review": "concern",
+     "review_restated": "This SQL returns every task in the database that is attached to an intended-parent or GC journey, has a due date before 21 October 2026, has no completion timestamp, and has a status other than \"completed,\" listed by due date with the journey name and the assigned person's name."
+    },
+    "trace_id": "5faddfa798c1783b6a15e05ef6689013"
+   },
+   "cost_usd": 0.10624,
+   "title": "Overdue tasks across journey cases",
+   "sql": "SELECT ct.task_title AS `Task`, ct.task_status AS `Status`, ct.must_be_completed_by AS `Due date`, CASE WHEN ct.ip_case_id IS NOT NULL THEN 'IP journey' WHEN ct.gc_case_id IS NOT NULL THEN 'GC journey' END AS `Journey type`, COALESCE(ip.case_file_name, gc.case_file_name) AS `Journey`, CONCAT(a.first_name, ' ', a.last_name) AS `Assigned to` FROM case_task ct LEFT JOIN ip_case ip ON ip.case_id = ct.ip_case_id LEFT JOIN gc_case gc ON gc.case_id = ct.gc_case_id LEFT JOIN admin a ON a.admin_id = ct.task_assigned_to_id WHERE ct.must_be_completed_by < '2026-10-21' AND ct.completed IS NULL AND ct.task_status <> 'completed' AND (ct.ip_case_id IS NOT NULL OR ct.gc_case_id IS NOT NULL) ORDER BY ct.must_be_completed_by, `Journey`, `Task`",
+   "assumptions": [
+    "Your login ID can't be matched to a staff member or to journey ownership in the data, so this lists overdue tasks across ALL journeys and all staff, not only yours. If you tell me which staff member you are, I can narrow it to your journeys or tasks.",
+    "'Journeys' means intended-parent and gestational-carrier cases; tasks not linked to either are excluded.",
+    "A task is overdue when its due date is before October 21, 2026 (tasks due today are not overdue).",
+    "A task counts as still open when it has no completion time recorded and its status is not 'completed'. Deferred and pending tasks are included as open.",
+    "Tasks with no due date are not treated as overdue."
+   ]
+  }
+ ]
+}

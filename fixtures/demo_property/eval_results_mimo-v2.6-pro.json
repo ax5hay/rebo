@@ -1,0 +1,439 @@
+{
+ "run": "2026-10-21",
+ "questions": "as in the cases file",
+ "model": "openrouter:xiaomi/mimo-v2.6-pro",
+ "escalate": "",
+ "database": "sqlite:///fixtures/demo_property/greenleaf.db",
+ "summary": {
+  "reports": 12,
+  "clarify": 0,
+  "clarify_rate": 0.0,
+  "gate_answered": 0,
+  "errors": 0,
+  "escalated": 0,
+  "median_seconds": 43.0,
+  "total_cost_usd": 0.0261,
+  "execution_match": "9/12"
+ },
+ "cases": [
+  {
+   "id": "gp-01",
+   "kind": "report",
+   "rows": 50,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 94.9,
+   "question": "Which units are vacant right now?",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 19709,
+    "output_tokens": 1748,
+    "cache_read_tokens": 14256,
+    "tool_calls": 8,
+    "model": "openrouter:xiaomi/mimo-v2.6-pro",
+    "escalated": false,
+    "route": "new",
+    "review": "concern",
+    "review_restated": "The SQL lists every unit that has no lease whose status is flagged as current, showing its building, street, city, unit number, type, bedrooms, square footage and monthly rent, sorted by building and unit number (50 rows).",
+    "trace_id": "f00ccf54e3f568aeb6eef5a88a0dd486"
+   },
+   "cost_usd": 0.00395,
+   "title": "Vacant units right now (as of 2026-10-21)",
+   "sql": "SELECT b.name AS building,\n       b.street AS street,\n       b.city AS city,\n       u.unit_number AS unit_number,\n       u.unit_type AS unit_type,\n       u.bedrooms AS bedrooms,\n       u.sqft AS square_feet,\n       u.monthly_rent AS monthly_rent\nFROM unit u\nJOIN building b ON b.building_id = u.building_id\nWHERE NOT EXISTS (\n    SELECT 1\n    FROM lease l\n    JOIN lease_status s ON s.status_id = l.status_id\n    WHERE l.unit_id = u.unit_id\n      AND s.is_current = 1\n)\nORDER BY b.name, u.unit_number",
+   "assumptions": [
+    "A unit counts as vacant if it has no lease in a currently running state (Active - Fixed Term, Active - Month to Month, or Notice Given) as of today.",
+    "Units whose only lease paperwork is waiting on a signature are still counted as vacant, since no one has moved in yet.",
+    "Units whose leases have ended or where the tenant was evicted are counted as vacant.",
+    "A few units have more than one running lease on record; this does not change whether a unit is vacant, only how many people are listed on it.",
+    "Listed rent is the unit's current asking rent, not the rent of any past tenant.",
+    "Check: Check that the \"current\" flag on lease statuses is set only for Active - Fixed Term, Active - Month to Month and Notice Given. The query relies entirely on that flag, and the stated assumptions say pending-signature leases should not count as occupied, so any pending or other status flagged as current would wrongly drop units from the vacant list."
+   ]
+  },
+  {
+   "id": "gp-02",
+   "kind": "report",
+   "rows": 109,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 75.9,
+   "question": "List tenants who currently have a lease, with their unit and monthly rent.",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 20087,
+    "output_tokens": 1077,
+    "cache_read_tokens": 14576,
+    "tool_calls": 7,
+    "model": "openrouter:xiaomi/mimo-v2.6-pro",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For every lease whose status is flagged as current, the query returns the tenant's full name, building, city, unit number and type, bedroom count, lease start date, status label, and the unit's listed monthly rent, sorted by building name and unit number.",
+    "trace_id": "c1a09a918725571b6b49db25e6bb59fe"
+   },
+   "cost_usd": 0.00339,
+   "title": "Tenants with a current lease, their unit and monthly rent",
+   "sql": "SELECT\n  t.first_name || ' ' || t.last_name AS tenant_name,\n  b.name AS building,\n  b.city AS city,\n  u.unit_number AS unit_number,\n  u.unit_type AS unit_type,\n  u.bedrooms AS bedrooms,\n  l.start_date AS lease_start,\n  ls.label AS lease_status,\n  u.monthly_rent AS monthly_rent\nFROM lease l\nJOIN tenant t ON t.tenant_id = l.tenant_id\nJOIN unit u ON u.unit_id = l.unit_id\nJOIN building b ON b.building_id = u.building_id\nJOIN lease_status ls ON ls.status_id = l.status_id\nWHERE ls.is_current = 1\nORDER BY b.name, u.unit_number",
+   "assumptions": [
+    "A tenant 'currently has a lease' when the lease's status is one of the three current statuses: Active - Fixed Term, Active - Month to Month, or Notice Given (tenants who gave notice still occupy the unit until the lease ends).",
+    "The monthly rent shown is the unit's listed monthly rent.",
+    "The unit is identified by building name plus unit number, since unit numbers repeat across buildings.",
+    "Every tenant appears at most once, since each tenant holds a single lease in the data."
+   ]
+  },
+  {
+   "id": "gp-03",
+   "kind": "report",
+   "rows": 12,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 20.4,
+   "question": "How many maintenance requests are still open in each building?",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 10672,
+    "output_tokens": 503,
+    "cache_read_tokens": 8752,
+    "tool_calls": 4,
+    "model": "openrouter:xiaomi/mimo-v2.6-pro",
+    "escalated": false,
+    "route": "new",
+    "review": "concern",
+    "review_restated": "For each of the 12 buildings, the query counts the maintenance requests whose state is exactly 'open' (reached through the building's units), shows 0 for buildings with none, and lists the buildings from highest to lowest count.",
+    "trace_id": "0ad4dea22bb70a8dd1beac23bb353939"
+   },
+   "cost_usd": 0.00131,
+   "title": "Open maintenance requests by building",
+   "sql": "SELECT b.name AS building_name, b.city AS city, COUNT(m.request_id) AS open_requests\nFROM building b\nLEFT JOIN unit u ON u.building_id = b.building_id\nLEFT JOIN maintenance m ON m.unit_id = u.unit_id AND m.state = 'open'\nGROUP BY b.building_id, b.name, b.city\nORDER BY open_requests DESC, b.name",
+   "assumptions": [
+    "",
+    "\"Still open\" was taken as requests in the open state only. Requests marked in progress or waiting for parts are counted as separate states and are not included here.",
+    "Buildings with no open requests are shown with a count of zero so every building appears.",
+    "Check: \"Still open\" most likely means every request not yet closed, but this count only includes the 'open' state and leaves out requests marked in progress or waiting for parts, so the totals may be too low. Check whether those other unfinished states should be counted before this goes to the business user."
+   ]
+  },
+  {
+   "id": "gp-04",
+   "kind": "report",
+   "rows": 135,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 62.0,
+   "question": "Which tenants paid rent late at least once in 2026?",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 15993,
+    "output_tokens": 1966,
+    "cache_read_tokens": 13088,
+    "tool_calls": 6,
+    "model": "openrouter:xiaomi/mimo-v2.6-pro",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For each tenant, the query counts rent payments whose due date falls in 2026 and that have a non-blank payment date later than the due date, then lists the count, the earliest and latest late due dates, the latest late payment date, and the total calendar days late, sorted by count (highest first).",
+    "trace_id": "18814c99d393f4820cd4a64293123c36"
+   },
+   "cost_usd": 0.00303,
+   "title": "Tenants who paid rent late at least once in 2026",
+   "sql": "SELECT\n  t.first_name || ' ' || t.last_name AS tenant_name,\n  t.email AS tenant_email,\n  COUNT(*) AS late_payments_in_2026,\n  MIN(p.due_on) AS first_late_due_date,\n  MAX(p.due_on) AS most_recent_late_due_date,\n  MAX(p.paid_on) AS most_recent_late_payment_date,\n  ROUND(SUM(julianday(p.paid_on) - julianday(p.due_on))) AS total_days_late\nFROM payment p\nJOIN lease l ON p.lease_id = l.lease_id\nJOIN tenant t ON l.tenant_id = t.tenant_id\nWHERE p.due_on >= '2026-01-01' AND p.due_on < '2027-01-01'\n  AND p.paid_on IS NOT NULL AND p.paid_on <> ''\n  AND p.paid_on > p.due_on\nGROUP BY t.tenant_id, t.first_name, t.last_name, t.email\nORDER BY late_payments_in_2026 DESC, total_days_late DESC",
+   "assumptions": [
+    "Late means the rent payment was actually made, but after its due date; 2026 refers to rent charges due between 1 Jan and 31 Dec 2026.",
+    "Unpaid rent charges from September\u2013October 2026 (44 of them) are not counted, since those tenants have not paid at all rather than paid late; they can be reported separately if you want.",
+    "A tenant's late payments are combined across all their leases/units.",
+    "Days late is calendar days between the due date and the payment date; the payment date shown is the most recent late payment of 2026 for that tenant."
+   ]
+  },
+  {
+   "id": "gp-05",
+   "kind": "report",
+   "rows": 3,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 89.9,
+   "question": "Total rent collected per region in 2026.",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 16656,
+    "output_tokens": 1898,
+    "cache_read_tokens": 10848,
+    "tool_calls": 7,
+    "model": "openrouter:xiaomi/mimo-v2.6-pro",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For each region, this counts the payments dated 1 January 2026 through 31 December 2026 and sums their amounts, attributing each payment to the region of the building holding the rented unit, sorted by total descending.",
+    "trace_id": "b7fb82a4df9cf01c670dd5e060c50e4a"
+   },
+   "cost_usd": 0.00422,
+   "title": "Total rent collected per region in 2026",
+   "sql": "SELECT\n  r.name AS \"Region\",\n  COUNT(p.payment_id) AS \"Number of payments\",\n  SUM(p.amount) AS \"Total rent collected (2026)\"\nFROM payment p\nJOIN lease l ON p.lease_id = l.lease_id\nJOIN unit u ON l.unit_id = u.unit_id\nJOIN building b ON u.building_id = b.building_id\nJOIN region r ON b.region_id = r.region_id\nWHERE p.paid_on >= '2026-01-01' AND p.paid_on < '2027-01-01'\nGROUP BY r.region_id, r.name\nORDER BY SUM(p.amount) DESC",
+   "assumptions": [
+    "Rent collected in 2026 means money actually received (payment date) between 1 Jan and 31 Dec 2026, not rent that was due in 2026.",
+    "Each payment is attributed to the region of the building where the rented unit sits.",
+    "Payments with no payment date recorded (44 of them) are treated as not yet collected and are excluded.",
+    "All payments in the data are treated as rent, since no other payment types exist.",
+    "Calendar year 2026 is used, with no other date filter applied."
+   ]
+  },
+  {
+   "id": "gp-06",
+   "kind": "report",
+   "rows": 17,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 43.0,
+   "question": "Urgent maintenance requests that are not closed, with the technician assigned.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 9754,
+    "output_tokens": 1005,
+    "cache_read_tokens": 5824,
+    "tool_calls": 3,
+    "model": "openrouter:xiaomi/mimo-v2.6-pro",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "This SQL returns each maintenance request whose priority is exactly 'urgent' and whose status is not 'closed', listing its ID, category, priority, status and opened date, with the assigned staff member's full name (or 'Unassigned' if none), sorted oldest opened first.",
+    "trace_id": "00d7f01e6d485b7243228bb342e26d7a"
+   },
+   "cost_usd": 0.00261,
+   "title": "Urgent open maintenance requests with assigned technician",
+   "sql": "SELECT m.request_id AS \"Request ID\",\n       m.category AS \"Category\",\n       m.priority AS \"Priority\",\n       m.state AS \"Status\",\n       m.opened AS \"Opened Date\",\n       CASE WHEN s.staff_id IS NULL THEN 'Unassigned'\n            ELSE TRIM(COALESCE(s.first_name,'') || ' ' || COALESCE(s.last_name,'')) END AS \"Assigned Technician\"\nFROM maintenance m\nLEFT JOIN staff s ON m.assigned_to = s.staff_id\nWHERE m.priority = 'urgent'\n  AND m.state <> 'closed'\nORDER BY m.opened",
+   "assumptions": [
+    "Urgent means the priority level stored as 'urgent' (not the separate 'high' priority level).",
+    "Not closed means the request's current status is anything other than 'closed' (open, in progress, or waiting for parts), regardless of whether a closing date is recorded.",
+    "The technician shown is the staff member currently assigned to the request; requests with no one assigned are shown as 'Unassigned' rather than being dropped.",
+    "The assigned person is shown whatever their staff role, since assignment on requests is done to staff records."
+   ]
+  },
+  {
+   "id": "gp-07",
+   "kind": "report",
+   "rows": 1,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 27.8,
+   "question": "Average number of days to close a plumbing request.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 8977,
+    "output_tokens": 718,
+    "cache_read_tokens": 7920,
+    "tool_calls": 4,
+    "model": "openrouter:xiaomi/mimo-v2.6-pro",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "The SQL returns one row: the count of plumbing maintenance requests that have a closing date, the average of (closed minus opened) in days rounded to one decimal, and the fastest and slowest of those durations, across all dates and all units.",
+    "trace_id": "d3aae90facf74eb9517257a07abf65bd"
+   },
+   "cost_usd": 0.00112,
+   "title": "Average days to close a plumbing request",
+   "sql": "SELECT COUNT(*) AS \"Plumbing requests closed\", ROUND(AVG(julianday(maintenance.closed) - julianday(maintenance.opened)), 1) AS \"Average days to close\", MIN(julianday(maintenance.closed) - julianday(maintenance.opened)) AS \"Fastest close (days)\", MAX(julianday(maintenance.closed) - julianday(maintenance.opened)) AS \"Slowest close (days)\" FROM maintenance WHERE maintenance.category = 'plumbing' AND maintenance.closed IS NOT NULL AND TRIM(maintenance.closed) <> ''",
+   "assumptions": [
+    "Only plumbing requests that have actually been closed are counted (65 of the 75 plumbing requests); the 10 still open, in progress, or waiting on parts have no closing date and are excluded.",
+    "Days to close is measured as whole days from the date the request was opened to the date it was closed.",
+    "All time periods are included \u2014 no date range was specified.",
+    "Requests are counted as stored on the work order, regardless of unit, building, or priority."
+   ]
+  },
+  {
+   "id": "gp-08",
+   "kind": "report",
+   "rows": 6,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 38.2,
+   "question": "Leases ending between 2026-10-01 and 2026-12-31.",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 20716,
+    "output_tokens": 1009,
+    "cache_read_tokens": 17408,
+    "tool_calls": 6,
+    "model": "openrouter:xiaomi/mimo-v2.6-pro",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "This SQL returns every lease whose end date falls from 1 October 2026 to 31 December 2026 inclusive, with no status filter, showing the lease ID, tenant name, building, unit number and type, lease status, start and end dates, and the unit's monthly rent, sorted by end date.",
+    "trace_id": "5f3c3b0bb12b62c2daf4e19a3e79f6ea"
+   },
+   "cost_usd": 0.00239,
+   "title": "Leases Ending Between 2026-10-01 and 2026-12-31",
+   "sql": "SELECT l.lease_id AS \"Lease ID\",\n       t.first_name || ' ' || t.last_name AS \"Tenant\",\n       b.name AS \"Building\",\n       u.unit_number AS \"Unit\",\n       u.unit_type AS \"Unit Type\",\n       ls.label AS \"Lease Status\",\n       l.start_date AS \"Start Date\",\n       l.end_date AS \"End Date\",\n       u.monthly_rent AS \"Monthly Rent\"\nFROM lease l\nJOIN tenant t ON t.tenant_id = l.tenant_id\nJOIN unit u ON u.unit_id = l.unit_id\nJOIN building b ON b.building_id = u.building_id\nJOIN lease_status ls ON ls.status_id = l.status_id\nWHERE l.end_date >= '2026-10-01' AND l.end_date <= '2026-12-31'\nORDER BY l.end_date",
+   "assumptions": [
+    "Both the start and end of the date window are included, so leases ending exactly on 2026-10-01 or 2026-12-31 would be counted.",
+    "Only leases that have an end date recorded are considered; open-ended or month-to-month arrangements without an end date are not shown.",
+    "All lease statuses are included, so ended and evicted leases appear alongside any still in progress.",
+    "Monthly rent shown is the rent of the unit the lease covers, and the unit number is only unique within its building."
+   ]
+  },
+  {
+   "id": "gp-09",
+   "kind": "report",
+   "rows": 4,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 20.7,
+   "question": "Which buildings have an elevator and more than 10 units?",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 9841,
+    "output_tokens": 412,
+    "cache_read_tokens": 8464,
+    "tool_calls": 3,
+    "model": "openrouter:xiaomi/mimo-v2.6-pro",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For each building flagged as having an elevator, this lists its name, city and street along with the number of units joined to it, keeping only buildings with more than 10 units, sorted from most to fewest units.",
+    "trace_id": "98227664d3d7d96ceb438957e2078410"
+   },
+   "cost_usd": 0.00099,
+   "title": "Buildings with an elevator and more than 10 units",
+   "sql": "SELECT b.name AS building_name, b.city AS city, b.street AS street, COUNT(u.unit_id) AS unit_count\nFROM building b\nJOIN unit u ON u.building_id = b.building_id\nWHERE b.has_elevator = 1\nGROUP BY b.building_id, b.name, b.city, b.street\nHAVING COUNT(u.unit_id) > 10\nORDER BY unit_count DESC",
+   "assumptions": [
+    "A building 'has an elevator' when its elevator flag is set to yes.",
+    "The number of units is the count of units currently recorded for the building.",
+    "Only buildings with strictly more than 10 units are included."
+   ]
+  },
+  {
+   "id": "gp-10",
+   "kind": "report",
+   "rows": 16,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 42.6,
+   "question": "Evicted tenants and their email addresses.",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 6126,
+    "output_tokens": 361,
+    "cache_read_tokens": 4848,
+    "tool_calls": 3,
+    "model": "openrouter:xiaomi/mimo-v2.6-pro",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For every lease whose status label is 'Evicted', this returns the tenant's full name, email, and that lease's start and end dates, one row per such lease.",
+    "trace_id": "a3c70df1505ba8f672129adc8f4dd4d1"
+   },
+   "cost_usd": 0.00089,
+   "title": "Evicted tenants and their email addresses",
+   "sql": "SELECT t.first_name || ' ' || t.last_name AS tenant_name, t.email AS email_address, l.start_date AS lease_start_date, l.end_date AS lease_end_date FROM lease l JOIN tenant t ON t.tenant_id = l.tenant_id JOIN lease_status ls ON ls.status_id = l.status_id WHERE ls.label = 'Evicted'",
+   "assumptions": [
+    "An evicted tenant is one whose lease carries the status labeled 'Evicted'.",
+    "I included each tenant's lease start and end dates for context; the eviction status comes from the lease record.",
+    "Each tenant has exactly one lease, so no tenant is listed twice."
+   ]
+  },
+  {
+   "id": "gp-11",
+   "kind": "report",
+   "rows": 1,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 45.7,
+   "question": "How many plumbin requests are waiting_part?",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 5736,
+    "output_tokens": 467,
+    "cache_read_tokens": 4864,
+    "tool_calls": 2,
+    "model": "openrouter:xiaomi/mimo-v2.6-pro",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "The SQL counts maintenance records where the category is plumbing and the state is waiting_parts, returning one row with the category, the state, and the count (3).",
+    "trace_id": "7876f1f0fb5e696e0be5cf773b88a28e"
+   },
+   "cost_usd": 0.00081,
+   "title": "Plumbing requests waiting for parts",
+   "sql": "SELECT category AS \"Request category\", state AS \"Request status\", COUNT(*) AS \"Number of requests\" FROM maintenance WHERE category = 'plumbing' AND state = 'waiting_parts' GROUP BY category, state",
+   "assumptions": [
+    "'Plumbin requests' was read as maintenance requests of the plumbing category.",
+    "'Waiting_part' was read as requests in the waiting_parts status (waiting on parts to arrive).",
+    "Counted across all units and all time, with no date or property filter applied."
+   ]
+  },
+  {
+   "id": "gp-12",
+   "kind": "report",
+   "rows": 5,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 27.6,
+   "question": "Show open electricle maintenance requests with their unit.",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 13946,
+    "output_tokens": 547,
+    "cache_read_tokens": 11872,
+    "tool_calls": 5,
+    "model": "openrouter:xiaomi/mimo-v2.6-pro",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "The SQL lists every maintenance request in the electrical category whose state is exactly 'open', joined to its unit and building, showing request ID, date opened, priority, estimated cost, unit number and type, building name and city, sorted oldest first.",
+    "trace_id": "01143343f59e904216daebe0de7d850c"
+   },
+   "cost_usd": 0.00143,
+   "title": "Open electrical maintenance requests by unit",
+   "sql": "SELECT m.request_id AS \"Request ID\", m.opened AS \"Date Opened\", m.priority AS \"Priority\", m.cost AS \"Estimated Cost\", u.unit_number AS \"Unit Number\", u.unit_type AS \"Unit Type\", b.name AS \"Building\", b.city AS \"City\" FROM maintenance m JOIN unit u ON m.unit_id = u.unit_id JOIN building b ON u.building_id = b.building_id WHERE m.category = 'electrical' AND m.state = 'open' ORDER BY m.opened",
+   "assumptions": [
+    "Read 'electricle' as the electrical category of maintenance requests.",
+    "Only requests whose status is exactly 'open' are included; requests in progress or waiting for parts are not counted as open.",
+    "Cost is shown as reported on each request (estimated/recorded cost)."
+   ]
+  }
+ ]
+}

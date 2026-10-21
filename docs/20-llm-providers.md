@@ -236,7 +236,7 @@ What this shows:
 | Goal | agent | fast | escalate | fallback |
 |---|---|---|---|---|
 | Accuracy first (default) | Sonnet 5.5 | Haiku 5.5 | — | `google:gemini-3.8-flash` |
-| Cost first | Haiku 5.5 | Haiku 5.5 | Sonnet 5.5 | — |
+| Cost first (small schemas, §5b) | GPT-6 Luna Pro + `decide: Sonnet 5.5` | Haiku 5.5 | — | — |
 | Offline | `lmstudio:<Qwen3.8-27B>` | same | — | — |
 | Gemini experiment | `google:gemini-3.8-flash` (after P1.10) | `google:gemini-3.5-flash-lite` | Sonnet 5.5 | — |
 
@@ -273,3 +273,35 @@ The doubt signals flagged 2 of Haiku's 5 wrong answers, so the cascade is 2.4× 
 worse than Sonnet. **Sonnet stays the default**; the cascade remains the cost option. A better doubt
 signal (B-048 agreement, used as the trigger) is the next thing to try. Files:
 `fixtures/demo_property/eval_results_haiku_only.json`, `eval_results_haiku_doubt_cascade.json`.
+
+## 5b. Cheaper agent models and doubt-gated decide (2026-10-21)
+
+Re-checked `openrouter.ai/api/v1/models` on 2026-10-21 for tool-capable models priced like Haiku.
+Demo gold (12), one run each, everything else unchanged:
+
+| Agent model (input/output $ per 1M) | Content match | Cost | File |
+|---|---|---|---|
+| Sonnet 5.5 ($2/$10), recent runs | 9–11/12 | $0.19–0.25 | `eval_results_sonnet_compact.json`, `_fanout_probe.json` |
+| GPT-6 Luna Pro ($0.10/$0.50) | 9/12 | $0.030 | `eval_results_gpt-6-luna.json` |
+| MiMo v2.6 Pro ($0.435/$0.87) | 9/12 | $0.026 | `eval_results_mimo-v2.6-pro.json` |
+| DeepSeek V4.1 Flash ($0.15/$0.60) | 8/12 | $0.020 | `eval_results_deepseek-v4.1-flash.json` |
+| Haiku 5.5 ($0.10/$0.50) | 7/12 | $0.017 | `eval_results_haiku_only.json` |
+
+On the JMS schema (6 validated prompts) GPT-6 Luna Pro **asked a clarifying question on 5 of 6**
+where Sonnet answered (reasonable questions, but too many), $0.053 vs $0.373
+(`jms_staging/eval_results_luna6.json`).
+
+Two ways of adding Sonnet back only where it matters, `models.decide` (off by default):
+
+| Setup | Demo | JMS 6 | Verdict |
+|---|---|---|---|
+| Haiku explores, Sonnet always writes the answer from its lookups | 8/12, $0.243 | – | rejected: Sonnet anchored on the cheap draft (same misses as Haiku) and cost as much as Sonnet alone |
+| Luna answers; Sonnet decides only on doubt (wants to ask, trap, grain, review concern) from Luna's lookups | 9/12, **$0.028** (no doubt fired) | 5 reports + 1 question, **$0.395** (5 decides) | kept as an option; **not the default** |
+
+**Decision: Sonnet stays the agent.** On a small schema the cheap tier is 7–9× cheaper at similar
+accuracy; on the realistic schema the cheap model is unsure on most questions, so the decide step runs
+anyway and saves nothing, while each wrong report costs trust. The bill is cut where accuracy is not
+at stake instead: answer cache, saved-report reuse, parameter fill, re-runs, schedules and the "Read
+as" switches cost $0 per question (doc 27 §2); message caching cut JMS cost 2.2× (B-052) and compact
+tool results 25 % of input (B-054). Settings for a small, simple schema:
+`models: {agent: openrouter:openai/gpt-6-luna-pro, decide: openrouter:anthropic/claude-sonnet-5.5}`.
