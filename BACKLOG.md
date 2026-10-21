@@ -190,10 +190,11 @@ do: Add `GET /api/admin/preview?user=X&q=…`, which returns the context block (
 done when: offline test showing an admin sees X's personal items in the preview and a user gets 403.
 result: 2026-10-21, `git log --grep B-020`; 122 passed. UI panel not browser-tested.
 
-### [ ] B-021 · Import diff preview (admin)
+### [x] B-021 · Import diff preview (admin)
 needs: offline
 do: `admin.import_knowledge(dry_run=True)` returns the list of changes without applying them. The Admin page shows the diff before an Import button.
 done when: offline test showing dry-run changes nothing.
+result: 2026-10-21, `git log --grep B-021`; 123 passed. Dialog not browser-tested.
 
 ### [ ] B-022 · Bulk review (admin)
 needs: offline
