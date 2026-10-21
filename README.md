@@ -13,7 +13,7 @@ A self-contained, self-learning natural-language reports bot for any SQL databas
 
 JMS is the first test database (`fixtures/jms_staging/`). Nothing in `src/` is JMS-specific.
 
-Read **AGENTS.md** first (direction and rules). Roles: users ask and teach for themselves, admins manage
+Read **AGENTS.md** first (direction and rules), then **CONTRIBUTING.md** (checks, evals, commit rules). Roles: users ask and teach for themselves, admins manage
 learned knowledge, owners manage the ~10–20 line configuration (docs/22).
 
 ## Continue on another machine

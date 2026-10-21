@@ -40,10 +40,11 @@ do: `tests/test_no_domain_words.py`:
 done when: the test passes now and fails if `gc_case` is added to `agent.py`.
 result: 2026-10-21, `git log --grep B-003`; verified both ways; 13 plain-English table names allow-listed in the test.
 
-### [ ] B-004 · CONTRIBUTING.md
+### [x] B-004 · CONTRIBUTING.md
 needs: offline
 do: Copy the commit rules (doc 18 §0), the research protocol (AGENTS.md §4), how to run the tests, evals and bundle, and the type prefixes. Link it from README.
 done when: the file exists and is linked.
+result: 2026-10-21, `git log --grep B-004`; also documents the B-002 pre-commit hook.
 
 ## Phase P1: accuracy, fewest turns, cost (product core)
 
