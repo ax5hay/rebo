@@ -320,10 +320,11 @@ result: 2026-10-21, `git log --grep B-037`; plus tools/copy_state.py for the Pos
 
 ## Phase P4: JMS track (all against the mock; no JMS access)
 
-### [ ] B-038 · Report Builder output profile
+### [x] B-038 · Report Builder output profile
 needs: offline
 do: Add `adapters.jms` option `builder_compatible: true` (inside the adapter's own config section). The guard additionally rejects SQL outside the staging Builder grammar (reuse `mocks/jms/server.py::builder_grammar_problem`, moved into the adapter), so saved reports open editable.
 done when: offline tests: the 8 grammar cases, and an agent retry when the grammar is violated.
+result: 2026-10-21, `git log --grep B-038`; 148 passed. Grouped/aggregate reports are impossible in this mode (doc 10 §5).
 
 ### [ ] B-039 · Save to Report Builder
 needs: offline
