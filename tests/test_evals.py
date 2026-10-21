@@ -64,3 +64,9 @@ def test_use_drafts_asks_only_drafted_cases_with_the_draft(tmp_path):
         {"id": "b", "question": "Real question?", "gold_sql": "SELECT 1"}]), encoding="utf-8")
     assert [c["question"] for c in load_cases(str(path))] == ["Show me A.", "Real question?"]
     assert [(c["id"], c["question"]) for c in load_cases(str(path), use_drafts=True)] == [("a", "Which a's are open?")]
+
+
+def test_each_eval_run_asks_as_a_new_person():
+    from rebo.evals import fresh_eval_user
+    a, b = fresh_eval_user(), fresh_eval_user()
+    assert a != b and a.startswith("eval-")    # so run 2 cannot replay run 1 from the answer cache

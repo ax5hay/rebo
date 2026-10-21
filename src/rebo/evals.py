@@ -10,6 +10,7 @@ See docs/10-evals-and-observability.md.
 from __future__ import annotations
 
 import json
+import uuid
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
@@ -131,7 +132,14 @@ def load_cases(path: str, *, use_drafts: bool = False) -> list[dict[str, Any]]:
     return lines
 
 
-async def run_eval(app: App, path: str, *, limit: int = 0, user: str = "eval",
+def fresh_eval_user() -> str:
+    """A new asker per run: the exact answer cache, saved reports and personal knowledge are per person,
+    so a fixed eval user would let a second run (or the other arm of an A/B) replay the first run's
+    answers at no cost and measure nothing."""
+    return f"eval-{uuid.uuid4().hex[:8]}"
+
+
+async def run_eval(app: App, path: str, *, limit: int = 0, user: str | None = None,
                    use_drafts: bool = False) -> dict[str, Any]:
     lines = load_cases(path, use_drafts=use_drafts)
     if limit:
@@ -140,7 +148,7 @@ async def run_eval(app: App, path: str, *, limit: int = 0, user: str = "eval",
                   metadata={k: c.get(k) for k in ("min_rows", "max_rows", "tables")}) for c in lines]
     ds = Dataset(name=Path(path).stem, cases=cases, evaluators=[IsReport(), RowsInRange(), UsesTables(app.target.dialect),
                                           ExecutionMatch(app)])
-    evaluator = User(id=user)
+    evaluator = User(id=user or fresh_eval_user())
 
     async def task(question: str) -> dict[str, Any]:
         return await app.ask(evaluator, question)
@@ -173,7 +181,7 @@ def _step_text(step: dict[str, Any], prev: dict[str, Any] | None) -> str | None:
     return None
 
 
-async def run_conversations(app: App, path: str, *, limit: int = 0, user: str = "eval") -> dict[str, Any]:
+async def run_conversations(app: App, path: str, *, limit: int = 0, user: str | None = None) -> dict[str, Any]:
     """Multi-turn eval. JSONL, one conversation per line:
 
       {"id": "...", "gold_sql": "the report the person is after",
@@ -185,7 +193,7 @@ async def run_conversations(app: App, path: str, *, limit: int = 0, user: str = 
     and cost per conversation."""
     convs = [json.loads(l) for l in Path(path).read_text(encoding="utf-8").splitlines() if l.strip()]
     convs = convs[:limit] if limit else convs
-    who = User(id=user)
+    who = User(id=user or fresh_eval_user())
     out = []
     for c in convs:
         g = guard(c["gold_sql"], dialect=app.target.dialect, schema=app.catalog.schema, sensitive=set(),
