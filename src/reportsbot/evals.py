@@ -141,6 +141,92 @@ async def run_eval(app: App, path: str, *, limit: int = 0, user: str = "eval") -
     return {"cases": out, "failures": [f.name for f in report.failures]}
 
 
+# USD per 1M tokens (input, cache read, output), OpenRouter list prices checked 2026-10-21 (docs/20).
+PRICES = {
+    "anthropic/claude-haiku-5.5": (0.10, 0.01, 0.50),
+    "anthropic/claude-sonnet-5.5": (2.00, 0.10, 10.00),
+    "google/gemini-3.8-flash": (0.825, 0.0825, 4.125),
+    "google/gemini-3.5-flash-lite": (0.30, 0.03, 2.50),
+}
+
+
+def cost(usage: dict) -> float | None:
+    name = (usage.get("model") or "").split(":", 1)[-1]
+    if name not in PRICES:
+        return None
+    pin, pcache, pout = PRICES[name]
+    cached = usage.get("cache_read_tokens") or 0
+    fresh = max((usage.get("input_tokens") or 0) - cached, 0)
+    return round((fresh * pin + cached * pcache + (usage.get("output_tokens") or 0) * pout) / 1e6, 5)
+
+
+def _step_text(step: dict[str, Any], prev: dict[str, Any] | None) -> str | None:
+    """What the scripted user sends: typed text, an option of the last clarification (as the UI sends
+    it), or a follow-up chip of the last report. None when the step does not fit the last turn."""
+    if "say" in step:
+        return step["say"]
+    if "pick" in step and prev and prev["kind"] == "clarify":
+        qs = prev["questions"]
+        picks = step["pick"] if isinstance(step["pick"], list) else [step["pick"]] * len(qs)
+        if len(picks) != len(qs) or any(i >= len(q["options"]) for i, q in zip(picks, qs)):
+            return None
+        if len(qs) == 1:
+            return qs[0]["options"][picks[0]]
+        return "; ".join(f"{q['question']} → {q['options'][i]}" for i, q in zip(picks, qs))
+    if "follow_up" in step and prev and prev["kind"] == "report" and step["follow_up"] < len(prev.get("follow_ups") or []):
+        return prev["follow_ups"][step["follow_up"]]
+    return None
+
+
+async def run_conversations(app: App, path: str, *, limit: int = 0, user: str = "eval") -> dict[str, Any]:
+    """Multi-turn eval. JSONL, one conversation per line:
+
+      {"id": "...", "gold_sql": "the report the person is after",
+       "turns": [{"say": "..."}, {"pick": 0}, {"follow_up": 1}, {"say": "..."}]}
+
+    `pick` chooses option i of every clarifying question (or a list, one index per question);
+    `follow_up` clicks chip i under the last report. A conversation stops at the first report whose
+    rows match gold_sql (columns_match). Reports turns to the first correct report, the clarify rate
+    and cost per conversation."""
+    convs = [json.loads(l) for l in Path(path).read_text(encoding="utf-8").splitlines() if l.strip()]
+    convs = convs[:limit] if limit else convs
+    who = User(id=user)
+    out = []
+    for c in convs:
+        g = guard(c["gold_sql"], dialect=app.target.dialect, schema=app.catalog.schema, sensitive=set(),
+                  row_cap=app.settings.row_limit + 1)
+        ref = app.target.run(g.sql, max_rows=app.settings.row_limit)
+        conv_id, prev, turns, solved_at = None, None, [], None
+        for step in c["turns"]:
+            text = _step_text(step, prev)
+            if text is None:
+                turns.append({"step": step, "skipped": "does not fit the previous turn"})
+                continue
+            r = await app.ask(who, text, conv_id)
+            conv_id, prev = r["conversation_id"], r
+            usage = json.loads((app.store.one("SELECT usage FROM turn WHERE id=?", (r["turn_id"],)) or {}).get("usage")
+                               or "{}")
+            correct = r["kind"] == "report" and columns_match(ref.rows, r["rows"], ref.columns)
+            turns.append({"step": step, "text": text, "kind": r["kind"], "rows": len(r.get("rows") or []),
+                          "correct": correct, "route": usage.get("route"), "cost_usd": cost(usage)})
+            if correct:
+                solved_at = sum("text" in t for t in turns)
+                break
+        asked = [t for t in turns if "text" in t]
+        costs = [t["cost_usd"] for t in asked if t["cost_usd"] is not None]
+        out.append({"id": c["id"], "turns_to_first_correct": solved_at, "asked": len(asked),
+                    "clarify": sum(t["kind"] == "clarify" for t in asked),
+                    "cost_usd": round(sum(costs), 5) if costs else None, "turns": turns})
+    solved = [c["turns_to_first_correct"] for c in out if c["turns_to_first_correct"]]
+    asked = sum(c["asked"] for c in out)
+    costs = [c["cost_usd"] for c in out if c["cost_usd"] is not None]
+    summary = {"conversations": len(out), "solved": len(solved),
+               "mean_turns_to_first_correct": round(sum(solved) / len(solved), 2) if solved else None,
+               "clarify_rate": round(sum(c["clarify"] for c in out) / asked, 3) if asked else None,
+               "total_cost_usd": round(sum(costs), 4) if costs else None}
+    return {"summary": summary, "conversations": out}
+
+
 def export_confirmed(app: App, path: str) -> int:
     """Write every verified example as an eval case with its SQL as gold."""
     rows = app.store.all("SELECT id, question, sql FROM knowledge WHERE kind='example' AND status='verified'")

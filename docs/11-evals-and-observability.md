@@ -31,6 +31,32 @@ guard and validator are all exercised. Output is pydantic-evals' table plus JSON
 **Clarify is not automatically a failure.** For prompts like "cases assigned to [admin name]",
 asking is correct. Read `kind` alongside the scores.
 
+### 1.1 Multi-turn eval (`run_conversations`, `tools/eval_conversations.py`; B-011)
+
+Single questions miss what people actually do: ask vaguely, answer a clarification, click a
+follow-up chip, rephrase. `fixtures/*/conversations.jsonl` holds scripted conversations:
+
+```json
+{"id": "dc-01", "gold_sql": "the report the person is after",
+ "turns": [{"say": "Show me the tenants"}, {"pick": 0}, {"say": "Only tenants with a lease right now, ..."}]}
+```
+
+`pick` chooses option *i* of every clarifying question (sent the way the UI sends it); `follow_up`
+clicks chip *i* under the last report; a step that does not fit the previous turn is skipped and
+recorded. Each conversation stops at the first report whose rows match `gold_sql`
+(`columns_match`). Per conversation: `turns_to_first_correct` (null = never), asked turns, clarify
+turns, cost. Summary: solved, mean turns to the first correct report, clarify rate (clarify turns /
+asked turns), total cost. `fixtures/demo_property/conversations.jsonl` has 5 conversations built
+on demo gold gp-02/03/04/05/06. Offline test with a FunctionModel; no results file yet (needs an
+LLM key):
+
+```bash
+uv run python tools/eval_conversations.py fixtures/demo_property/conversations.jsonl \
+    fixtures/demo_property/eval_conversations_sonnet.json
+```
+
+Prices for the cost estimate live in `evals.PRICES` (shared with `tools/eval_run.py`).
+
 ## 2. The eval set grows from use
 
 `evals.export_confirmed(app, path)` writes every **verified** example as a case with its SQL as
