@@ -26,7 +26,7 @@ from .llm import build_model, credentials_present
 from .observability import setup_tracing
 from .retrieval import Index, fts_query, get_embedder
 from .safety import canonical_hash, guard
-from .settings import Settings, get_settings
+from .settings import Settings, get_settings, load_env_file
 from .store import Store, new_id, now
 from .target import TargetDB
 
@@ -49,6 +49,7 @@ class TableDoc(BaseModel):
 
 class App:
     def __init__(self, settings: Settings | None = None):
+        load_env_file()  # API keys from .env into the environment (explicit settings objects too)
         self.settings = s = settings or get_settings()
         self.store = Store(s.state_db)
         self.target = TargetDB(s.database_url, timeout_s=s.query_timeout_s)

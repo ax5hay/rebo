@@ -38,6 +38,13 @@ _YAML_KEYS = {
 }
 
 
+def load_env_file(path: str | Path = ".env") -> None:
+    """Put API keys from .env (OPENROUTER_API_KEY, ANTHROPIC_API_KEY, GEMINI_API_KEY, ...) into the
+    process environment, where the model providers read them. Real environment variables win."""
+    from dotenv import load_dotenv
+    load_dotenv(path, override=False)
+
+
 def config_path() -> Path:
     return Path(os.environ.get("REPORTSBOT_CONFIG", "reportsbot.yaml"))
 
@@ -136,4 +143,5 @@ class Settings(BaseSettings):
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
+    load_env_file()
     return Settings()  # type: ignore[call-arg]

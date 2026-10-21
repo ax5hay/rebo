@@ -41,3 +41,16 @@ def test_unknown_key_is_an_error(cfg):
     cfg.write_text(YAML + "\nlimts: {rows: 1}\n", encoding="utf-8")
     with pytest.raises(ValueError, match="unknown setting 'limts.rows'"):
         Settings()
+
+
+def test_api_keys_in_dotenv_reach_the_model_registry(tmp_path, monkeypatch):
+    from reportsbot.llm import credentials_present
+    from reportsbot.settings import load_env_file
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    monkeypatch.delenv("REPORTSBOT_OPENROUTER_API_KEY", raising=False)
+    (tmp_path / ".env").write_text("OPENROUTER_API_KEY=test-key-from-dotenv\n", encoding="utf-8")
+    s = Settings(database_url="sqlite://")
+    assert not credentials_present("openrouter:anthropic/claude-sonnet-5.5", s)
+    load_env_file(tmp_path / ".env")
+    assert credentials_present("openrouter:anthropic/claude-sonnet-5.5", s)
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)  # do not leak into other tests
