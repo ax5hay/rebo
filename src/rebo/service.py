@@ -29,7 +29,7 @@ from .knowledge import Knowledge, User
 from .llm import build_model, cost, credentials_present, profile, turn_limits
 from .observability import annotate_trace, ask_span, phoenix_url, setup_tracing
 from .retrieval import Index, fts_query, get_embedder
-from .safety import canonical_hash, drill_sql, fill_params, guard
+from .safety import canonical_hash, drill_sql, explain_sql, fill_params, guard
 from .settings import Settings, get_settings, load_env_file
 from .store import Store, new_id, now
 from .target import QueryResult, TargetDB
@@ -408,6 +408,7 @@ class App:
         self.knowledge.mark_used(prov["item_ids"])
         payload = {"title": out.title, "sql": out.sql, "columns": res.columns, "rows": res.rows,
                    "truncated": res.truncated, "elapsed_ms": res.elapsed_ms, "assumptions": out.assumptions,
+                   "steps": explain_sql(out.sql, self.target.dialect),
                    "provenance": prov, "follow_ups": out.follow_ups,
                    "message": msg.say("report_ready", title=out.title,
                                       row_phrase=msg.rows_phrase(len(res.rows), res.truncated)),
@@ -832,9 +833,12 @@ class App:
         out = []
         for t in self.store.all("SELECT * FROM turn WHERE conversation_id=? ORDER BY created_at", (conversation_id,)):
             usage = json.loads(t["usage"] or "{}")
+            payload = json.loads(t["payload"])
+            if t["kind"] == "report" and "steps" not in payload and t["sql"]:  # turns from before the steps
+                payload["steps"] = explain_sql(t["sql"], self.target.dialect)
             out.append({"turn_id": t["id"], "conversation_id": conversation_id, "kind": t["kind"],
                         "question": t["question"], "feedback": t["feedback"], "trace_id": usage.get("trace_id"),
-                        "route": usage.get("route"), "created_at": t["created_at"], **json.loads(t["payload"])})
+                        "route": usage.get("route"), "created_at": t["created_at"], **payload})
         return out
 
     def insights(self, user: User, days: int = 90) -> dict[str, Any]:

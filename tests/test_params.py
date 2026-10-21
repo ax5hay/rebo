@@ -128,3 +128,27 @@ async def test_personal_default_reaches_the_prompt_for_its_owner_only(app):
     await app.ask(User("bob"), "customers")
     assert "<my_defaults>\nstatus: paused\n</my_defaults>" in prompts[0] and "<my_defaults>" not in prompts[1]
     assert prompts[0].index("<my_defaults>") < prompts[0].index("<learned_knowledge>")
+
+
+def test_the_query_explained_in_plain_steps():
+    from rebo.safety import explain_sql
+    steps = explain_sql("SELECT b.name AS building, COUNT(*) AS open_requests FROM maintenance m "
+                        "JOIN unit u ON u.unit_id = m.unit_id JOIN building b ON b.building_id = u.building_id "
+                        "WHERE m.state <> 'closed' AND m.priority IN ('high', 'urgent') GROUP BY b.name "
+                        "HAVING COUNT(*) > 2 ORDER BY 2 DESC LIMIT 5", "sqlite")
+    assert steps == ["Look in maintenance, with the matching unit, building",
+                     "Keep rows where state is not 'closed'; and priority is one of 'high', 'urgent'",
+                     "Combine rows per building name", "Keep groups where number of rows is more than 2",
+                     "Show building, open requests", "Sort by open requests (highest first)", "Only the first 5"]
+    assert explain_sql("SELECT t.first_name FROM tenant t LEFT JOIN lease l ON l.tenant_id = t.tenant_id "
+                       "WHERE l.end_date IS NULL", "sqlite")[:2] == [
+        "Look in tenant, with the matching lease where there is one", "Keep rows where lease end date is empty"]
+    assert explain_sql("not sql at all", "sqlite") == []
+
+
+async def test_reports_carry_their_steps(app):
+    from test_llm import _completion, _scripted
+    _scripted(app, [_completion("present_report", {"title": "Paused", "assumptions": [],
+                                                   "sql": "SELECT full_name FROM customer WHERE status = 'paused'"})])
+    r = await app.ask(User("alice"), "paused customers")
+    assert r["steps"] == ["Look in customer", "Keep rows where status is 'paused'", "Show full name"]

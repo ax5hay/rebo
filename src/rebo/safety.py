@@ -7,6 +7,7 @@ See docs/06-sql-safety.md.
 from __future__ import annotations
 
 import hashlib
+from contextvars import ContextVar
 from dataclasses import dataclass, field
 
 import sqlglot
@@ -247,3 +248,129 @@ def drill_sql(sql: str, dialect: str, columns: list[str], row: list, schema: dic
         detail.set(key, None)
     detail = detail.where(exp.and_(*filters), copy=False)
     return detail.sql(dialect=dialect), labels
+
+
+# ---- the query in plain steps (shown under every report) ------------------------------------------
+# Research on people checking text-to-SQL answers (Berant et al. 2018; DIY, IUI 2021; SQLucid) found
+# that non-experts judge correctness far better from a step-by-step, plain-language reading of the
+# query than from SQL. These steps are generated from the syntax tree, never by a model, so they say
+# exactly what the query does.
+
+# alias -> table, and the main table, of the query being explained (per call: safe across threads/tasks)
+_EXPLAIN: ContextVar[tuple[dict[str, str], str]] = ContextVar("rebo_explain", default=({}, ""))
+
+
+def _words(node) -> str:
+    """A column or expression in plain words: c.full_name -> "full name"; columns of joined tables
+    carry their table ("building name"), so "name" or "id" is never ambiguous."""
+    if isinstance(node, exp.Column):
+        tables, main = _EXPLAIN.get()
+        table = tables.get(node.table.lower(), node.table) if node.table else ""
+        col = node.name.replace("_", " ")
+        if table and table != main and not col.startswith(table.replace("_", " ")):
+            return f"{table.replace('_', ' ')} {col}"
+        return col
+    if isinstance(node, exp.Literal):
+        return f"'{node.this}'" if node.is_string else node.this
+    if isinstance(node, exp.Alias):
+        return _words(node.this)
+    if isinstance(node, exp.Count):
+        inner = node.this
+        what = "rows" if isinstance(inner, exp.Star) or inner is None else _words(inner)
+        return f"number of {'different ' if node.args.get('distinct') or isinstance(inner, exp.Distinct) else ''}{what}"
+    agg = {exp.Sum: "total", exp.Avg: "average", exp.Min: "lowest", exp.Max: "highest"}
+    for kind, word in agg.items():
+        if isinstance(node, kind):
+            return f"{word} {_words(node.this)}"
+    if isinstance(node, (exp.Tuple, exp.Array)):
+        return ", ".join(_words(e) for e in node.expressions)
+    return node.sql()
+
+
+def _condition(node) -> list[str]:
+    """One condition in words; AND is split into separate lines."""
+    if isinstance(node, exp.And):
+        return _condition(node.this) + _condition(node.expression)
+    if isinstance(node, exp.Paren):
+        return _condition(node.this)
+    ops = {exp.EQ: "is", exp.NEQ: "is not", exp.GT: "is more than", exp.GTE: "is at least",
+           exp.LT: "is less than", exp.LTE: "is at most"}
+    for kind, word in ops.items():
+        if isinstance(node, kind):
+            return [f"{_words(node.this)} {word} {_words(node.expression)}"]
+    if isinstance(node, exp.Is):
+        return [f"{_words(node.this)} is empty"]
+    if isinstance(node, exp.Not) and isinstance(node.this, exp.Is):
+        return [f"{_words(node.this.this)} is not empty"]
+    if isinstance(node, exp.In):
+        return [f"{_words(node.this)} is one of {', '.join(_words(e) for e in node.expressions)}"]
+    if isinstance(node, exp.Like):
+        verb = "does not match" if node.args.get("negate") else "matches"
+        return [f"{_words(node.this)} {verb} {_words(node.expression)}"]
+    if isinstance(node, exp.Between):
+        return [f"{_words(node.this)} is between {_words(node.args['low'])} and {_words(node.args['high'])}"]
+    if isinstance(node, exp.Or):
+        return [" or ".join(" and ".join(_condition(p)) for p in (node.this, node.expression))]
+    if isinstance(node, exp.Exists):
+        return ["a matching row exists in a related table"]
+    if isinstance(node, exp.Not) and isinstance(node.this, exp.Exists):
+        return ["no matching row exists in a related table"]
+    return [node.sql()]
+
+
+def explain_sql(sql: str, dialect: str) -> list[str]:
+    """The query as numbered plain-language steps; [] when it cannot be read (the SQL is still shown)."""
+    try:
+        tree = sqlglot.parse_one(sql, read=dialect)
+    except Exception:
+        return []
+    if not isinstance(tree, exp.Select) or not tree.args.get("from_"):
+        return []
+    src = tree.args["from_"].this
+    tables = {t.alias_or_name.lower(): t.name for t in [src, *(j.this for j in tree.args.get("joins") or [])]
+              if isinstance(t, exp.Table)}
+    token = _EXPLAIN.set((tables, src.name if isinstance(src, exp.Table) else ""))
+    try:
+        return _explain_steps(tree, src)
+    finally:
+        _EXPLAIN.reset(token)
+
+
+def _explain_steps(tree, src) -> list[str]:
+    steps = []
+    with_ = tree.args.get("with_")
+    if with_:
+        steps.append(f"Prepare {len(with_.expressions)} intermediate result{'s' if len(with_.expressions) > 1 else ''} first")
+    look = f"Look in {src.name.replace('_', ' ') if isinstance(src, exp.Table) else 'a sub-result'}"
+    joins = []
+    for j in tree.args.get("joins") or []:
+        name = j.this.name.replace("_", " ") if isinstance(j.this, exp.Table) else "a sub-result"
+        joins.append(f"{name}{' where there is one' if (j.side or '').upper() == 'LEFT' else ''}")
+    steps.append(look + (", with the matching " + ", ".join(joins) if joins else ""))
+    where = tree.args.get("where")
+    if where is not None:
+        steps.append("Keep rows where " + "; and ".join(_condition(where.this)))
+    group = tree.args.get("group")
+    if group:
+        steps.append("Combine rows per " + ", ".join(_words(g) for g in group.expressions))
+    having = tree.args.get("having")
+    if having is not None:
+        steps.append("Keep groups where " + "; and ".join(_condition(having.this)))
+    shown = [p.alias or _words(p) if isinstance(p, exp.Alias) else _words(p) for p in tree.expressions]
+    steps.append(("Show different " if tree.args.get("distinct") else "Show ") + ", ".join(
+        s.replace("_", " ") for s in shown))
+    order = tree.args.get("order")
+    if order:
+        parts = []
+        for o in order.expressions:
+            key = o.this
+            if isinstance(key, exp.Literal) and not key.is_string and key.this.isdigit() and int(key.this) <= len(shown):
+                name = shown[int(key.this) - 1].replace("_", " ")
+            else:
+                name = _words(key)
+            parts.append(f"{name}{' (highest first)' if o.args.get('desc') else ''}")
+        steps.append("Sort by " + ", ".join(parts))
+    limit = tree.args.get("limit")
+    if limit is not None and isinstance(limit.expression, exp.Literal):
+        steps.append(f"Only the first {limit.expression.this}")
+    return steps
