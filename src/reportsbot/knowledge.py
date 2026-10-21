@@ -331,12 +331,13 @@ class Knowledge:
             return Outcome("promoted", self._promote(user, item, "org"))
         return Outcome("share_requested", self._set_status(item_id, "proposed", actor=user.id, note="owner asked to share"))
 
-    def _promote(self, admin: User, item: dict, scope: str) -> dict:
+    def _promote(self, admin: User, item: dict, scope: str, note: str = "") -> dict:
         with self.store.tx() as db:
             db.execute("UPDATE knowledge SET verified_by=?, verified_at=? WHERE id=?", (admin.id, now(), item["id"]))
-        return self._set_status(item["id"], "verified", actor=admin.id, scope=scope, note=f"shared with {scope}")
+        return self._set_status(item["id"], "verified", actor=admin.id, scope=scope,
+                                note=f"shared with {scope}" + (f": {note}" if note else ""))
 
-    def promote(self, admin: User, item_id: str, scope: str = "org") -> Outcome:
+    def promote(self, admin: User, item_id: str, scope: str = "org", note: str = "") -> Outcome:
         if not admin.is_admin:
             raise PermissionError("Only admins can share knowledge with others.")
         item = self.get(item_id)
@@ -344,7 +345,7 @@ class Knowledge:
             raise KeyError(item_id)
         if scope == "team" and not item.get("team"):
             scope = "org"
-        return Outcome("promoted", self._promote(admin, item, scope))
+        return Outcome("promoted", self._promote(admin, item, scope, note))
 
     def set_pinned(self, user: User, item_id: str, pinned: bool) -> dict[str, Any]:
         """Favourites: only the owner pins or unpins their own example; it heads their starter row."""

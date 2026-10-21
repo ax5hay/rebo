@@ -53,6 +53,7 @@ Rules behind the table:
 | My defaults | Section on My knowledge (also `GET /api/defaults`, `PUT /api/defaults/{name} {value}`): name = value pairs saved as personal notes titled `default: <name>`; the context block lists them first in `<my_defaults>` and the instructions say to apply them unless the question says otherwise and to state them as assumptions | "Always the last 30 days" is said once, not in every question (B-019) |
 | See as user X (admin) | Admin page panel / `GET /api/admin/preview?user=X&q=…[&team=]`: the exact context block X's question would get (their personal + shared knowledge, defaults, likely tables, values), with each item's owner. Read-only, no model; users get 403 | Admins check what a person's answer rests on before sharing or editing (B-020) |
 | Import diff preview (admin) | Export / import dialog: **Preview changes** lists every add / edit (field: before → after) / share / withdraw and every error; **Import** is enabled only after a preview of the current text. `POST /api/knowledge/import {yaml, dry_run: true}` | Bulk edits are checked before they touch shared knowledge (B-021) |
+| Bulk review (admin) | Checkboxes on the review queue, one note, **Share selected** (org) / **Reject selected**; `POST /api/review/bulk {item_ids, action: share/reject, note}`. Each item is handled on its own and the note goes into its history; failures are listed | A Monday review of 20 items is 2 clicks, not 20 (B-022) |
 | Re-run with today's data | Button on every report | Same SQL, fresh rows, no model call (B-008) |
 | Follow-up chips | Up to 3 drill-downs under each report | Drill down with one click |
 | Starter questions | "Others often ask: …" from the most-used trusted reports | First question lands on a known-good report |
@@ -70,7 +71,6 @@ Rules behind the table:
 |---|---|---|
 | **"Why did you ask me that?"** | everyone | Show the evidence behind a clarification: the competing readings and their row counts (needs the deterministic ask-gate, doc 18 P1.2) |
 | **Re-run with today's data** | everyone | Button on any past report; reuses the SQL, no model call |
-| **Bulk review** | admin | Approve or reject several queue items at once, with one note |
 | **Request SLA / notifications** | admin/owner | Age of open requests; email/webhook when a request is answered or an item goes stale |
 | **Usage dashboard** | admin/owner | Confirmation rate, top questions, cost per day, items most reported wrong |
 | **Config change preview** | owner | Validate a new configuration and run the offline tests plus a 5-question eval before saving |

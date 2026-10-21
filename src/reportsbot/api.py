@@ -24,6 +24,12 @@ class FeedbackIn(BaseModel):
     note: str = ""
 
 
+class BulkReviewIn(BaseModel):
+    item_ids: list[str]
+    action: Literal["share", "reject"]
+    note: str = ""
+
+
 class DefaultIn(BaseModel):
     value: str
 
@@ -231,6 +237,10 @@ def router(app: App) -> APIRouter:
     @r.get("/review")
     def review(user: User = Depends(current_user)):
         return guard_errors(lambda: app.review_queue(user))
+
+    @r.post("/review/bulk")
+    def review_bulk(body: BulkReviewIn, user: User = Depends(current_user)):
+        return guard_errors(lambda: app.bulk_review(user, body.item_ids, body.action, body.note))
 
     @r.get("/admin/preview")
     def preview(user_id: str = Query(..., alias="user"), q: str = "", team: str | None = None,

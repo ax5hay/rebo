@@ -94,3 +94,24 @@ def test_import_dry_run_lists_changes_and_changes_nothing(app):
     edit = next(c for c in r["changes"] if c["action"] == "edit")
     assert edit["fields"] == {"body": ["spent over 1000", "spent over 500"]}
     assert len(r["errors"]) == 1 and "broken" in r["errors"][0] and "Nothing has changed" in r["message"]
+
+
+def test_bulk_review_shares_or_rejects_several_with_one_note(app):
+    from fastapi.testclient import TestClient
+
+    from reportsbot.api import create_app
+    a = app.add_knowledge(USER, kind="note", title="fiscal year", body="starts in April")["item"]
+    b = app.add_knowledge(USER, kind="term", title="vip", body="spent over 1000")["item"]
+    c = app.add_knowledge(USER, kind="note", title="noise", body="ignore")["item"]
+    client = TestClient(create_app(app, with_ui=False))
+    admin_h = {"X-User-Id": "ada", "X-User-Role": "admin"}
+    r = client.post("/api/review/bulk", json={"item_ids": [a["id"], b["id"], "nope"], "action": "share",
+                                              "note": "agreed in the Monday review"}, headers=admin_h).json()
+    assert r["done"] == [a["id"], b["id"]] and len(r["errors"]) == 1
+    assert {app.knowledge.get(i)["status"] for i in (a["id"], b["id"])} == {"verified"}
+    assert "Monday review" in app.knowledge.history(a["id"])[-1]["note"]
+    client.post("/api/review/bulk", json={"item_ids": [c["id"]], "action": "reject", "note": "duplicate"},
+                headers=admin_h)
+    assert app.knowledge.get(c["id"])["status"] == "retired"
+    assert client.post("/api/review/bulk", json={"item_ids": [a["id"]], "action": "reject"},
+                       headers={"X-User-Id": "alice"}).status_code == 403

@@ -560,6 +560,26 @@ class App:
         where = "your team" if o.item["scope"] == "team" else "the whole organisation"
         return {"message": msg.say("promoted", scope=where, title=o.item["title"]), "item": o.item}
 
+    def bulk_review(self, user: User, item_ids: list[str], action: str, note: str = "") -> dict[str, Any]:
+        """Share (org) or reject several queued items with one note. Each item is handled on its own;
+        failures are reported, not fatal. Admins only."""
+        if not user.is_admin:
+            raise PermissionError("Only admins can review the queue.")
+        if action not in ("share", "reject"):
+            raise ValueError("action must be share or reject")
+        done, errors = [], []
+        for item_id in dict.fromkeys(item_ids):
+            try:
+                if action == "share":
+                    self.knowledge.promote(user, item_id, "org", note)
+                else:
+                    self.knowledge.retire(user, item_id, note)
+                done.append(item_id)
+            except Exception as e:
+                errors.append(f"{item_id}: {e}")
+        return {"message": msg.say("bulk_review_done", n=len(done), action="shared" if action == "share" else
+                                   "rejected", errors=len(errors)), "done": done, "errors": errors}
+
     def retire(self, user: User, item_id: str, reason: str = "") -> dict[str, Any]:
         o = self.knowledge.retire(user, item_id, reason)
         return {"message": msg.say("retired"), "item": o.item}

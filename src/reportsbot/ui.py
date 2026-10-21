@@ -434,7 +434,18 @@ def mount_ui(api: FastAPI, app: App) -> None:
                     ui.space()
                     ui.button("Add shared knowledge", on_click=lambda: _knowledge_dialog(app, u, draw)).props("outline")
                     ui.button("Export / import", on_click=bulk_dialog).props("outline")
+                selected: set[str] = set()
+                if queue:
+                    with ui.row().classes("items-center gap-2 w-full"):
+                        bulk_note = ui.input("Note for the selected items").props("dense").classes("grow")
+                        ui.button("Share selected", on_click=lambda: do(
+                            app.bulk_review, list(selected), "share", bulk_note.value or "")).props("outline dense")
+                        ui.button("Reject selected", on_click=lambda: do(
+                            app.bulk_review, list(selected), "reject", bulk_note.value or "")).props(
+                            "flat dense color=negative")
                 for item in queue:
+                    ui.checkbox(f"select “{item['title']}”", on_change=lambda e, i=item["id"]: (
+                        selected.add(i) if e.value else selected.discard(i))).props("dense")
                     queue_card(item)
                 with ui.expansion("See as user X: what another person's question would be given").classes(
                         "w-full mt-4"):

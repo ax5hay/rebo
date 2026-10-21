@@ -70,6 +70,7 @@ MESSAGES: dict[str, str] = {
 
     # --- configuration and bulk knowledge (owners / admins) --------------------------------
     "config_saved": "Configuration saved and the previous version kept. Restart the bot to apply it.",
+    "bulk_review_done": "{n} item(s) {action}; {errors} could not be changed.",
     "import_preview": "Import would make: {added} added, {updated} updated, {shared} shared, {retired} withdrawn, {errors} with errors. Nothing has changed yet.",
     "import_done": "Imported: {added} added, {updated} updated, {shared} shared, {retired} withdrawn, {errors} with errors.",
 
