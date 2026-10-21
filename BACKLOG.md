@@ -363,7 +363,8 @@ do: Load a tool-calling model in LM Studio. Run the demo gold set with `models.a
 done when: `fixtures/demo_property/eval_results_lmstudio.json` exists and doc 20 §4 is updated with real numbers.
 result: 2026-10-21, `git log --grep B-044`; gemma-4-e2b 1/10 content match, 2 errors -> 0 with output_retries 4 (accuracy unchanged); doc 20 §4.1.
 
-### [ ] B-045 · Gemini direct (Google API) run
+### [!] B-045 · Gemini direct (Google API) run
 needs: gemini
 do: Run the demo gold set with `models.agent: google:<current Flash id>` (re-check the id first).
 done when: a results file exists and doc 20 is updated.
+blocked: 2026-10-21. The GEMINI_API_KEY in .env is on Google's free tier: gemini-3.8-flash allows 5 requests/minute, and all 10 demo questions failed with 429 RESOURCE_EXHAUSTED in under a second (one turn needs ~10 requests). Question for the user: provide a paid-tier key, or accept a throttled run (about 2 questions per minute at best, and the free tier's daily cap may still stop it)? Current id re-checked: gemini-3.8-flash; Google direct price added to llm.PRICES.
