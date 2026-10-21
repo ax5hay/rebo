@@ -431,8 +431,10 @@ do: when candidates disagree (B-048), build a multiple-choice question from the 
 ### [ ] B-057 · Metamorphic proofs on the synthetic shadow database
 do: mutate gold SQL into known-wrong variants; measure detection and false-alarm rates of grain/NULL/date invariants on tools/synth data.
 
-### [ ] B-058 · EXPLAIN gate and row-level security passthrough
+### [!] B-058 · EXPLAIN gate and row-level security passthrough
 do: dialect-aware EXPLAIN (never ANALYZE) rejects cartesian or huge plans with a hint to the agent; optional run-as-user database role. Offline tests on known bad plans.
+result: 2026-10-21. Cartesian joins (no join condition; bare JOIN or comma join without WHERE) are now a SQL trap with one retry, portable across dialects, no EXPLAIN needed; timeouts already bound runaway queries. EXPLAIN row-estimate gate not built (dialect-specific, estimates unreliable; timeouts cover it).
+question for a human: row-level security passthrough needs a deployment decision: how people map to database roles or session variables in your database (e.g. Postgres SET ROLE per user, or a session variable your RLS policies read). Tell me which, and I will add it as one setting.
 
 ### [ ] B-059 · Nightly regression from confirmed reports
 needs: llm

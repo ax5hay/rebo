@@ -556,6 +556,8 @@ C_O = "FROM customer c JOIN orders o ON o.customer_id = c.customer_id"
     ("SELECT c.full_name, o.amount FROM customer c LEFT JOIN orders o ON o.customer_id = c.customer_id "
      "WHERE o.amount > 10", "LEFT JOIN"),
     (f"SELECT SUM(c.customer_id) {C_O}", "sums"),
+    ("SELECT c.full_name, o.amount FROM customer c JOIN orders o", "without a join condition"),
+    ("SELECT c.full_name, o.amount FROM customer c, orders o", "without a join condition"),
     # not traps
     ("SELECT full_name FROM customer WHERE email IS NULL", None),
     ("SELECT full_name FROM customer WHERE customer_id NOT IN (1, 2)", None),
@@ -563,6 +565,8 @@ C_O = "FROM customer c JOIN orders o ON o.customer_id = c.customer_id"
      "WHERE o.order_id IS NULL", None),                                                   # anti-join
     (f"SELECT SUM(o.amount) {C_O}", None),                                               # many side
     (f"SELECT SUM(DISTINCT c.customer_id) {C_O}", None),
+    ("SELECT c.full_name FROM customer c CROSS JOIN orders o", None),                    # said on purpose
+    ("SELECT c.full_name FROM customer c, orders o WHERE o.customer_id = c.customer_id", None),  # old-style join
 ])
 def test_sql_trap(app, sql, trap):
     from rebo.agent import sql_trap

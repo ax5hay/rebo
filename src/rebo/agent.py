@@ -11,6 +11,8 @@ and the database; failures go back to the model as a retry. See docs/03-agent-lo
 """
 from __future__ import annotations
 
+import re
+
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Callable, Literal
 
@@ -176,7 +178,7 @@ def sql_trap(sql: str, dialect: str, pks: dict[str, list[str]]) -> str | None:
     """A query that runs but very likely answers a different question (research basis: doc 16 §5). Checks,
     on the syntax tree only: comparison with NULL; NOT IN over a subquery (one NULL empties the result);
     a LEFT JOIN undone by a WHERE filter on the joined table; SUM/AVG of a column repeated by a
-    one-to-many join. Returns what is wrong in words, or None."""
+    one-to-many join; a join with no condition at all (a cartesian product). Returns what is wrong in words, or None."""
     try:
         tree = sqlglot.parse_one(sql, read=dialect)
     except sqlglot.errors.ParseError:
@@ -191,6 +193,13 @@ def sql_trap(sql: str, dialect: str, pks: dict[str, list[str]]) -> str | None:
     for sel in tree.find_all(exp.Select):
         joins = sel.args.get("joins") or []
         where = sel.args.get("where")
+        for j in joins:  # every row times every row: almost never meant, and can run for very long (B-058)
+            on = j.args.get("on")
+            no_condition = (on is None or isinstance(on, exp.Boolean)) and not j.args.get("using")  # bare JOIN parses as ON TRUE
+            said_cross = (j.kind or "").upper() == "CROSS" and re.search(r"\bcross\s+join\b", sql, re.I)  # a comma join parses as CROSS too
+            if no_condition and isinstance(j.this, exp.Table) and not said_cross and where is None:
+                return (f"it joins {j.this.name} without a join condition, which pairs every row with every row. "
+                        "Add the ON condition (find_join_path), or write CROSS JOIN if that is really intended.")
         if where is not None:
             conjuncts = list(where.this.flatten()) if isinstance(where.this, exp.And) else [where.this]
             for j in joins:
@@ -279,7 +288,7 @@ def build_agent(model: Model, output: Literal["tool", "prompted"] = "tool", retr
     def describe_table(ctx: RunContext[Deps], table: str) -> dict[str, Any]:
         """Columns (type, null rate, distinct count, common values, meaning), keys and joins of one table."""
         app = ctx.deps.app
-        d = app.catalog.describe(table, app.knowledge.learned_joins(ctx.deps.user))
+        d = app.catalog.describe_compact(table, app.knowledge.learned_joins(ctx.deps.user))
         ctx.deps.trace.append({"tool": "describe_table", "table": table, "found": bool(d)})
         if not d:
             raise ModelRetry(f"No table named '{table}'. Use search_schema.")
