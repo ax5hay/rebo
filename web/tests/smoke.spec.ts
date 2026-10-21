@@ -54,7 +54,8 @@ test("a grouped answer can be shown as a chart and back as a table", async ({ pa
 
 test("every page opens without script errors, and the glass bar is there", async ({ page }) => {
   const errors: string[] = [];
-  page.on("pageerror", (e) => errors.push(e.message));
+  // WebKit reports requests cancelled by leaving a page as errors "... due to access control checks"
+  page.on("pageerror", (e) => { if (!/access control checks/.test(e.message)) errors.push(e.message); });
   await page.goto(`/app/?user=olga-${test.info().project.name}&role=owner`);
   for (const path of ["/app/", "/app/knowledge", "/app/review", "/app/admin", "/app/insights", "/app/config", "/app/me", "/app/help"]) {
     await page.goto(path);
