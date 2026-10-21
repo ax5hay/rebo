@@ -224,13 +224,14 @@ No model calls.
 done when: offline tests (bad database URL → readable error; good → OK).
 result: 2026-10-21, `git log --grep B-024`; 126 passed. UI not browser-tested.
 
-### [ ] B-025 · Request notifications and ages
+### [x] B-025 · Request notifications and ages
 needs: offline
 do:
 - Optional `notify_url` key (one config line; webhook POST on request created/resolved and on item stale/promoted).
 - Show request ages on the Admin page.
 - Mock receiver in tests.
 done when: offline test with an httpx mock; config doc updated (count stays ≤ 20 lines).
+result: 2026-10-21, `git log --grep B-025`; 129 passed; config at 19 settings (test-enforced <= 20).
 
 ## Phase P2: production plumbing
 
