@@ -1,0 +1,16 @@
+# pip/uv tool install pre-commit, then: pre-commit install   (rules match .github/workflows/ci.yml)
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.1
+    hooks:
+      - id: ruff-check
+        args: [--select, "F,E9,B", --ignore, "E501,B008,B905"]
+        files: ^(src|tests|tools|mocks)/
+  - repo: local
+    hooks:
+      - id: bundle-secret-scan
+        name: bundle secret scan (tools/export_bundle.py --check-only)
+        entry: uv run python tools/export_bundle.py --check-only
+        language: system
+        pass_filenames: false
+        always_run: true
