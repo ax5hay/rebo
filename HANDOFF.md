@@ -10,14 +10,16 @@ also in git history; this file is the short version a new session reads first.
   `REBO_*` env, `rebo.yaml`). Private repo **github.com/ax5hay/rebo**, CI green (SQLite, Postgres +
   pgvector, web + Playwright, dependency audit), Dependabot weekly.
 - **Product UI** in `web/` (React; Ask, What I taught, Review, Admin, Insights, Configuration), served
-  at `/` by `rebo serve` when built. NiceGUI pages only with `--nicegui`.
+  at `/` by `rebo serve` when built; second design (sidebar, ⌘K palette, calm answer panels, plain
+  query steps from the syntax tree, dark mode). NiceGUI pages only with `--nicegui`.
 - **Observability on by default**: Phoenix traces (one trace per question), people's feedback and eval
   verdicts as trace annotations, Insights page with live health checks, accuracy history, cost.
 - Everything from B-001…B-044 (not B-015/B-041, which need a person; B-045 blocked on the Gemini
   free tier). 164 offline tests; 268 with Postgres.
 - **Measured with keys (2026-10-21b):** JMS 18 prompts Sonnet 13 reports / 5 clarify / 0 errors $2.68;
   Haiku cascade $0.14; Gemini with profile 13 reports, 2 errors (504s); demo gold 8/10; conversations
-  4/5. Still unmeasured: B-008 (cost per repeat), B-009 retrieval effect, B-019 defaults effect.
+  4/5; repeat question $0, new value $0.00013 (B-008); Gemini free tier: 3.5-flash-lite 7/10 at $0
+  (3.8-flash's free quota is 20 requests/day). Still unmeasured: B-009 and B-019 effects.
 - **Next work:** `BACKLOG.md`. Left after the second machine: B-043 (visual check), B-044 (LM Studio,
   in progress), B-045 (needs a Gemini key), B-015 and B-041 (need a person), and every
   `eval pending: needs llm` measurement (B-005, 006, 008–013, 019, 042; each names its results file).
