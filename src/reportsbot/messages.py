@@ -12,6 +12,7 @@ MESSAGES: dict[str, str] = {
     "rows_truncated": "Showing the first {n} rows; there are more. Narrow the question or export the full result.",
     "rows_none": "No rows matched. The assumptions below explain what was searched for.",
     "assumptions_header": "How I read your question",
+    "review_concern": "Check: {concern}",
     "ask_feedback": "Is this right?",
 
     # --- provenance badges (shown above the table) --------------------------------------

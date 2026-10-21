@@ -45,6 +45,9 @@ keys rather than writing their own text, so behaviour and wording change togethe
 | Show SQL | `Report.sql` | Collapsed. The executed SQL may also carry the row cap |
 | Feedback row | `ask_feedback` | Replaced by the outcome sentence after a click |
 
+A new report built on more than 2 assumptions may carry one extra, last assumption from the
+reviewer (`review_concern`, doc 04 §7): "Check: Closed customers may be wanted too."
+
 ## 3. Feedback sentences, verbatim
 
 | When | Key | Text |

@@ -62,6 +62,11 @@ class ParamFill(BaseModel):
         "unchanged ones copied as they are"))
 
 
+class Review(BaseModel):
+    ok: bool = Field(description="true when the report answers the question as asked")
+    concern: str = Field("", description="When not ok: the one thing a person should check, in plain words")
+
+
 class App:
     def __init__(self, settings: Settings | None = None):
         load_env_file()  # API keys from .env into the environment (explicit settings objects too)
@@ -91,6 +96,15 @@ class App:
         return Agent(output_type=ToolOutput(ParamFill, name="fill_parameters"), retries=1, instructions=(
             "A user's new request is compared with a saved report. Decide whether it asks for the same report "
             "with only different values, and if so give the new value for every placeholder."))
+
+    @cached_property
+    def review_agent(self) -> Agent:
+        return Agent(output_type=ToolOutput(Review, name="review"), retries=1, instructions=(
+            "You check a database report before a business user sees it. Given the question, the SQL, the "
+            "assumptions made and the first rows, decide whether the report answers the question. Flag only a "
+            "concrete problem a person should check (wrong filter, wrong grain, missing condition, a reading "
+            "that contradicts the question), in one plain sentence without table or column names. "
+            "Otherwise ok."))
 
     @cached_property
     def escalation_model(self):
@@ -281,6 +295,7 @@ class App:
                    "model": self.settings.escalate_model if escalated else first_name, "escalated": escalated,
                    "route": "reuse" if reuse and not escalated else "new"}
         if isinstance(out, Report) and deps.final is not None:
+            await self._second_opinion(user, text, out, deps.final, usage_d)
             return self._report_turn(turn_id, conv_id, user, text, out, deps.final, deps, usage_d)
         if isinstance(out, Clarify):
             gated = self._ask_gate(out, text)
@@ -323,6 +338,23 @@ class App:
                    "suggestions": self._suggestions(user, turn_id, out.learnable)}
         return self._record(turn_id, conv_id, user, text, "report", payload, deps, sql=out.sql, prov=prov,
                             usage=usage_d)
+
+    async def _second_opinion(self, user: User, text: str, out: Report, res: QueryResult, usage_d: dict) -> None:
+        """A new report resting on more than 2 assumptions gets one review by the fast model; a concern
+        is added as a "Check: ..." assumption. usage.review = ok | concern (absent when not reviewed)."""
+        if len(out.assumptions) <= 2 or self._provenance(user, out.sql, out.used_knowledge)["label"] != "new":
+            return
+        prompt = json.dumps({"question": text, "sql": out.sql, "assumptions": out.assumptions,
+                             "columns": res.columns, "first_rows": res.rows[:10], "row_count": len(res.rows)},
+                            default=str)
+        try:
+            review = (await self.review_agent.run(prompt, model=self.fast_agent_model)).output
+        except Exception:
+            log.info("second opinion failed; report shown without it", exc_info=True)
+            return
+        usage_d["review"] = "ok" if review.ok or not review.concern.strip() else "concern"
+        if usage_d["review"] == "concern":
+            out.assumptions.append(msg.say("review_concern", concern=review.concern.strip()))
 
     def _limits(self, model_spec: str) -> UsageLimits:
         tool_calls = round(self.settings.max_tool_calls * profile(model_spec).tool_call_factor)

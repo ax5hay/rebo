@@ -333,3 +333,32 @@ async def test_prompted_output_turn_end_to_end(app):
     app.__dict__["agent"] = build_agent(FunctionModel(model), output="prompted")
     r = await app.ask(User("alice"), "paused customers")
     assert r["kind"] == "report" and len(r["rows"]) == 10
+
+
+@pytest.mark.parametrize("verdict, review", [({"ok": True}, "ok"),
+                                             ({"ok": False, "concern": "Closed customers may be wanted too."}, "concern")])
+async def test_new_report_with_many_assumptions_gets_a_second_opinion(app, verdict, review):
+    three = ["Paused is the stored status.", "All regions.", "Any signup date."]
+    seen = _scripted(app, [_completion("present_report", {"title": "Paused", "assumptions": three,
+                           "sql": "SELECT full_name FROM customer WHERE status = 'paused'"})])
+    reviews = []
+
+    def fast(req):
+        reviews.append(req.content.decode())
+        return httpx.Response(200, json=_completion("review", verdict))
+
+    app.__dict__["fast_agent_model"] = build_model(
+        "lmstudio:fast", app.settings, http_client=httpx.AsyncClient(transport=httpx.MockTransport(fast)))
+    r = await app.ask(User("alice"), "paused customers")
+    usage = json.loads(app.store.one("SELECT usage FROM turn WHERE id=?", (r["turn_id"],))["usage"])
+    assert len(reviews) == 1 and "first_rows" in reviews[0] and usage["review"] == review and len(seen) == 1
+    assert (r["assumptions"][-1] == "Check: Closed customers may be wanted too.") == (review == "concern")
+
+
+async def test_no_second_opinion_with_two_assumptions_or_fewer(app):
+    _scripted(app, [_completion("present_report", {"title": "Paused", "assumptions": ["a", "b"],
+                                                   "sql": "SELECT full_name FROM customer WHERE status = 'paused'"})])
+    app.__dict__["fast_agent_model"] = build_model("lmstudio:fast", app.settings, http_client=httpx.AsyncClient(
+        transport=httpx.MockTransport(lambda req: pytest.fail("the reviewer must not be called"))))
+    r = await app.ask(User("alice"), "paused customers")
+    assert "review" not in json.loads(app.store.one("SELECT usage FROM turn WHERE id=?", (r["turn_id"],))["usage"])

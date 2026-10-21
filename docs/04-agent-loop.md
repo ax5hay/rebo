@@ -156,6 +156,12 @@ For a `Report`:
    (doc 20 §5). Not yet measured on the eval sets (needs an LLM key).
 5. Otherwise store the rows in `deps.final` and accept.
 
+**Second opinion** (`App._second_opinion`, B-013), after acceptance: a report whose provenance is
+`new` and that rests on more than 2 assumptions is reviewed once by `models.fast` (question, SQL,
+assumptions, first 10 rows) → `{ok, concern}`. A concern is appended as an assumption
+"Check: …"; `turn.usage.review` = `ok` | `concern`. A failed review call never blocks the report.
+Before/after on the demo gold not yet measured (needs an LLM key).
+
 So **a report is never shown without having run successfully**. The rows the user sees are the
 ones the validator fetched; no second execution happens.
 
