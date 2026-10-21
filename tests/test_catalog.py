@@ -1,4 +1,5 @@
 import json
+import sqlite3
 
 import pytest
 
@@ -40,5 +41,5 @@ def test_describe_hides_protected_values(app):
 
 
 def test_target_session_is_read_only(app):
-    with pytest.raises(Exception):
+    with pytest.raises(sqlite3.OperationalError, match="readonly"):
         app.target.run("DELETE FROM customer", max_rows=1)

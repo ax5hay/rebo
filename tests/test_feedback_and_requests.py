@@ -2,7 +2,7 @@
 import pytest
 
 from reportsbot.knowledge import User
-from test_learning import SQL, fake_turn
+from test_learning import fake_turn
 
 ALICE, BOB, CAROL = User("alice"), User("bob"), User("carol")
 ADMIN, OWNER = User("ada", role="admin"), User("olga", role="owner")
