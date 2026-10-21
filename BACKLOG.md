@@ -244,10 +244,11 @@ do: **Research first** (AGENTS.md §4; doc 19 §3 suggests Postgres 18 + pgvecto
 done when: tests are green on both backends; doc 09 and doc 13 updated.
 result: 2026-10-21, 3 commits (`git log --grep B-026`); 212 passed locally (130 SQLite + 82 Postgres 18.6). Built-in tsvector + BYTEA vectors (no extensions), decision in doc 19 §3. No state.db -> Postgres copy tool (knowledge moves via export/import).
 
-### [ ] B-027 · Schema migrations with Alembic
+### [x] B-027 · Schema migrations with Alembic
 needs: offline
 do: Replace `store.MIGRATIONS` with Alembic revisions (SQLite and Postgres). Keep the in-place upgrade path for existing `state.db` files.
 done when: upgrading a copy of a pre-migration `state.db` works (test with a fixture DB).
+result: 2026-10-21, `git log --grep B-027`; 131 passed (SQLite), 213 with Postgres 18.6; pre-migration fixture (schema of 9b81192^) upgrades in place.
 
 ### [ ] B-028 · Better embeddings (optional TEI service)
 needs: docker
