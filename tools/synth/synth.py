@@ -10,6 +10,8 @@ What makes the data realistic without copying anything:
   * declared foreign keys and measured undeclared references point at generated parents,
     so every join that works on the source also works here
   * personal columns (names, emails, phones, addresses) come from Faker, never the source
+  * dates within a row keep their natural order (born < created < started < ended < touched), from
+    the spec in tools/synth/correlations/<profile folder>.json (derive.py writes it; B-042)
 
     uv run --extra synth python tools/synth/synth.py \
         --url mysql+pymysql://root:root@127.0.0.1:3307/jms --profile fixtures/jms_staging/profile.json
@@ -80,8 +82,10 @@ def structure(cur, db: str) -> dict:
 
 
 class Generator:
-    def __init__(self, tables: dict, profile: dict, *, cap: int, scale: float, min_rows: int, seed: int):
+    def __init__(self, tables: dict, profile: dict, *, cap: int, scale: float, min_rows: int, seed: int,
+                 correlations: dict | None = None):
         self.t, self.p = tables, profile.get("tables", {})
+        self.date_order = (correlations or {}).get("tables", {})
         self.rng = random.Random(seed)
         self.fake = Faker("en_US")
         Faker.seed(seed)
@@ -266,6 +270,7 @@ class Generator:
                     row[cn] = i
                     continue
                 row[cn] = self.value(name, c, i)
+            self._order_dates(name, row)
             # uniqueness: primary key (if not the simple integer case) and unique indexes
             constraints = [info["pk"]] if info["pk"] and not single_int_pk else []
             constraints += info["uniques"]
@@ -294,6 +299,24 @@ class Generator:
         self.rows[name] = out
         return out
 
+    def _order_dates(self, table: str, row: dict) -> None:
+        """Bump any date that falls before a date of a lower tier in the same row (a few hours to 60 days
+        later), so e.g. completed >= created always holds."""
+        floor = None
+        for col, _tier in self.date_order.get(table, []):
+            v = row.get(col)
+            if v is None:
+                continue
+            as_dt = v if isinstance(v, dt.datetime) else dt.datetime.combine(v, dt.time())
+            if floor and as_dt < floor:
+                as_dt = min(floor + dt.timedelta(hours=self.rng.randint(1, 60 * 24)), dt.datetime(2037, 12, 31))
+                if not isinstance(v, dt.datetime):  # a DATE is midnight: never the same day as a later floor
+                    day = as_dt.date() + dt.timedelta(days=1 if dt.datetime.combine(as_dt.date(), dt.time()) < floor
+                                                      else 0)
+                    as_dt = dt.datetime.combine(day, dt.time())
+                row[col] = as_dt if isinstance(v, dt.datetime) else as_dt.date()
+            floor = max(floor or as_dt, as_dt)
+
     def _col(self, table: str, col: str) -> dict:
         return next(c for c in self.t[table]["columns"] if c["c"] == col)
 
@@ -306,7 +329,11 @@ def main() -> int:
     ap.add_argument("--scale", type=float, default=1.0, help="multiply the source row counts")
     ap.add_argument("--min-rows", type=int, default=0, help="rows for tables empty in the source")
     ap.add_argument("--seed", type=int, default=7)
+    ap.add_argument("--correlations", type=Path, default=None,
+                    help="date-order spec (default: tools/synth/correlations/<profile folder>.json if present)")
     args = ap.parse_args()
+    spec_path = args.correlations or Path(__file__).parent / "correlations" / f"{args.profile.parent.name}.json"
+    correlations = json.loads(spec_path.read_text(encoding="utf-8")) if spec_path.is_file() else None
 
     profile = json.loads(args.profile.read_text(encoding="utf-8"))
     conn = connect(args.url)
@@ -314,7 +341,8 @@ def main() -> int:
         cur.execute("SELECT DATABASE() AS d")
         db = cur.fetchone()["d"]
         tables = structure(cur, db)
-    gen = Generator(tables, profile, cap=args.cap, scale=args.scale, min_rows=args.min_rows, seed=args.seed)
+    gen = Generator(tables, profile, cap=args.cap, scale=args.scale, min_rows=args.min_rows, seed=args.seed,
+                    correlations=correlations)
     order = gen.order()
     total = 0
     with conn.cursor() as cur:

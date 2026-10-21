@@ -1,0 +1,776 @@
+{
+ "rule": "within a row, a date of a higher tier is never earlier than one of a lower tier",
+ "tiers": {
+  "0": "born",
+  "1": "created",
+  "2": "started",
+  "3": "ended",
+  "4": "touched"
+ },
+ "tables": {
+  "admin": [
+   [
+    "created",
+    1
+   ],
+   [
+    "last_login",
+    4
+   ]
+  ],
+  "admin_calendar_sync": [
+   [
+    "created",
+    1
+   ],
+   [
+    "last_attempt_at",
+    4
+   ],
+   [
+    "last_full_sync_at",
+    4
+   ],
+   [
+    "last_sync_at",
+    4
+   ]
+  ],
+  "admin_chat_session": [
+   [
+    "started_at",
+    2
+   ],
+   [
+    "last_message_at",
+    4
+   ]
+  ],
+  "agency_calendar_sync_settings": [
+   [
+    "created",
+    1
+   ],
+   [
+    "last_updated",
+    4
+   ]
+  ],
+  "agency_team": [
+   [
+    "created",
+    1
+   ],
+   [
+    "last_updated",
+    4
+   ]
+  ],
+  "agency_workview_settings": [
+   [
+    "created",
+    1
+   ],
+   [
+    "last_updated",
+    4
+   ]
+  ],
+  "calendar_event": [
+   [
+    "created",
+    1
+   ],
+   [
+    "date_end",
+    3
+   ],
+   [
+    "synced_at",
+    4
+   ]
+  ],
+  "campaign": [
+   [
+    "created",
+    1
+   ],
+   [
+    "updated",
+    4
+   ]
+  ],
+  "case_campaign": [
+   [
+    "created",
+    1
+   ],
+   [
+    "completed",
+    3
+   ],
+   [
+    "updated",
+    4
+   ]
+  ],
+  "case_campaign_flow": [
+   [
+    "created",
+    1
+   ],
+   [
+    "completed",
+    3
+   ]
+  ],
+  "case_contract": [
+   [
+    "created",
+    1
+   ],
+   [
+    "updated",
+    4
+   ]
+  ],
+  "case_date_based_todo": [
+   [
+    "created",
+    1
+   ],
+   [
+    "completed",
+    3
+   ],
+   [
+    "last_updated",
+    4
+   ]
+  ],
+  "case_document": [
+   [
+    "created",
+    1
+   ],
+   [
+    "last_updated",
+    4
+   ]
+  ],
+  "case_email": [
+   [
+    "created",
+    1
+   ],
+   [
+    "deleted_at",
+    3
+   ]
+  ],
+  "case_log": [
+   [
+    "created",
+    1
+   ],
+   [
+    "last_updated_dt",
+    4
+   ]
+  ],
+  "case_note": [
+   [
+    "created",
+    1
+   ],
+   [
+    "updated",
+    4
+   ]
+  ],
+  "case_task": [
+   [
+    "created",
+    1
+   ],
+   [
+    "start_date",
+    2
+   ],
+   [
+    "completed",
+    3
+   ],
+   [
+    "end_date",
+    3
+   ],
+   [
+    "last_updated",
+    4
+   ]
+  ],
+  "chatbot_event": [
+   [
+    "created",
+    1
+   ],
+   [
+    "resolved_at",
+    3
+   ],
+   [
+    "last_signaled_at",
+    4
+   ]
+  ],
+  "clinic_task": [
+   [
+    "created",
+    1
+   ],
+   [
+    "completed",
+    3
+   ],
+   [
+    "last_updated",
+    4
+   ]
+  ],
+  "contact": [
+   [
+    "date_of_birth",
+    0
+   ],
+   [
+    "created",
+    1
+   ],
+   [
+    "referral_date",
+    2
+   ],
+   [
+    "chatbot_disabled_at",
+    3
+   ]
+  ],
+  "contact_email": [
+   [
+    "created",
+    1
+   ],
+   [
+    "deleted_at",
+    3
+   ]
+  ],
+  "contact_lead": [
+   [
+    "created",
+    1
+   ],
+   [
+    "last_login",
+    4
+   ]
+  ],
+  "contact_log": [
+   [
+    "created",
+    1
+   ],
+   [
+    "last_updated_dt",
+    4
+   ]
+  ],
+  "contact_note": [
+   [
+    "created",
+    1
+   ],
+   [
+    "updated",
+    4
+   ]
+  ],
+  "contact_task": [
+   [
+    "created",
+    1
+   ],
+   [
+    "completed",
+    3
+   ],
+   [
+    "last_updated",
+    4
+   ]
+  ],
+  "contract": [
+   [
+    "created",
+    1
+   ],
+   [
+    "updated",
+    4
+   ]
+  ],
+  "custom_task": [
+   [
+    "completed",
+    3
+   ],
+   [
+    "updated",
+    4
+   ]
+  ],
+  "date_based_todo_snippet_template": [
+   [
+    "created",
+    1
+   ],
+   [
+    "updated",
+    4
+   ]
+  ],
+  "date_based_todo_template": [
+   [
+    "created",
+    1
+   ],
+   [
+    "updated",
+    4
+   ]
+  ],
+  "delivery_baby": [
+   [
+    "date_of_birth",
+    0
+   ],
+   [
+    "created",
+    1
+   ]
+  ],
+  "email_auto_log_request": [
+   [
+    "created",
+    1
+   ],
+   [
+    "last_updated",
+    4
+   ]
+  ],
+  "email_message": [
+   [
+    "created",
+    1
+   ],
+   [
+    "deleted_at",
+    3
+   ]
+  ],
+  "email_sync": [
+   [
+    "created",
+    1
+   ],
+   [
+    "last_updated",
+    4
+   ]
+  ],
+  "email_template": [
+   [
+    "created",
+    1
+   ],
+   [
+    "updated",
+    4
+   ]
+  ],
+  "err": [
+   [
+    "first_occurred",
+    2
+   ],
+   [
+    "last_occurred",
+    3
+   ]
+  ],
+  "err_400": [
+   [
+    "first_occurred",
+    2
+   ],
+   [
+    "last_occurred",
+    3
+   ]
+  ],
+  "err_api": [
+   [
+    "first_occurred",
+    2
+   ],
+   [
+    "last_occurred",
+    3
+   ]
+  ],
+  "external_user": [
+   [
+    "created",
+    1
+   ],
+   [
+    "updated",
+    4
+   ]
+  ],
+  "family": [
+   [
+    "created",
+    1
+   ],
+   [
+    "referral_date",
+    2
+   ]
+  ],
+  "form_question": [
+   [
+    "created",
+    1
+   ],
+   [
+    "last_updated",
+    4
+   ]
+  ],
+  "gc_case": [
+   [
+    "created",
+    1
+   ],
+   [
+    "sign_on_date",
+    2
+   ],
+   [
+    "closed",
+    3
+   ]
+  ],
+  "gc_profile_delivery": [
+   [
+    "date_of_birth",
+    0
+   ],
+   [
+    "created",
+    1
+   ]
+  ],
+  "general_task": [
+   [
+    "created",
+    1
+   ],
+   [
+    "start_date",
+    2
+   ],
+   [
+    "completed",
+    3
+   ],
+   [
+    "end_date",
+    3
+   ],
+   [
+    "last_updated",
+    4
+   ]
+  ],
+  "hellosign": [
+   [
+    "created",
+    1
+   ],
+   [
+    "completed",
+    3
+   ]
+  ],
+  "ip_case": [
+   [
+    "created",
+    1
+   ],
+   [
+    "sign_on_date",
+    2
+   ],
+   [
+    "closed",
+    3
+   ],
+   [
+    "completed",
+    3
+   ]
+  ],
+  "medical_release_form": [
+   [
+    "patient_date_of_birth",
+    0
+   ],
+   [
+    "created",
+    1
+   ]
+  ],
+  "milestone_base": [
+   [
+    "created",
+    1
+   ],
+   [
+    "updated",
+    4
+   ]
+  ],
+  "oauth_token": [
+   [
+    "created",
+    1
+   ],
+   [
+    "last_sync_at",
+    4
+   ],
+   [
+    "last_updated",
+    4
+   ]
+  ],
+  "pending_campaign_send": [
+   [
+    "created",
+    1
+   ],
+   [
+    "sent_at",
+    2
+   ]
+  ],
+  "profile_base": [
+   [
+    "created",
+    1
+   ],
+   [
+    "updated",
+    4
+   ]
+  ],
+  "profile_question": [
+   [
+    "created",
+    1
+   ],
+   [
+    "updated",
+    4
+   ]
+  ],
+  "provider": [
+   [
+    "created",
+    1
+   ],
+   [
+    "last_login",
+    4
+   ]
+  ],
+  "provider_note": [
+   [
+    "created",
+    1
+   ],
+   [
+    "updated",
+    4
+   ]
+  ],
+  "provider_user": [
+   [
+    "created",
+    1
+   ],
+   [
+    "last_login",
+    4
+   ]
+  ],
+  "saved_view": [
+   [
+    "created",
+    1
+   ],
+   [
+    "updated",
+    4
+   ]
+  ],
+  "sms_template": [
+   [
+    "created",
+    1
+   ],
+   [
+    "updated",
+    4
+   ]
+  ],
+  "template": [
+   [
+    "created",
+    1
+   ],
+   [
+    "updated",
+    4
+   ]
+  ],
+  "template_stage": [
+   [
+    "created",
+    1
+   ],
+   [
+    "updated",
+    4
+   ]
+  ],
+  "template_sub_stage": [
+   [
+    "created",
+    1
+   ],
+   [
+    "updated",
+    4
+   ]
+  ],
+  "template_task": [
+   [
+    "created",
+    1
+   ],
+   [
+    "updated",
+    4
+   ]
+  ],
+  "text_message": [
+   [
+    "created",
+    1
+   ],
+   [
+    "updated",
+    4
+   ]
+  ],
+  "text_message_status_event": [
+   [
+    "created",
+    1
+   ],
+   [
+    "updated",
+    4
+   ]
+  ],
+  "third_party_user": [
+   [
+    "created",
+    1
+   ],
+   [
+    "last_login",
+    4
+   ]
+  ],
+  "user": [
+   [
+    "created",
+    1
+   ],
+   [
+    "last_login",
+    4
+   ]
+  ],
+  "user_custom_profile_answer": [
+   [
+    "created",
+    1
+   ],
+   [
+    "updated",
+    4
+   ]
+  ],
+  "user_custom_profile_section": [
+   [
+    "created",
+    1
+   ],
+   [
+    "updated",
+    4
+   ]
+  ],
+  "user_form_answer": [
+   [
+    "created",
+    1
+   ],
+   [
+    "updated",
+    4
+   ]
+  ],
+  "user_np": [
+   [
+    "date_of_birth",
+    0
+   ],
+   [
+    "created",
+    1
+   ],
+   [
+    "last_login",
+    4
+   ]
+  ]
+ }
+}
