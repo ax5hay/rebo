@@ -332,10 +332,11 @@ do: The adapter offers a "Save to JMS" option, which calls a configurable host U
 done when: offline test against the mock; editable or view-only is reported back to the user.
 result: 2026-10-21, `git log --grep B-039`; 150 passed; tested against the mock only.
 
-### [ ] B-040 · Contract replay tests
+### [x] B-040 · Contract replay tests
 needs: offline
 do: Generate request/response examples from `fixtures/jms_contract/chat_contract.schema.json`, covering every `reports.action`, and validate the adapter's responses against the `ChatResponse` schema (jsonschema).
 done when: the tests pass for all actions.
+result: 2026-10-21, `git log --grep B-040`; all 8 actions schema-valid; 151 passed.
 
 ### [!] B-041 · Pilot against JMS staging
 needs: human
