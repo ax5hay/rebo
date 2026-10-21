@@ -1,0 +1,18 @@
+# Weekly dependency updates. Each update still goes through CI and the research protocol
+# (AGENTS.md §4): check licence and maintenance before merging a major version.
+version: 2
+updates:
+  - package-ecosystem: uv
+    directory: /
+    schedule: {interval: weekly}
+    open-pull-requests-limit: 5
+  - package-ecosystem: npm
+    directory: /web
+    schedule: {interval: weekly}
+    open-pull-requests-limit: 5
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: {interval: weekly}
+  - package-ecosystem: docker
+    directory: /
+    schedule: {interval: weekly}
