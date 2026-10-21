@@ -2,6 +2,7 @@
 
     uv run python tools/export_bundle.py                      # ../reportsbot-<date>.zip
     uv run python tools/export_bundle.py --with-models        # + the local embedding model (offline use)
+    uv run python tools/export_bundle.py --check-only         # scan only, no zip (pre-commit hook)
 
 Includes the whole reports-bot folder except local state and secrets. Fails (exit 1, no zip) when any
 included file contains a secret-looking value or a real database host; warns about email addresses
@@ -99,6 +100,7 @@ def main() -> int:
     ap.add_argument("--out", type=Path, default=ROOT.parent / f"reportsbot-{dt.date.today().isoformat()}.zip")
     ap.add_argument("--with-models", action="store_true", help="include the fastembed model cache as models/fastembed")
     ap.add_argument("--no-history", action="store_true", help="leave out reportsbot.git.bundle (the commit history)")
+    ap.add_argument("--check-only", action="store_true", help="run the secret scan and exit; write nothing")
     args = ap.parse_args()
 
     files = sorted(p for p in ROOT.rglob("*") if p.is_file() and included(p))
@@ -110,6 +112,9 @@ def main() -> int:
             print("BLOCK", p)
         print(f"{len(problems)} problem(s): no zip written.")
         return 1
+    if args.check_only:
+        print(f"{len(files)} files scanned: no secrets ({len(warnings)} warning(s)).")
+        return 0
     try:
         commit = subprocess.check_output(["git", "-C", str(ROOT), "rev-parse", "HEAD"], text=True).strip()
         dirty = bool(subprocess.check_output(["git", "-C", str(ROOT), "status", "--porcelain", "--", "."], text=True).strip())

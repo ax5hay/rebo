@@ -40,7 +40,7 @@ The only setting with business meaning (`protected_columns`) is a safety control
 | `reportsbot mcp` | MCP server over stdio (needs `--extra mcp`) |
 | `reportsbot knowledge export [file] [--all]` / `reportsbot knowledge import file [--as name]` | Everything learned as editable YAML, and back (acts as an owner) |
 | `reportsbot config check` | Validate `reportsbot.yaml` |
-| `python tools/export_bundle.py [--with-models]` | The checked zip for another machine (doc 23) |
+| `python tools/export_bundle.py [--with-models \| --check-only]` | The checked zip for another machine (doc 23) |
 
 ## 3. Set up on a new PC (from the zip)
 

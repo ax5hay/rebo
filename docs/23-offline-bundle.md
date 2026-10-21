@@ -10,6 +10,7 @@ beforehand and is inside the bundle. The only network access needed afterwards i
 ```bash
 uv run python tools/export_bundle.py                 # ../reportsbot-YYYY-MM-DD.zip
 uv run python tools/export_bundle.py --with-models   # + models/fastembed (≈130 MB) for fully offline use
+uv run python tools/export_bundle.py --check-only    # scan only, no zip; the pre-commit hook runs this
 ```
 
 The tool includes the whole folder except `.venv/`, `data/` (the bot's memory on this machine),

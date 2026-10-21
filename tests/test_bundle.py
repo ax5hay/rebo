@@ -45,3 +45,14 @@ def test_the_real_folder_passes_the_scan():
     files = sorted(p for p in bundle.ROOT.rglob("*") if p.is_file() and bundle.included(p))
     problems, _ = bundle.scan(files)
     assert problems == []
+
+
+def test_check_only_scans_without_writing(tmp_path, monkeypatch):
+    monkeypatch.setattr(bundle, "ROOT", tmp_path)
+    (tmp_path / "a.md").write_text("nothing secret", encoding="utf-8")
+    out = tmp_path / "out.zip"
+    monkeypatch.setattr("sys.argv", ["export_bundle.py", "--check-only", "--out", str(out)])
+    assert bundle.main() == 0
+    (tmp_path / "planted.env.txt").write_text(FAKE, encoding="utf-8")
+    assert bundle.main() == 1
+    assert not out.exists()
