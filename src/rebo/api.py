@@ -242,7 +242,7 @@ def router(app: App) -> APIRouter:
 
     @r.get("/schedules")
     def schedules(user: User = Depends(current_user)):
-        return app.store.all("SELECT * FROM schedule WHERE owner=? AND active=1 ORDER BY next_at", (user.id,))
+        return app.jobs.schedules(user)
 
     @r.delete("/schedules/{schedule_id}")
     def unschedule(schedule_id: str, user: User = Depends(current_user)):

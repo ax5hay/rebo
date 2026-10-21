@@ -69,6 +69,8 @@ async def test_a_scheduled_report_reruns_without_a_model(app):
     alice = User("alice")
     t = fake_turn(app, alice, "SELECT full_name AS customer FROM customer WHERE status = 'paused'")
     s = app.jobs.schedule(alice, t, "daily 08:00")
+    listed = app.jobs.schedules(alice)
+    assert [x["id"] for x in listed] == [s["id"]] and listed[0]["question"] and app.jobs.schedules(User("bob")) == []
     assert app.jobs.due_schedules(at=s["next_at"] - 1) == 0
     assert app.jobs.due_schedules(at=s["next_at"] + 1) == 1 and app.jobs.due_schedules(at=s["next_at"] + 1) == 0
     jid = await app.jobs.run_once(at=s["next_at"] + 2)

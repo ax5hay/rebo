@@ -81,6 +81,11 @@ class Jobs:
                                                    next_run(every, now()), now()))
         return self.store.one("SELECT * FROM schedule WHERE id=?", (sid,))
 
+    def schedules(self, user: User) -> list[dict[str, Any]]:
+        """Your active schedules, each with the question of the report it reruns (for lists people read)."""
+        return self.store.all("SELECT s.*, t.question FROM schedule s LEFT JOIN turn t ON t.id = s.turn_id "
+                              "WHERE s.owner=? AND s.active=1 ORDER BY s.next_at", (user.id,))
+
     def unschedule(self, user: User, schedule_id: str) -> None:
         s = self.store.one("SELECT owner FROM schedule WHERE id=?", (schedule_id,))
         if not s or s["owner"] != user.id:
