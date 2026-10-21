@@ -73,3 +73,24 @@ def test_admin_preview_shows_what_another_user_would_get(app):
     assert r.json()["knowledge"][0]["owner"] == "alice" and "'alice'" in r.json()["context"]
     assert client.get("/api/admin/preview", params={"user": "alice", "q": "paused"},
                       headers={"X-User-Id": "bob"}).status_code == 403
+
+
+def test_import_dry_run_lists_changes_and_changes_nothing(app):
+    term = app.add_knowledge(ADMIN, kind="term", title="vip", body="spent over 1000")["item"]
+    personal = app.add_knowledge(USER, kind="note", title="my note", body="north")["item"]
+    doc = yaml.safe_load(admin.export_knowledge(app, ADMIN))
+    by_id = {i["id"]: i for i in doc["knowledge"]}
+    by_id[term["id"]]["body"] = "spent over 500"
+    by_id[personal["id"]]["status"] = "verified"
+    doc["knowledge"].append({"kind": "note", "title": "fiscal year", "body": "starts in April"})
+    doc["knowledge"].append({"kind": "example", "title": "broken", "sql": "SELECT nope FROM customer"})
+    before = app.store.all("SELECT id, status, body, updated_at FROM knowledge ORDER BY id")
+    events = app.store.one("SELECT COUNT(*) AS n FROM knowledge_event")["n"]
+    r = admin.import_knowledge(app, ADMIN, yaml.safe_dump(doc), dry_run=True)
+    assert app.store.all("SELECT id, status, body, updated_at FROM knowledge ORDER BY id") == before
+    assert app.store.one("SELECT COUNT(*) AS n FROM knowledge_event")["n"] == events
+    assert {(c["action"], c["title"]) for c in r["changes"]} == {
+        ("edit", "vip"), ("share", "my note"), ("add", "fiscal year")}
+    edit = next(c for c in r["changes"] if c["action"] == "edit")
+    assert edit["fields"] == {"body": ["spent over 1000", "spent over 500"]}
+    assert len(r["errors"]) == 1 and "broken" in r["errors"][0] and "Nothing has changed" in r["message"]

@@ -73,6 +73,7 @@ class ConfigIn(BaseModel):
 
 class ImportIn(BaseModel):
     yaml: str
+    dry_run: bool = False
 
 
 class KnowledgeEdit(BaseModel):
@@ -266,7 +267,7 @@ def router(app: App) -> APIRouter:
 
     @r.post("/knowledge/import")
     def import_knowledge(body: ImportIn, user: User = Depends(current_user)):
-        return guard_errors(lambda: admin.import_knowledge(app, user, body.yaml))
+        return guard_errors(lambda: admin.import_knowledge(app, user, body.yaml, dry_run=body.dry_run))
 
     @r.post("/admin/revalidate")
     def revalidate(user: User = Depends(current_user)):

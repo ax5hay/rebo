@@ -78,16 +78,23 @@ def export_knowledge(app: "App", user: User, include_retired: bool = False) -> s
     return _EXPORT_HEADER + yaml.safe_dump({"knowledge": items}, sort_keys=False, allow_unicode=True, width=110)
 
 
-def import_knowledge(app: "App", user: User, text: str) -> dict[str, Any]:
+def import_knowledge(app: "App", user: User, text: str, *, dry_run: bool = False) -> dict[str, Any]:
+    """Apply an edited export. dry_run: change nothing; return the same counts plus `changes`, the list
+    of what an import would do (add / edit with before -> after / share / withdraw), SQL checked."""
     if not user.is_admin:
         raise PermissionError("Only admins can import knowledge.")
     doc = yaml.safe_load(text) or {}
-    counts: dict[str, Any] = {"added": 0, "updated": 0, "shared": 0, "retired": 0, "unchanged": 0, "errors": []}
+    counts: dict[str, Any] = {"added": 0, "updated": 0, "shared": 0, "retired": 0, "unchanged": 0, "errors": [],
+                              "changes": [], "dry_run": dry_run}
     for n, entry in enumerate(doc.get("knowledge") or [], 1):
         try:
             if not entry.get("id"):
-                app.add_knowledge(user, kind=entry["kind"], title=entry["title"], body=entry.get("body"),
-                                  sql=entry.get("sql"), question=entry.get("question"))
+                if dry_run:
+                    app._check_item_sql(entry["kind"], entry.get("sql"))
+                    counts["changes"].append({"action": "add", "kind": entry["kind"], "title": entry["title"]})
+                else:
+                    app.add_knowledge(user, kind=entry["kind"], title=entry["title"], body=entry.get("body"),
+                                      sql=entry.get("sql"), question=entry.get("question"))
                 counts["added"] += 1
                 continue
             item = app.knowledge.get(entry["id"])
@@ -95,20 +102,35 @@ def import_knowledge(app: "App", user: User, text: str) -> dict[str, Any]:
                 raise KeyError(f"unknown id {entry['id']}")
             changes = {k: entry.get(k) for k in app.knowledge.EDITABLE if k in entry and entry.get(k) != item.get(k)}
             if changes:
-                app.edit_knowledge(user, item["id"], changes)
+                if dry_run:
+                    if "sql" in changes:
+                        app._check_item_sql(item["kind"], changes["sql"])
+                    counts["changes"].append({"action": "edit", "id": item["id"], "title": item["title"],
+                                              "fields": {k: [item.get(k), v] for k, v in changes.items()}})
+                else:
+                    app.edit_knowledge(user, item["id"], changes)
                 counts["updated"] += 1
             status = entry.get("status")
             if status == "verified" and item["status"] != "verified":
-                app.promote(user, item["id"], entry.get("scope") if entry.get("scope") in ("org", "team") else "org")
+                scope = entry.get("scope") if entry.get("scope") in ("org", "team") else "org"
+                if dry_run:
+                    counts["changes"].append({"action": "share", "id": item["id"], "title": item["title"],
+                                              "scope": scope})
+                else:
+                    app.promote(user, item["id"], scope)
                 counts["shared"] += 1
             elif status == "retired" and item["status"] != "retired":
-                app.retire(user, item["id"], "withdrawn via import")
+                if dry_run:
+                    counts["changes"].append({"action": "withdraw", "id": item["id"], "title": item["title"]})
+                else:
+                    app.retire(user, item["id"], "withdrawn via import")
                 counts["retired"] += 1
             elif not changes:
                 counts["unchanged"] += 1
         except Exception as e:  # one bad entry must not block the rest; report it
             counts["errors"].append(f"entry {n} ({entry.get('title', '?')}): {e}")
-    counts["message"] = msg.say("import_done", **{k: counts[k] for k in ("added", "updated", "shared", "retired")},
+    counts["message"] = msg.say("import_preview" if dry_run else "import_done",
+                                **{k: counts[k] for k in ("added", "updated", "shared", "retired")},
                                 errors=len(counts["errors"]))
     return counts
 

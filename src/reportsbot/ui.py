@@ -492,6 +492,23 @@ def mount_ui(api: FastAPI, app: App) -> None:
                 ui.label("Everything the bot has learned (edit, then Import)").classes("font-medium")
                 text = ui.textarea(value=admin_ops.export_knowledge(app, u)).classes("w-full font-mono").props("rows=24")
 
+                diff = ui.column().classes("w-full gap-0")
+
+                def preview():  # the diff is shown before anything is applied
+                    diff.clear()
+                    res = _safe(admin_ops.import_knowledge, app, u, text.value or "", dry_run=True)
+                    if not res:
+                        return
+                    with diff:
+                        for c in res["changes"]:
+                            line = f"{c['action']}: {c['title']}"
+                            for k, (old, new) in (c.get("fields") or {}).items():
+                                line += f" · {k}: “{old}” → “{new}”"
+                            ui.label(line).classes("text-sm")
+                        for err in res["errors"]:
+                            ui.label(f"error: {err}").classes("text-sm text-negative")
+                    import_btn.enable()
+
                 def do_import():
                     res = _safe(admin_ops.import_knowledge, app, u, text.value or "")
                     if res:
@@ -501,7 +518,10 @@ def mount_ui(api: FastAPI, app: App) -> None:
                         draw()
 
                 with ui.row():
-                    ui.button("Import", on_click=do_import).props("color=primary")
+                    ui.button("Preview changes", on_click=preview).props("outline")
+                    import_btn = ui.button("Import", on_click=do_import).props("color=primary")
+                    import_btn.disable()  # enabled by a preview of the current text
+                    text.on_value_change(lambda: import_btn.disable())
                     ui.button("Download", on_click=lambda: ui.download.content(text.value, "knowledge.yaml")).props("flat")
                     ui.button("Close", on_click=d.close).props("flat")
             d.open()
