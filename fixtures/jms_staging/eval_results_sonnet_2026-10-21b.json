@@ -1,0 +1,633 @@
+{
+ "run": "2026-10-21",
+ "questions": "as in the cases file",
+ "model": "openrouter:anthropic/claude-sonnet-5.5",
+ "escalate": "",
+ "database": "mysql+pymysql://reports_ro:***@127.0.0.1:3307/jms",
+ "summary": {
+  "reports": 13,
+  "clarify": 5,
+  "clarify_rate": 0.278,
+  "gate_answered": 0,
+  "errors": 0,
+  "escalated": 0,
+  "median_seconds": 19.3,
+  "total_cost_usd": 2.684
+ },
+ "cases": [
+  {
+   "id": "validated-01",
+   "kind": "report",
+   "rows": 3,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 24.1,
+   "question": "Show me all active surrogates in Screening and list their current substage.",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 73189,
+    "output_tokens": 1705,
+    "cache_read_tokens": 13272,
+    "tool_calls": 7,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "concern"
+   },
+   "cost_usd": 0.13821,
+   "title": "Active surrogates in Screening with current substage",
+   "sql": "select case_id as \"Case ID\", case_file_name as \"Case name\", substage as \"Current substage\", case when completed is null and substage is not null then 'Open' when substage is not null then 'Completed (no open screening substage)' else 'No screening substage' end as \"Substage state\", completed as \"Substage completed on\" from (select g.case_id, g.case_file_name, t.title substage, s.completed, row_number() over (partition by g.case_id order by (s.completed is not null), s.ordering, s.sub_stage_id) rn from gc_case g left join custom_sub_stage s on s.gc_case_id=g.case_id and s.stage='screening' left join template_sub_stage t on t.sub_stage_id=s.base_sub_stage_id where g.case_type='surrogate' and g.stage='screening' and g.active=1) x where rn=1 order by case_id",
+   "assumptions": [
+    "Surrogates are cases of type 'surrogate'; 'active' means the case is flagged active (not archived).",
+    "'In Screening' means the case's current stage is screening.",
+    "Current substage is the first not-yet-completed screening substage, ordered by its sequence position; ties are broken by the earliest-created substage.",
+    "If a case has no open screening substage, its last completed screening substage is shown and flagged as completed.",
+    "Check: For cases with no open screening substage, the query shows the earliest-sequenced completed substage, not the last completed one as the stated assumption says, so the Elizabeth Wagner row may show the wrong substage. Also check whether the \"Test\" substage on Robert Thomas's case is a real substage or leftover test data."
+   ]
+  },
+  {
+   "id": "validated-02",
+   "kind": "report",
+   "rows": 12,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 18.2,
+   "question": "Which IP cases are in matching right now? Include the names and emails for both IPs.",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 92328,
+    "output_tokens": 1159,
+    "cache_read_tokens": 9954,
+    "tool_calls": 7,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok"
+   },
+   "cost_usd": 0.17733,
+   "title": "IP cases currently in matching, with both IPs' names and emails",
+   "sql": "SELECT c.case_id AS case_number, c.case_file_name AS case_name, TRIM(CONCAT_WS(' ', i1.first_name, i1.last_name)) AS ip_1_name, i1.email AS ip_1_email, TRIM(CONCAT_WS(' ', i2.first_name, i2.last_name)) AS ip_2_name, i2.email AS ip_2_email FROM ip_case c JOIN family f ON f.family_id = c.family_id JOIN contact i1 ON i1.contact_id = f.ip_1_id LEFT JOIN contact i2 ON i2.contact_id = f.ip_2_id WHERE c.stage = 'matching' AND c.active = 1 ORDER BY c.case_id",
+   "assumptions": [
+    "'In matching right now' means active cases whose current workflow stage is Matching.",
+    "The two IPs are the first and second contacts on the case's family record; many cases have only one IP, so the second name and email are blank.",
+    "Emails come from each IP's contact record."
+   ]
+  },
+  {
+   "id": "validated-03",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 14.7,
+   "question": "List every active case assigned to [admin name].",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 67332,
+    "output_tokens": 1420,
+    "cache_read_tokens": 9954,
+    "tool_calls": 3,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "gate": "asked"
+   },
+   "cost_usd": 0.12995,
+   "questions": [
+    {
+     "question": "Your request has the placeholder \"[admin name]\" in it. Which admin's active cases should I list? These four have the most active cases. If you mean someone else, choose the closest option and tell me the name.",
+     "options": [
+      "Autumn Wagner",
+      "Candice Miranda",
+      "Margaret Jones",
+      "Sally Alexander"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "validated-04",
+   "kind": "report",
+   "rows": 2,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 17.3,
+   "question": "Which cases have had their profiles approved in the last 30 days?",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 78014,
+    "output_tokens": 1245,
+    "cache_read_tokens": 9954,
+    "tool_calls": 6,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok"
+   },
+   "cost_usd": 0.14957,
+   "title": "Cases with profile approved in the last 30 days",
+   "sql": "select c.case_id as case_id, c.case_file_name as case_name, c.stage as stage, f.profile_approved as profile_approved_at from family f join ip_case c on c.family_id = f.family_id where f.profile_approved >= date_sub('2026-10-21', interval 30 day) and f.profile_approved < '2026-10-22' order by f.profile_approved desc",
+   "assumptions": [
+    "'Cases' means intended-parent cases, because profile approval is recorded on the family linked to those cases.",
+    "Last 30 days means 2026-09-21 through today, 2026-10-21.",
+    "Donor and surrogate profile approvals (egg donor, gestational carrier, sperm donor) had no approvals in this period, so they don't affect the result.",
+    "A case is listed once for its family's approval date. Cases with no name on file show a blank name."
+   ]
+  },
+  {
+   "id": "validated-05",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 12.4,
+   "question": "Show me the most recent notes on this journey, pinned ones first.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 32488,
+    "output_tokens": 1113,
+    "cache_read_tokens": 3318,
+    "tool_calls": 4,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "gate": "asked"
+   },
+   "cost_usd": 0.0698,
+   "questions": [
+    {
+     "question": "Which journey do you mean? I can't tell which one \"this journey\" is. Please pick a scope (and tell me the case name if it's a specific one).",
+     "options": [
+      "All intended-parent journeys, newest notes first (pinned first)",
+      "All carrier/donor (gestational carrier) cases, newest notes first (pinned first)",
+      "Every case, both kinds together, newest notes first (pinned first)"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "validated-06",
+   "kind": "report",
+   "rows": 95,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 29.5,
+   "question": "List all overdue tasks across my journeys.",
+   "usage": {
+    "requests": 6,
+    "input_tokens": 143563,
+    "output_tokens": 2213,
+    "cache_read_tokens": 19908,
+    "tool_calls": 8,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "concern"
+   },
+   "cost_usd": 0.27143,
+   "title": "Overdue tasks across journeys",
+   "sql": "SELECT t.task_id AS task_id, t.task_title AS task, t.task_type AS task_type, t.task_status AS status, t.must_be_completed_by AS due_date, DATEDIFF('2026-10-21', t.must_be_completed_by) AS days_overdue, COALESCE(g.case_file_name, i.case_file_name) AS journey, CASE WHEN t.gc_case_id IS NOT NULL THEN 'GC/donor journey' ELSE 'Intended parent journey' END AS journey_type, CONCAT(a.first_name,' ',a.last_name) AS assigned_to FROM case_task t LEFT JOIN gc_case g ON g.case_id=t.gc_case_id LEFT JOIN ip_case i ON i.case_id=t.ip_case_id LEFT JOIN admin a ON a.admin_id=t.task_assigned_to_id WHERE t.completed IS NULL AND t.task_status<>'completed' AND t.must_be_completed_by < '2026-10-21' AND (t.gc_case_id IS NOT NULL OR t.ip_case_id IS NOT NULL) ORDER BY t.must_be_completed_by",
+   "assumptions": [
+    "I couldn't link your login to a staff member, so this lists overdue tasks for all journeys, not only yours. The 'assigned to' column lets you filter to a person.",
+    "A journey is a donor/carrier case or an intended-parent case that has a task attached.",
+    "A task is overdue if its due date is before today (2026-10-21) and it has no completion date and isn't marked completed.",
+    "Deferred and pending tasks count as overdue if past due.",
+    "Oldest due date appears first.",
+    "Check: The question asks for overdue tasks across \"my\" journeys, but the report covers every journey because the user could not be matched to a staff member; confirm the user is fine with all journeys before sharing, or link their login so the list is filtered to them."
+   ]
+  },
+  {
+   "id": "validated-07",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 8.7,
+   "question": "What tasks are included in the [template name] workflow?",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 16900,
+    "output_tokens": 1027,
+    "cache_read_tokens": 6636,
+    "tool_calls": 2,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "gate": "asked"
+   },
+   "cost_usd": 0.03146,
+   "questions": [
+    {
+     "question": "Your request has a placeholder, \"[template name]\". Which workflow template do you want the tasks for?",
+     "options": [
+      "Gestational Carrier Workflow (DEFAULT)",
+      "Intended Parent Workflow - (IP/ED) (DEFAULT)",
+      "Intended Parent Workflow - (IP/GC) (DEFAULT)",
+      "IP AI Workflow"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "validated-08",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 19.3,
+   "question": "Which contacts came in through [marketing source] and haven't completed a form since intake?",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 72428,
+    "output_tokens": 1713,
+    "cache_read_tokens": 16590,
+    "tool_calls": 6,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "gate": "asked"
+   },
+   "cost_usd": 0.13046,
+   "questions": [
+    {
+     "question": "Your request has a placeholder, \"[marketing source]\". Which referral source should I use?",
+     "options": [
+      "search / Search Engine",
+      "personal / Personal Referral",
+      "social_media / Facebook",
+      "Other (e.g. Blog, media, event, clinic, other)"
+     ]
+    },
+    {
+     "question": "What does \"haven't completed a form since intake\" mean?",
+     "options": [
+      "No form submitted after their first form submission",
+      "No form submitted other than the 'Surrogate Intake Form'"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "validated-09",
+   "kind": "report",
+   "rows": 10,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 22.8,
+   "question": "List egg donors available for a cycle who haven't donated before.",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 109823,
+    "output_tokens": 1593,
+    "cache_read_tokens": 16590,
+    "tool_calls": 7,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "concern"
+   },
+   "cost_usd": 0.20405,
+   "title": "Available egg donors who haven't donated before",
+   "sql": "SELECT g.case_id AS case_id, c.first_name AS first_name, c.last_name AS last_name, c.email AS email, c.phone_number AS phone, g.stage AS stage, g.donor_status AS donor_status\nFROM gc_case g\nJOIN contact c ON c.contact_id = g.gc_id\nWHERE g.case_type = 'donor'\n  AND g.donor_status = 'available'\n  AND NOT EXISTS (SELECT 1 FROM ed_profile p WHERE p.contact_id = g.gc_id AND p.past_donor = 1)\nORDER BY c.last_name, c.first_name",
+   "assumptions": [
+    "Egg donors are cases of type 'donor'.",
+    "'Available for a cycle' means the donor's availability status is 'available' (not in a cycle, under review, or temporarily unavailable).",
+    "'Haven't donated before' means no profile for that person is flagged as a past donor. Donors with no past-donor answer recorded are included, since nothing shows they donated.",
+    "Retrieval records were not used to decide whether someone has donated before.",
+    "Check: The list counts anyone with no past-donor answer on file as never having donated, so people whose donation history is simply unknown are included; check how many listed donors have no profile answer before treating them as first-time donors."
+   ]
+  },
+  {
+   "id": "validated-10",
+   "kind": "report",
+   "rows": 32,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 27.3,
+   "question": "Which contracts are still waiting on a signature?",
+   "usage": {
+    "requests": 6,
+    "input_tokens": 84020,
+    "output_tokens": 2511,
+    "cache_read_tokens": 19908,
+    "tool_calls": 8,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "concern"
+   },
+   "cost_usd": 0.15532,
+   "title": "Contracts still waiting on a signature",
+   "sql": "SELECT h.hellosign_id AS `Signature request #`, h.created AS `Request sent on`, CONCAT(ca.first_name,' ',ca.last_name) AS `Requested by`, COUNT(*) AS `Signers still to sign`, GROUP_CONCAT(DISTINCT CASE cr.user_type WHEN 'user' THEN CONCAT(u.first_name,' ',u.last_name) WHEN 'admin' THEN CONCAT(a.first_name,' ',a.last_name) ELSE 'Other signer' END SEPARATOR ', ') AS `Waiting on`, DATEDIFF('2026-10-21', h.created) AS `Days waiting`\nFROM contract_rel cr\nJOIN hellosign h ON h.hellosign_id = cr.parent_id\nLEFT JOIN admin ca ON ca.admin_id = h.created_by_id\nLEFT JOIN user u ON cr.user_type = 'user' AND u.user_id = cr.user_id\nLEFT JOIN admin a ON cr.user_type = 'admin' AND a.admin_id = cr.user_id\nWHERE cr.status = 'sent'\nGROUP BY h.hellosign_id, h.created, ca.first_name, ca.last_name\nORDER BY h.created",
+   "assumptions": [
+    "A 'contract' means an e-signature request sent out for signing; one row per request.",
+    "'Still waiting on a signature' means at least one signer has been sent the request but has not signed yet.",
+    "Signers whose request could not be delivered are not included.",
+    "Signer names are shown for regular users and admins; other signer types appear as 'Other signer'.",
+    "Days waiting is counted from the request date to today (2026-10-21).",
+    "Check: Request 63 shows an empty \"Waiting on\" value, so the report does not say who has not signed; the signer's name is likely missing from the user records, and that case should be checked before this goes to the business user."
+   ]
+  },
+  {
+   "id": "validated-11",
+   "kind": "report",
+   "rows": 29,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 15.8,
+   "question": "Show me which intended parents have never logged into their portal.",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 67843,
+    "output_tokens": 889,
+    "cache_read_tokens": 9954,
+    "tool_calls": 6,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok"
+   },
+   "cost_usd": 0.12566,
+   "title": "Intended parents who have never logged in",
+   "sql": "SELECT u.user_id AS `User ID`, u.first_name AS `First name`, u.last_name AS `Last name`, u.email AS `Email`, u.created AS `Account created`, u.confirmed_email AS `Email confirmed (1=yes)`\nFROM `user` u\nWHERE u.user_type = 'IP' AND u.last_login IS NULL\nORDER BY u.created DESC",
+   "assumptions": [
+    "Intended parents are the user accounts of type 'IP'; IP representatives and partners/spouses are not included.",
+    "'Never logged into their portal' means the account has no recorded last login.",
+    "All accounts are listed, since every account is flagged active."
+   ]
+  },
+  {
+   "id": "validated-12",
+   "kind": "report",
+   "rows": 23,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 21.3,
+   "question": "Which cases have active, incomplete campaigns right now?",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 91378,
+    "output_tokens": 1753,
+    "cache_read_tokens": 16590,
+    "tool_calls": 6,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "concern"
+   },
+   "cost_usd": 0.16876,
+   "title": "Cases with active, incomplete campaigns",
+   "sql": "select * from (\nselect 'Donor/Carrier (GC)' as case_family, g.case_id as case_id, g.case_file_name as case_name, g.case_type as case_type, g.stage as case_stage, c.internal_title as campaign, cc.flow_status as flow_status, cc.created as enrolled_on\nfrom case_campaign cc join campaign c on c.campaign_id=cc.campaign_id join gc_case g on g.case_id=cc.assigned_gc_case\nwhere cc.active=1 and c.active=1 and cc.completed is null\nunion all\nselect 'Intended parent (IP)', i.case_id, i.case_file_name, 'intended_parent', i.stage, c.internal_title, cc.flow_status, cc.created\nfrom case_campaign cc join campaign c on c.campaign_id=cc.campaign_id join ip_case i on i.case_id=cc.assigned_ip_case\nwhere cc.active=1 and c.active=1 and cc.completed is null) x order by 1,2",
+   "assumptions": [
+    "'Active campaign' means the campaign itself is switched on and the case's enrollment in it is active.",
+    "'Incomplete' means the enrollment has no completion date recorded. Some of these show a flow status of 'finished' even though no completion date is set.",
+    "Both donor/carrier cases and intended-parent cases are included, each listed once per campaign enrollment.",
+    "The report shows the current state of the data, with no date filter.",
+    "Check: Many rows show a flow status of \"finished\" but are still counted as incomplete only because no completion date is stored, so please confirm with the business whether those enrollments should be treated as incomplete or excluded."
+   ]
+  },
+  {
+   "id": "validated-13",
+   "kind": "report",
+   "rows": 42,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 20.8,
+   "question": "How many open To Dos does each admin currently have assigned to them?",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 63932,
+    "output_tokens": 1533,
+    "cache_read_tokens": 13272,
+    "tool_calls": 6,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "concern"
+   },
+   "cost_usd": 0.11798,
+   "title": "Open To Dos currently assigned to each admin",
+   "sql": "SELECT CONCAT(a.first_name, ' ', a.last_name) AS admin_name,\n  SUM(t.src = 'Case') AS open_case_to_dos,\n  SUM(t.src = 'Contact') AS open_contact_to_dos,\n  SUM(t.src = 'General') AS open_general_to_dos,\n  COUNT(*) AS total_open_to_dos\nFROM (\n  SELECT 'Case' AS src, task_assigned_to_id FROM case_task WHERE completed IS NULL AND task_status <> 'completed' AND task_assigned_to_id IS NOT NULL\n  UNION ALL\n  SELECT 'Contact', task_assigned_to_id FROM contact_task WHERE completed IS NULL AND task_status <> 'completed' AND task_assigned_to_id IS NOT NULL\n  UNION ALL\n  SELECT 'General', task_assigned_to_id FROM general_task WHERE completed IS NULL AND task_status <> 'completed' AND task_assigned_to_id IS NOT NULL\n) t\nJOIN admin a ON a.admin_id = t.task_assigned_to_id\nGROUP BY a.admin_id, a.first_name, a.last_name\nORDER BY total_open_to_dos DESC, admin_name",
+   "assumptions": [
+    "'To Dos' covers all three kinds of to-do items: case to dos, contact to dos and general (non-case) to dos. They are shown in separate columns plus a total.",
+    "A To Do counts as open when it has no completion date and its status is not 'completed'. This includes not started, in progress, pending internal input and deferred items.",
+    "Some tasks have a completion date but a status that still says 'not started' or 'in progress'. I treated those as completed.",
+    "Tasks with no assignee are left out.",
+    "Inactive or soft-deleted admins are included if they still have open to dos assigned.",
+    "'Currently' means as of today's data, with no date filter on due dates, so overdue and future items are both counted.",
+    "Check: The status condition (status not equal to 'completed') silently drops any to-do whose status is blank, even when it has no completion date and is really open. Check how many to-dos have no status before trusting the totals."
+   ]
+  },
+  {
+   "id": "validated-14",
+   "kind": "report",
+   "rows": 122,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 32.1,
+   "question": "Which surrogates are still waiting on their profile to be approved?",
+   "usage": {
+    "requests": 8,
+    "input_tokens": 158490,
+    "output_tokens": 1950,
+    "cache_read_tokens": 26544,
+    "tool_calls": 13,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "concern"
+   },
+   "cost_usd": 0.28605,
+   "title": "Active surrogates whose profile is not yet approved",
+   "sql": "SELECT g.case_id AS case_number, c.first_name AS first_name, c.last_name AS last_name, g.case_file_name AS case_name, g.stage AS stage, s.status AS status, g.created AS case_created\nFROM gc_case g\nJOIN contact c ON c.contact_id = g.gc_id\nLEFT JOIN status s ON s.status_id = g.status_id\nWHERE g.case_type = 'surrogate'\n  AND g.active = 1\n  AND c.gc_profile_approved IS NULL\nORDER BY g.created",
+   "assumptions": [
+    "Surrogates are cases of type surrogate.",
+    "Waiting on profile approval means the surrogate's profile has no approval date recorded yet.",
+    "Only active cases are included; archived or inactive cases are left out.",
+    "A surrogate with more than one case appears once per case.",
+    "The status 'Pending GC Approval' is only one of several statuses in this group. I did not filter on it, because it applies to just one surrogate case.",
+    "Check: The report treats \"no approval date\" as \"waiting for approval,\" but the first rows show statuses like Not Qualified, Testing Mass Emails and Mass Text Testing, which do not mean a profile is awaiting approval, and the one status that does (Pending GC Approval) was not used as a filter. Check whether the blank approval date really means waiting before trusting the 122 rows."
+   ]
+  },
+  {
+   "id": "validated-15",
+   "kind": "report",
+   "rows": 268,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 13.6,
+   "question": "Show me egg donor profiles that haven't been approved by the agency yet.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 45691,
+    "output_tokens": 821,
+    "cache_read_tokens": 9954,
+    "tool_calls": 4,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "concern"
+   },
+   "cost_usd": 0.08068,
+   "title": "Egg donor profiles not yet approved by the agency",
+   "sql": "SELECT p.profile_id AS `Profile ID`, c.first_name AS `First Name`, c.last_name AS `Last Name`, c.email AS `Email`, c.created AS `Contact Created`, p.user_submitted AS `Submitted by User`, p.past_donor AS `Past Donor`, p.race_1 AS `Primary Race`, p.frozen_egg_count AS `Frozen Egg Count` FROM ed_profile p JOIN contact c ON c.contact_id = p.contact_id WHERE c.ed_profile_approved IS NULL ORDER BY c.created DESC",
+   "assumptions": [
+    "Egg donor profiles are the records in the egg donor profile list, each linked to a contact.",
+    "A profile counts as approved by the agency when its contact has an egg donor approval date; profiles with no approval date are shown as not yet approved.",
+    "Every profile is listed separately, so a contact with more than one profile appears more than once.",
+    "Check: The approval test is on the contact record, not the egg donor profile itself. If the agency approves each profile separately, this list could show approved profiles as unapproved (or miss unapproved ones), so confirm that approval is really stored at the contact level before relying on it."
+   ]
+  },
+  {
+   "id": "validated-16",
+   "kind": "report",
+   "rows": 67,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 30.9,
+   "question": "Pull a list of sperm donors whose profiles are pending approval.",
+   "usage": {
+    "requests": 8,
+    "input_tokens": 157363,
+    "output_tokens": 2048,
+    "cache_read_tokens": 26544,
+    "tool_calls": 12,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "concern"
+   },
+   "cost_usd": 0.28477,
+   "title": "Sperm donors with profiles pending approval",
+   "sql": "SELECT g.case_id AS case_number, g.case_file_name AS case_name, c.first_name AS first_name, c.last_name AS last_name, g.stage AS stage, s.status AS status, g.donor_status AS donor_availability, g.created AS case_created\nFROM gc_case g\nJOIN contact c ON c.contact_id = g.gc_id\nLEFT JOIN status s ON s.status_id = g.status_id\nWHERE g.case_type = 'sperm_donor'\n  AND g.active = 1\n  AND c.sd_profile_approved IS NULL\nORDER BY g.created DESC",
+   "assumptions": [
+    "Sperm donors are cases of type sperm donor.",
+    "A profile is 'pending approval' if the donor has no sperm donor profile approval date recorded yet.",
+    "Only active cases are included; archived or inactive cases are left out.",
+    "I did not use the 'Pending IP Approval' status. That is an intended-parent matching status, and only one sperm donor case has it. That case is included here only if its profile is also unapproved.",
+    "Check: The donor name is reached by joining the case's \"gc_id\" field, which sounds like a gestational carrier link rather than the donor, so confirm the listed first and last names are actually the sperm donors before using this list."
+   ]
+  },
+  {
+   "id": "validated-17",
+   "kind": "report",
+   "rows": 24,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true
+   },
+   "seconds": 16.5,
+   "question": "Show me intended parents whose profile has been approved.",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 72698,
+    "output_tokens": 1173,
+    "cache_read_tokens": 13272,
+    "tool_calls": 4,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok"
+   },
+   "cost_usd": 0.13191,
+   "title": "Intended parents with approved profiles",
+   "sql": "SELECT f.family_id AS `Family ID`, CONCAT_WS(' ', c1.first_name, c1.last_name) AS `Intended Parent 1`, CONCAT_WS(' ', c2.first_name, c2.last_name) AS `Intended Parent 2`, f.profile_approved AS `Profile Approved On`\nFROM family f\nLEFT JOIN contact c1 ON c1.contact_id = f.ip_1_id\nLEFT JOIN contact c2 ON c2.contact_id = f.ip_2_id\nWHERE f.profile_approved IS NOT NULL\nORDER BY f.profile_approved DESC",
+   "assumptions": [
+    "Intended parents are the families on record; each family lists one or two intended parents.",
+    "A profile counts as approved when the family has an approval date recorded.",
+    "Sorted with the most recently approved first."
+   ]
+  },
+  {
+   "id": "validated-18",
+   "kind": "clarify",
+   "rows": 0,
+   "scores": {
+    "IsReport": false,
+    "RowsInRange": false,
+    "UsesTables": false
+   },
+   "seconds": 9.3,
+   "question": "Which [GC or IP] cases are missing [specific form]?",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 16960,
+    "output_tokens": 932,
+    "cache_read_tokens": 6636,
+    "tool_calls": 2,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "gate": "asked"
+   },
+   "cost_usd": 0.03063,
+   "questions": [
+    {
+     "question": "Which type of case do you want to check?",
+     "options": [
+      "GC cases",
+      "IP cases"
+     ]
+    },
+    {
+     "question": "Which form should be missing? (Pick one, or name another form in your answer.)",
+     "options": [
+      "GC - Gather Form",
+      "Basic IP Intake Form",
+      "GC Pregnancy History",
+      "IP - AI Form B: Background & Lifestyle"
+     ]
+    }
+   ]
+  }
+ ]
+}
