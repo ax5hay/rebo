@@ -15,7 +15,7 @@ import sys
 import time
 from pathlib import Path
 
-from rebo.evals import DRAFT_LABEL, cost, load_cases, record_run, run_eval
+from rebo.evals import DRAFT_LABEL, cost, fresh_eval_user, load_cases, record_run, run_eval
 from rebo.observability import annotate_trace
 from rebo.service import App
 
@@ -23,9 +23,10 @@ from rebo.service import App
 async def main(cases: str, out: str, limit: int = 0, use_drafts: bool = False) -> None:
     app = App()
     started = time.time()
-    res = await run_eval(app, cases, limit=limit, use_drafts=use_drafts)
-    turns = app.store.all("SELECT question, kind, payload, usage FROM turn WHERE owner='eval' AND created_at >= ?",
-                          (started,))
+    asker = fresh_eval_user()
+    res = await run_eval(app, cases, limit=limit, use_drafts=use_drafts, user=asker)
+    turns = app.store.all("SELECT question, kind, payload, usage FROM turn WHERE owner=? AND created_at >= ?",
+                          (asker, started))
     by_q = {t["question"]: t for t in turns}
     qs = {c["id"]: c["question"] for c in load_cases(cases, use_drafts=use_drafts)}
     for c in res["cases"]:

@@ -129,6 +129,9 @@ def test_usage_stats_on_seeded_turns(app):
              ("hello", "answer", None, None, {}, t0 + 8 * 86400)]
     with app.store.tx() as db:
         db.execute("INSERT INTO conversation(id, owner, created_at, updated_at) VALUES('c','alice',?,?)", (t0, t0))
+        for who in ("eval", "eval-1a2b3c4d"):  # eval runs never count as use
+            db.execute("INSERT INTO turn(id, conversation_id, owner, question, kind, payload, usage, created_at) "
+                       "VALUES(?,?,?,?,?,?,?,?)", (f"e-{who}", "c", who, "paused customers", "report", "{}", "{}", t0))
         for n, (q, kind, label, fb, u, ts) in enumerate(seeds):
             db.execute("INSERT INTO turn(id, conversation_id, owner, question, kind, payload, provenance, feedback, "
                        "usage, created_at) VALUES(?,?,?,?,?,?,?,?,?,?)",

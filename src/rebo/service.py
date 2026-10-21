@@ -691,7 +691,7 @@ class App:
             raise PermissionError("Only admins and owners can see usage.")
         since = now() - days * 86400
         turns = self.store.all("SELECT question, kind, provenance, feedback, usage, created_at FROM turn "
-                               "WHERE created_at >= ? AND owner != 'eval'", (since,))
+                               "WHERE created_at >= ? AND owner != 'eval' AND owner NOT LIKE 'eval-%'", (since,))
         day = lambda ts: dt.datetime.fromtimestamp(ts, dt.timezone.utc).date()  # noqa: E731
         weeks: dict[str, dict[str, int]] = {}
         prov: Counter = Counter()
