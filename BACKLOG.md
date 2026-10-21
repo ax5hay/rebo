@@ -279,10 +279,11 @@ do: Key: normalised question + knowledge version + user scope + catalog version.
 done when: offline test (second identical ask makes 0 model requests; cache invalidates after a knowledge edit).
 result: 2026-10-21, `git log --grep B-031`; 140 passed (SQLite) and on Postgres 18.6.
 
-### [ ] B-032 · Budgets and rate limits
+### [x] B-032 · Budgets and rate limits
 needs: offline
 do: Add a `limits.cost_per_turn_usd` key using `UsageLimits(cost_limit=…)`; verify that genai-prices covers the configured models, falling back to the price table. Add a per-user requests-per-minute limit.
 done when: offline tests; the config example stays ≤ 20 lines.
+result: 2026-10-21, `git log --grep B-032`; 143 passed; config example 20 settings. genai-prices disagrees with list prices for Haiku/Gemini: cap scaled (doc 20 §2.2).
 
 ### [ ] B-033 · Production compose
 needs: docker
