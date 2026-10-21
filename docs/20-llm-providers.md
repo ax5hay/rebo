@@ -255,3 +255,21 @@ keeps only the last breakpoint).
 | Demo gold, after | 62 % | $0.254 | 10/12 |
 
 Files: `fixtures/jms_staging/eval_results_sonnet_cachemsgs.json`, `fixtures/demo_property/eval_results_sonnet_cachemsgs.json`.
+
+## Verifier-gated cascade (2026-10-21, B-053)
+
+With `models.escalate` set, a turn now also goes to the escalation model when a check had to step in
+on the cheaper model's answer (a SQL trap or grain problem caught by the validator, or a second-opinion
+concern), not only when the cheaper model fails. The discarded run's tokens stay in `usage.before` and
+are counted in the cost. Demo gold, one run each:
+
+| Setup | Content match | Cost | Escalated |
+|---|---|---|---|
+| Sonnet 5.5 (default, with message caching) | 10/12 | $0.254 | – |
+| Haiku 5.5 alone | 7/12 | $0.017 | – |
+| Haiku → Sonnet when in doubt | 8/12 | $0.106 | 2 (trap, review) |
+
+The doubt signals flagged 2 of Haiku's 5 wrong answers, so the cascade is 2.4× cheaper but 2 cases
+worse than Sonnet. **Sonnet stays the default**; the cascade remains the cost option. A better doubt
+signal (B-048 agreement, used as the trigger) is the next thing to try. Files:
+`fixtures/demo_property/eval_results_haiku_only.json`, `eval_results_haiku_doubt_cascade.json`.

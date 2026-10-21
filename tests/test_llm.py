@@ -679,3 +679,39 @@ def test_shape_matches_skip_what_was_shown_and_unlike_queries(app):
     near = app.shape_matches(User("bob"), "SELECT full_name FROM customer WHERE status = 'closed'")
     assert [i["id"] for i, _ in near] == [a["id"]] and near[0][1] == 1.0
     assert app.shape_matches(User("bob"), "SELECT full_name FROM customer WHERE status = 'closed'", exclude={a["id"]}) == []
+
+
+async def test_a_check_that_had_to_step_in_sends_the_turn_to_the_stronger_model(app):
+    trap = _completion("present_report", {"title": "Paused", "assumptions": [],
+                                          "sql": "SELECT full_name FROM customer WHERE status = 'paused' AND email <> NULL"})
+    good = _completion("present_report", {"title": "Paused", "assumptions": [],
+                                          "sql": "SELECT full_name FROM customer WHERE status = 'paused'"})
+    cheap = httpx.AsyncClient(transport=httpx.MockTransport(lambda req: httpx.Response(200, json=trap)))
+    strong = httpx.AsyncClient(transport=httpx.MockTransport(lambda req: httpx.Response(200, json=good)))
+    app.__dict__["agent"] = build_agent(build_model("lmstudio:cheap", app.settings, http_client=cheap))
+    app.__dict__["escalation_model"] = build_model("lmstudio:strong", app.settings, http_client=strong)
+    app.settings.escalate_model = "lmstudio:strong"
+    r = await app.ask(User("alice"), "paused customers with an email")
+    usage = json.loads(app.store.one("SELECT usage FROM turn WHERE id=?", (r["turn_id"],))["usage"])
+    assert r["kind"] == "report" and len(r["rows"]) == 10 and "NULL" not in r["sql"]
+    assert usage["escalated"] is True and usage["escalated_for"] == "trap" and usage["before"]["model"] != "lmstudio:strong"
+
+
+async def test_no_escalation_when_no_check_steps_in(app):
+    good = _completion("present_report", {"title": "Paused", "assumptions": [],
+                                          "sql": "SELECT full_name FROM customer WHERE status = 'paused'"})
+    cheap = httpx.AsyncClient(transport=httpx.MockTransport(lambda req: httpx.Response(200, json=good)))
+    app.__dict__["agent"] = build_agent(build_model("lmstudio:cheap", app.settings, http_client=cheap))
+    app.__dict__["escalation_model"] = build_model("lmstudio:strong", app.settings, http_client=httpx.AsyncClient(
+        transport=httpx.MockTransport(lambda req: pytest.fail("the stronger model must not be called"))))
+    app.settings.escalate_model = "lmstudio:strong"
+    r = await app.ask(User("alice"), "paused customers")
+    usage = json.loads(app.store.one("SELECT usage FROM turn WHERE id=?", (r["turn_id"],))["usage"])
+    assert r["kind"] == "report" and usage["escalated"] is False
+
+
+def test_cost_counts_the_discarded_run():
+    from rebo.llm import cost
+    first = {"model": "anthropic/claude-haiku-5.5", "input_tokens": 1_000_000, "output_tokens": 0}
+    both = {"model": "anthropic/claude-sonnet-5.5", "input_tokens": 1_000_000, "output_tokens": 0, "before": first}
+    assert cost(both) == round(cost({**both, "before": None}) + cost(first), 5)

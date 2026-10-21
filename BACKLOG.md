@@ -411,9 +411,10 @@ result: 2026-10-21, rejected. `tools/rerank_compare.py`: all four rerankers lowe
 do: `openrouter_cache_messages` / `anthropic_cache_messages` for Claude models (llm.build_one). Measure the cache-read ratio and cost on demo gold and JMS 18 against 0.53–0.64 and 0.17.
 result: 2026-10-21. JMS 18: cache reads 17 % → 72 %, $2.68 → $1.22, answers unchanged (13 reports). Demo: 62 %, $0.254, 10/12. doc 20.
 
-### [ ] B-053 · Verifier-gated cascade
+### [x] B-053 · Verifier-gated cascade
 needs: llm
 do: Haiku as the agent by default; escalate to Sonnet when a trap, grain, second-opinion concern, agreement disagreement or clarification fires. Demo gold 3 runs per arm against Sonnet 8–10/12; record the escalation rate and cost.
+result: 2026-10-21 (one run per arm, budget). Sonnet 10/12 $0.254; Haiku 7/12 $0.017; Haiku→Sonnet on doubt 8/12 $0.106, 2 escalations. Signals catch 2 of 5 Haiku errors: Sonnet stays default. doc 20.
 
 ### [ ] B-054 · Tool result budgets
 do: per-tool token budgets; describe_table returns the columns relevant to the question first (by retrieval score) and a count of the rest. Measure input tokens per question and schema recall@5 (doc 08).

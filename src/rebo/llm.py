@@ -87,7 +87,10 @@ def cost(usage: dict) -> float | None:
     pin, pcache, pout = PRICES[name]
     cached = usage.get("cache_read_tokens") or 0
     fresh = max((usage.get("input_tokens") or 0) - cached, 0)
-    return round((fresh * pin + cached * pcache + (usage.get("output_tokens") or 0) * pout) / 1e6, 5)
+    total = (fresh * pin + cached * pcache + (usage.get("output_tokens") or 0) * pout) / 1e6
+    if isinstance(usage.get("before"), dict):  # a run discarded for escalation still cost money
+        total += cost(usage["before"]) or 0.0
+    return round(total, 5)
 
 
 _GENAI_PROVIDER = {"openrouter": "openrouter", "anthropic": "anthropic", "google": "google", "openai": "openai"}

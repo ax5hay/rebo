@@ -400,20 +400,37 @@ class App:
             log.exception("agent run failed")
             return self._record(turn_id, conv_id, user, text, "error", {"message": msg.say("error_generic")}, deps)
 
+        out = result.output
+        usage_d = self._usage(result.usage, self.settings.escalate_model if escalated else first_name, escalated,
+                              "reuse" if reuse and not escalated else "new")
+        if isinstance(out, Report) and deps.final is not None:
+            await self._second_opinion(user, text, out, deps.final, usage_d, context=prompt)
+        # Verifier-gated cascade (B-053): when the cheaper model needed a check to step in (a SQL trap or a
+        # grain problem caught by the validator, or a concern from the second opinion), the turn is done
+        # again, once, on the escalation model. The discarded run's tokens stay in usage.before.
+        doubt = "trap" if deps.trap_retry else "grain" if deps.grain_retry else \
+            "review" if usage_d.get("review") == "concern" else None
+        if doubt and not escalated and self.escalation_model and first_name != self.settings.escalate_model:
+            before, first_deps = usage_d, deps
+            deps = Deps(app=self, user=user, trace=Trace(deps.trace, on_append=progress), shown=deps.shown)
+            deps.trace.append({"tool": "escalate", "after": doubt})
+            try:
+                result = await self.agent.run(prompt, deps=deps, message_history=history,
+                                              usage_limits=self._limits(self.settings.escalate_model),
+                                              model=self.escalation_model)
+                out, escalated = result.output, True
+                usage_d = self._usage(result.usage, self.settings.escalate_model, True, "new")
+                usage_d.update(escalated_for=doubt, before=before)  # one review per turn: not repeated
+            except Exception:
+                log.info("escalation after %s failed; keeping the first answer", doubt, exc_info=True)
+                deps, usage_d = first_deps, before
         all_msgs = [*history, *result.new_messages()]
         with self.store.tx() as db:
             db.execute("UPDATE conversation SET messages=?, updated_at=? WHERE id=?",
                        (ModelMessagesTypeAdapter.dump_json(all_msgs).decode(), now(), conv_id))
-        out = result.output
-        usage = result.usage
-        usage_d = {"requests": usage.requests, "input_tokens": usage.input_tokens, "output_tokens": usage.output_tokens,
-                   "cache_read_tokens": getattr(usage, "cache_read_tokens", None), "tool_calls": usage.tool_calls,
-                   "model": self.settings.escalate_model if escalated else first_name, "escalated": escalated,
-                   "route": "reuse" if reuse and not escalated else "new"}
         if deps.shape_retry:
             usage_d["shape"] = "adapted" if isinstance(out, Report) and out.used_knowledge else "kept"
         if isinstance(out, Report) and deps.final is not None:
-            await self._second_opinion(user, text, out, deps.final, usage_d, context=prompt)
             if cache_key:
                 with self.store.tx() as db:
                     db.execute("INSERT INTO answer_cache(key, owner, sql, report, created_at) VALUES(?,?,?,?,?) "
@@ -436,6 +453,12 @@ class App:
         payload = {"text": reply.text, "cites": [{k: c[k] for k in ("id", "title", "trust")} for c in cites],
                    "suggestions": self._suggestions(user, turn_id, reply.learnable)}
         return self._record(turn_id, conv_id, user, text, "answer", payload, deps, usage=usage_d)
+
+    @staticmethod
+    def _usage(u: Any, model: str, escalated: bool, route: str) -> dict[str, Any]:
+        return {"requests": u.requests, "input_tokens": u.input_tokens, "output_tokens": u.output_tokens,
+                "cache_read_tokens": getattr(u, "cache_read_tokens", None), "tool_calls": u.tool_calls,
+                "model": model, "escalated": escalated, "route": route}
 
     def _remember_clarification(self, user: User, conv_id: str, text: str) -> None:
         """An answer to the previous turn's clarifying question(s) becomes a personal note titled with
