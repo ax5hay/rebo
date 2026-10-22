@@ -45,7 +45,10 @@ also in git history; this file is the short version a new session reads first.
   settings surface; **Orbitra** (`fixtures/orbitra`), a made-up 221-table company with ~3.1M Indian and
   foreign synthetic rows in PostgreSQL (`docker compose up -d orbitra-db`, port 5434), its own gold set and
   offline checks (48/48 gold, 48/48 $0 answers, recall@8 0.845); protected-column detection fixed (B-063).
-  **No model has been run on Orbitra yet (B-064): the user starts those runs.**
+  **No model has been run on Orbitra yet (B-064): the user starts those runs.** Then: re-bootstrap
+  embeds only changed text (13.1 -> 3.1 s, B-065); layered Docker image with the model baked in
+  (source rebuild 7 s, ~2.5 MB to push, works with no network); CI ~10 -> ~3.5 min; likely tables
+  include joined hub tables (JMS recall 0.52 -> 0.77, B-066, answers not yet measured).
 - **Direction and rules:** `AGENTS.md`. Plan and gates: `docs/18-production-build.md`.
 
 ## 2. Measured facts (do not re-derive; re-measure only when a change could affect them)
