@@ -1,0 +1,1095 @@
+{
+ "run": "2026-10-22",
+ "cases": "fixtures/orbitra/gold.jsonl",
+ "questions": 48,
+ "summary": {
+  "top8": {
+   "recall": 0.865,
+   "all_tables": "32/48",
+   "tables_shown": 8.0
+  },
+  "top12": {
+   "recall": 0.901,
+   "all_tables": "36/48",
+   "tables_shown": 12.0
+  },
+  "top8+joined": {
+   "recall": 0.931,
+   "all_tables": "40/48",
+   "tables_shown": 11.4
+  }
+ },
+ "rows": [
+  {
+   "id": "or-01",
+   "gold": [
+    "department",
+    "employee"
+   ],
+   "top8": {
+    "recall": 1.0,
+    "all": true,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "or-02",
+   "gold": [
+    "employee",
+    "office_location"
+   ],
+   "top8": {
+    "recall": 1.0,
+    "all": true,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "or-03",
+   "gold": [
+    "employee",
+    "exit_interview"
+   ],
+   "top8": {
+    "recall": 1.0,
+    "all": true,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "or-04",
+   "gold": [
+    "legal_entity",
+    "payroll_run",
+    "payslip"
+   ],
+   "top8": {
+    "recall": 0.333,
+    "all": false,
+    "n": 8
+   },
+   "top12": {
+    "recall": 0.667,
+    "all": false,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 0.333,
+    "all": false,
+    "n": 12
+   }
+  },
+  {
+   "id": "or-05",
+   "gold": [
+    "leave_request",
+    "leave_type"
+   ],
+   "top8": {
+    "recall": 1.0,
+    "all": true,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 10
+   }
+  },
+  {
+   "id": "or-06",
+   "gold": [
+    "training_course",
+    "training_enrollment"
+   ],
+   "top8": {
+    "recall": 1.0,
+    "all": true,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "or-07",
+   "gold": [
+    "department",
+    "employee",
+    "performance_cycle",
+    "performance_review"
+   ],
+   "top8": {
+    "recall": 0.75,
+    "all": false,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 11
+   }
+  },
+  {
+   "id": "or-08",
+   "gold": [
+    "sales_order"
+   ],
+   "top8": {
+    "recall": 1.0,
+    "all": true,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "or-09",
+   "gold": [
+    "product",
+    "sales_order",
+    "sales_order_line"
+   ],
+   "top8": {
+    "recall": 0.667,
+    "all": false,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "or-10",
+   "gold": [
+    "customer_account",
+    "customer_site"
+   ],
+   "top8": {
+    "recall": 1.0,
+    "all": true,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "or-11",
+   "gold": [
+    "customer_account",
+    "customer_segment"
+   ],
+   "top8": {
+    "recall": 1.0,
+    "all": true,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "or-12",
+   "gold": [
+    "customer_account",
+    "opportunity",
+    "opportunity_stage",
+    "sales_territory"
+   ],
+   "top8": {
+    "recall": 0.75,
+    "all": false,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "or-13",
+   "gold": [
+    "competitor",
+    "opportunity",
+    "opportunity_competitor",
+    "opportunity_stage"
+   ],
+   "top8": {
+    "recall": 0.5,
+    "all": false,
+    "n": 8
+   },
+   "top12": {
+    "recall": 0.5,
+    "all": false,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 0.75,
+    "all": false,
+    "n": 10
+   }
+  },
+  {
+   "id": "or-14",
+   "gold": [
+    "subscription",
+    "subscription_plan"
+   ],
+   "top8": {
+    "recall": 1.0,
+    "all": true,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 10
+   }
+  },
+  {
+   "id": "or-15",
+   "gold": [
+    "churn_reason",
+    "subscription"
+   ],
+   "top8": {
+    "recall": 1.0,
+    "all": true,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 9
+   }
+  },
+  {
+   "id": "or-16",
+   "gold": [
+    "employee",
+    "sales_order",
+    "sales_rep"
+   ],
+   "top8": {
+    "recall": 0.667,
+    "all": false,
+    "n": 8
+   },
+   "top12": {
+    "recall": 0.667,
+    "all": false,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 0.667,
+    "all": false,
+    "n": 12
+   }
+  },
+  {
+   "id": "or-17",
+   "gold": [
+    "ar_invoice"
+   ],
+   "top8": {
+    "recall": 1.0,
+    "all": true,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "or-18",
+   "gold": [
+    "ar_invoice",
+    "ar_receipt",
+    "customer_account"
+   ],
+   "top8": {
+    "recall": 0.667,
+    "all": false,
+    "n": 8
+   },
+   "top12": {
+    "recall": 0.667,
+    "all": false,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "or-19",
+   "gold": [
+    "ar_invoice",
+    "ar_receipt",
+    "customer_account",
+    "customer_segment"
+   ],
+   "top8": {
+    "recall": 0.75,
+    "all": false,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "or-20",
+   "gold": [
+    "ar_invoice",
+    "customer_account"
+   ],
+   "top8": {
+    "recall": 1.0,
+    "all": true,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "or-21",
+   "gold": [
+    "credit_note"
+   ],
+   "top8": {
+    "recall": 1.0,
+    "all": true,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "or-22",
+   "gold": [
+    "ap_invoice",
+    "supplier"
+   ],
+   "top8": {
+    "recall": 1.0,
+    "all": true,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "or-23",
+   "gold": [
+    "purchase_order",
+    "supplier",
+    "supplier_category"
+   ],
+   "top8": {
+    "recall": 1.0,
+    "all": true,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "or-24",
+   "gold": [
+    "department",
+    "purchase_requisition"
+   ],
+   "top8": {
+    "recall": 0.5,
+    "all": false,
+    "n": 8
+   },
+   "top12": {
+    "recall": 0.5,
+    "all": false,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "or-25",
+   "gold": [
+    "gst_return"
+   ],
+   "top8": {
+    "recall": 1.0,
+    "all": true,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "or-26",
+   "gold": [
+    "expense_claim",
+    "expense_line"
+   ],
+   "top8": {
+    "recall": 1.0,
+    "all": true,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "or-27",
+   "gold": [
+    "asset_category",
+    "fixed_asset"
+   ],
+   "top8": {
+    "recall": 1.0,
+    "all": true,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 9
+   }
+  },
+  {
+   "id": "or-28",
+   "gold": [
+    "machine",
+    "machine_downtime",
+    "work_center"
+   ],
+   "top8": {
+    "recall": 1.0,
+    "all": true,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 11
+   }
+  },
+  {
+   "id": "or-29",
+   "gold": [
+    "product",
+    "product_category",
+    "work_order"
+   ],
+   "top8": {
+    "recall": 0.667,
+    "all": false,
+    "n": 8
+   },
+   "top12": {
+    "recall": 0.667,
+    "all": false,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "or-30",
+   "gold": [
+    "defect",
+    "defect_type",
+    "quality_inspection"
+   ],
+   "top8": {
+    "recall": 1.0,
+    "all": true,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 9
+   }
+  },
+  {
+   "id": "or-31",
+   "gold": [
+    "stock_balance",
+    "warehouse"
+   ],
+   "top8": {
+    "recall": 1.0,
+    "all": true,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 10
+   }
+  },
+  {
+   "id": "or-32",
+   "gold": [
+    "carrier",
+    "shipment"
+   ],
+   "top8": {
+    "recall": 1.0,
+    "all": true,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "or-33",
+   "gold": [
+    "return_authorization",
+    "return_reason"
+   ],
+   "top8": {
+    "recall": 1.0,
+    "all": true,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 10
+   }
+  },
+  {
+   "id": "or-34",
+   "gold": [
+    "customer_account",
+    "customer_site",
+    "device"
+   ],
+   "top8": {
+    "recall": 0.333,
+    "all": false,
+    "n": 8
+   },
+   "top12": {
+    "recall": 0.333,
+    "all": false,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 0.333,
+    "all": false,
+    "n": 12
+   }
+  },
+  {
+   "id": "or-35",
+   "gold": [
+    "charging_session"
+   ],
+   "top8": {
+    "recall": 1.0,
+    "all": true,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "or-36",
+   "gold": [
+    "charging_session"
+   ],
+   "top8": {
+    "recall": 1.0,
+    "all": true,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "or-37",
+   "gold": [
+    "support_ticket",
+    "ticket_priority"
+   ],
+   "top8": {
+    "recall": 1.0,
+    "all": true,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "or-38",
+   "gold": [
+    "csat_response",
+    "support_channel",
+    "support_ticket"
+   ],
+   "top8": {
+    "recall": 1.0,
+    "all": true,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "or-39",
+   "gold": [
+    "service_request"
+   ],
+   "top8": {
+    "recall": 1.0,
+    "all": true,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "or-40",
+   "gold": [
+    "employee",
+    "service_visit",
+    "technician"
+   ],
+   "top8": {
+    "recall": 0.333,
+    "all": false,
+    "n": 8
+   },
+   "top12": {
+    "recall": 0.667,
+    "all": false,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 0.667,
+    "all": false,
+    "n": 12
+   }
+  },
+  {
+   "id": "or-41",
+   "gold": [
+    "device",
+    "product",
+    "product_category",
+    "warranty_claim"
+   ],
+   "top8": {
+    "recall": 0.75,
+    "all": false,
+    "n": 8
+   },
+   "top12": {
+    "recall": 0.75,
+    "all": false,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 0.75,
+    "all": false,
+    "n": 12
+   }
+  },
+  {
+   "id": "or-42",
+   "gold": [
+    "customer_account",
+    "employee",
+    "project"
+   ],
+   "top8": {
+    "recall": 0.667,
+    "all": false,
+    "n": 8
+   },
+   "top12": {
+    "recall": 0.667,
+    "all": false,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "or-43",
+   "gold": [
+    "project",
+    "timesheet_entry"
+   ],
+   "top8": {
+    "recall": 0.5,
+    "all": false,
+    "n": 8
+   },
+   "top12": {
+    "recall": 0.5,
+    "all": false,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 0.5,
+    "all": false,
+    "n": 12
+   }
+  },
+  {
+   "id": "or-44",
+   "gold": [
+    "campaign",
+    "campaign_channel",
+    "email_send"
+   ],
+   "top8": {
+    "recall": 1.0,
+    "all": true,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "or-45",
+   "gold": [
+    "web_session"
+   ],
+   "top8": {
+    "recall": 1.0,
+    "all": true,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 10
+   }
+  },
+  {
+   "id": "or-46",
+   "gold": [
+    "energy_consumption",
+    "office_location"
+   ],
+   "top8": {
+    "recall": 1.0,
+    "all": true,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "or-47",
+   "gold": [
+    "csr_activity"
+   ],
+   "top8": {
+    "recall": 1.0,
+    "all": true,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 11
+   }
+  },
+  {
+   "id": "or-48",
+   "gold": [
+    "audit_finding",
+    "employee",
+    "internal_audit"
+   ],
+   "top8": {
+    "recall": 0.667,
+    "all": false,
+    "n": 8
+   },
+   "top12": {
+    "recall": 0.667,
+    "all": false,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 0.667,
+    "all": false,
+    "n": 9
+   }
+  }
+ ]
+}

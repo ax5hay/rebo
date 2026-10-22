@@ -73,7 +73,7 @@ CASES = [
      None),
     ("or-16", "Sales reps ranked by order value in rupees in FY25-26 (excluding cancelled orders), top 15.",
      f"SELECT e.first_name, e.last_name, SUM(o.total_amount_inr) FROM sales_order o JOIN sales_rep r ON r.sales_rep_id = o.sales_rep_id "
-     f"JOIN employee e ON e.employee_id = r.employee_id WHERE o.order_date BETWEEN {FY} AND o.status <> 'Cancelled' GROUP BY e.first_name, e.last_name ORDER BY 3 DESC LIMIT 15",
+     f"JOIN employee e ON e.employee_id = r.employee_id WHERE o.order_date BETWEEN {FY} AND o.status <> 'Cancelled' GROUP BY r.sales_rep_id, e.first_name, e.last_name ORDER BY 3 DESC LIMIT 15",
      None),
     # ---- receivables ----
     ("or-17", "How many customer invoices are overdue, and what is their total in rupees?",
@@ -82,13 +82,13 @@ CASES = [
      "SELECT a.account_name, SUM((i.total_amount - COALESCE(p.paid, 0)) * i.total_amount_inr / NULLIF(i.total_amount, 0)) FROM ar_invoice i "
      "JOIN customer_account a ON a.customer_account_id = i.customer_account_id LEFT JOIN (SELECT ar_invoice_id, SUM(amount) AS paid FROM ar_receipt GROUP BY ar_invoice_id) p "
      "ON p.ar_invoice_id = i.ar_invoice_id WHERE i.status <> 'Paid' GROUP BY a.account_name ORDER BY 2 DESC LIMIT 10", None),
-    ("or-19", "On average, how many days after the due date do customers pay, by customer segment?",
+    ("or-19", "On average, how many days after the due date do customers pay, by customer segment? Count every receipt.",
      "SELECT s.name, ROUND(AVG(r.receipt_date - i.due_date), 1) FROM ar_receipt r JOIN ar_invoice i ON i.ar_invoice_id = r.ar_invoice_id "
      "JOIN customer_account a ON a.customer_account_id = i.customer_account_id JOIN customer_segment s ON s.customer_segment_id = a.customer_segment_id GROUP BY s.name",
      None),
     ("or-20", "Total invoiced in GBP to UK customers in calendar 2025.",
-     "SELECT a.account_name, SUM(i.total_amount) FROM ar_invoice i JOIN customer_account a ON a.customer_account_id = i.customer_account_id "
-     "WHERE a.country_code = 'GB' AND i.currency = 'GBP' AND i.invoice_date BETWEEN '2025-01-01' AND '2025-12-31' GROUP BY a.account_name", None),
+     "SELECT SUM(i.total_amount) FROM ar_invoice i JOIN customer_account a ON a.customer_account_id = i.customer_account_id "
+     "WHERE a.country_code = 'GB' AND i.currency = 'GBP' AND i.invoice_date BETWEEN '2025-01-01' AND '2025-12-31'", None),
     ("or-21", "Credit notes issued in FY25-26 by reason, with their count.",
      f"SELECT reason, COUNT(*) FROM credit_note WHERE issued_on BETWEEN {FY} GROUP BY reason", None),
     # ---- procurement, finance ----
@@ -130,7 +130,8 @@ CASES = [
     # ---- devices, service, support ----
     ("or-34", "The 20 customers with the most offline devices right now.",
      "SELECT a.account_name, COUNT(*) FROM device d JOIN customer_site s ON s.customer_site_id = d.customer_site_id "
-     "JOIN customer_account a ON a.customer_account_id = s.customer_account_id WHERE d.status = 'Offline' GROUP BY a.account_name ORDER BY 2 DESC LIMIT 20", None),
+     "JOIN customer_account a ON a.customer_account_id = s.customer_account_id WHERE d.status = 'Offline' GROUP BY a.customer_account_id, a.account_name "
+     "ORDER BY 2 DESC, 1, a.customer_account_id LIMIT 20", "per account: two customers can share a name; ties at the cut-off by name"),
     ("or-35", "EV charging sessions per month in 2026, with the energy delivered in kWh.",
      "SELECT to_char(started_at, 'YYYY-MM'), COUNT(*), SUM(energy_kwh) FROM charging_session WHERE started_at >= '2026-01-01' AND started_at < '2027-01-01' GROUP BY 1", None),
     ("or-36", "Which vehicle models charge at our chargers most often?",
@@ -141,12 +142,12 @@ CASES = [
     ("or-38", "Average CSAT score per support channel.",
      "SELECT c.name, ROUND(AVG(r.score), 2) FROM csat_response r JOIN support_ticket t ON t.support_ticket_id = r.support_ticket_id "
      "JOIN support_channel c ON c.support_channel_id = t.support_channel_id GROUP BY c.name", None),
-    ("or-39", "Average hours to close service requests in 2025, by problem.",
+    ("or-39", "Average hours to close service requests reported in 2025, by problem.",
      "SELECT problem, ROUND(AVG(EXTRACT(EPOCH FROM closed_at - reported_at) / 3600), 1) FROM service_request WHERE closed_at IS NOT NULL "
      "AND reported_at >= '2025-01-01' AND reported_at < '2026-01-01' GROUP BY problem", None),
-    ("or-40", "Technicians with the most service visits in September 2026.",
+    ("or-40", "The 10 technicians with the most service visits in September 2026.",
      "SELECT e.first_name, e.last_name, COUNT(*) FROM service_visit v JOIN technician t ON t.technician_id = v.technician_id JOIN employee e ON e.employee_id = t.employee_id "
-     "WHERE v.visit_date BETWEEN '2026-09-01' AND '2026-09-30' GROUP BY e.first_name, e.last_name ORDER BY 3 DESC", None),
+     "WHERE v.visit_date BETWEEN '2026-09-01' AND '2026-09-30' GROUP BY t.technician_id, e.first_name, e.last_name ORDER BY 3 DESC, 1, 2 LIMIT 10", "ties at the cut-off"),
     ("or-41", "Warranty claims approved and rejected, per product category.",
      "SELECT c.category_name, w.decision, COUNT(*) FROM warranty_claim w JOIN device d ON d.device_id = w.device_id JOIN product p ON p.product_id = d.product_id "
      "JOIN product_category c ON c.product_category_id = p.product_category_id WHERE w.decision IN ('Approved', 'Rejected') GROUP BY c.category_name, w.decision", None),
@@ -156,7 +157,7 @@ CASES = [
      "LEFT JOIN customer_account a ON a.customer_account_id = p.customer_account_id WHERE p.health = 'Red'", None),
     ("or-43", "The 20 projects with the most approved billable hours in September 2026.",
      "SELECT p.project_name, SUM(t.hours) FROM timesheet_entry t JOIN project p ON p.project_id = t.project_id WHERE t.is_billable AND t.approval_status = 'Approved' "
-     "AND t.work_date BETWEEN '2026-09-01' AND '2026-09-30' GROUP BY p.project_name ORDER BY 2 DESC LIMIT 20", None),
+     "AND t.work_date BETWEEN '2026-09-01' AND '2026-09-30' GROUP BY p.project_id, p.project_name ORDER BY 2 DESC, p.project_id LIMIT 20", "per project: names repeat across projects; ties at the cut-off by id"),
     ("or-44", "Email open and click rates by campaign channel for emails sent in 2025.",
      "SELECT ch.name, ROUND(100.0 * AVG(CASE WHEN s.opened THEN 1 ELSE 0 END), 1), ROUND(100.0 * AVG(CASE WHEN s.clicked THEN 1 ELSE 0 END), 1) FROM email_send s "
      "JOIN campaign c ON c.campaign_id = s.campaign_id JOIN campaign_channel ch ON ch.campaign_channel_id = c.campaign_channel_id "

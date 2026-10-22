@@ -1,0 +1,248 @@
+{
+ "run": "2026-10-22",
+ "cases": "fixtures/orbitra/gold.jsonl",
+ "strict": "42/48",
+ "same_numbers": "47/48",
+ "rows": [
+  {
+   "id": "or-01",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-02",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-03",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-04",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-05",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-06",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-07",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-08",
+   "strict": false,
+   "same_numbers": true
+  },
+  {
+   "id": "or-09",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-10",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-11",
+   "strict": false,
+   "same_numbers": true
+  },
+  {
+   "id": "or-12",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-13",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-14",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-15",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-16",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-17",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-18",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-19",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-20",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-21",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-22",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-23",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-24",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-25",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-26",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-27",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-28",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-29",
+   "strict": false,
+   "same_numbers": false
+  },
+  {
+   "id": "or-30",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-31",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-32",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-33",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-34",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-35",
+   "strict": false,
+   "same_numbers": true
+  },
+  {
+   "id": "or-36",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-37",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-38",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-39",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-40",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-41",
+   "strict": false,
+   "same_numbers": true
+  },
+  {
+   "id": "or-42",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-43",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-44",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-45",
+   "strict": false,
+   "same_numbers": true
+  },
+  {
+   "id": "or-46",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-47",
+   "strict": true,
+   "same_numbers": true
+  },
+  {
+   "id": "or-48",
+   "strict": true,
+   "same_numbers": true
+  }
+ ]
+}

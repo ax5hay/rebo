@@ -68,6 +68,35 @@ Offline results (2026-10-22, `offline_check_2026-10-22.json`, no model):
 | Gold queries pass ReBo's guard and return rows | 48/48, slowest 29 ms |
 | Gold tables among the 8 "likely tables" of the first request | recall 0.845; all tables for 32/48 questions |
 | A saved gold report asked again is answered with the gold rows and no model call | 48/48 (route "direct") |
+| Needed tables in the first request after B-066 (joined tables added) | recall 0.925; all tables for 38/48 |
 | Protected columns found | 8: password hash, API token, 3 bank account numbers, 3 PAN columns |
 
-Not run yet: any model on this database.
+## With a model (2026-10-22, Sonnet 5.5 agent, Haiku 5.5 fast model, defaults)
+
+| Run | Matches gold (strict) | Same numbers | Cost | Median tokens in | File |
+|---|---|---|---|---|---|
+| 48 gold questions, no descriptions | 39/48 | 44/48 | $1.11 ($0.023 a question) | 19.9k | `eval_results_sonnet_baseline.json` |
+| 48 gold questions, `bootstrap --describe` | 42/48 | 47/48 | $1.26 | 21.9k | `eval_results_sonnet_described.json` |
+| the same, on the 45 questions worded identically in both runs | 39/45 vs 39/45 | **44/45 vs 44/45** | +13 % | +10 % | `rescore_sonnet_*.json` |
+| 8 conversations (vague opener, then a clarification in words) | 7/8 | 8/8 | $0.24 | | `eval_conversations_sonnet.json` |
+
+0 errors, median 11 s a question. "Same numbers" (`tools/rescore.py`) counts answers that hold
+exactly the gold numbers but present them differently: a month as "Apr 2025", a country name for its
+code, an added id or count column, a pivoted table. The one wrong answer (or-29) counted work orders
+with status "Completed" but not "Closed"; under "Read as" that is one switch.
+
+The first model run found **eight mistakes in the gold set, not in the bot**: references that
+grouped by name merged different reps, customers and projects that share a name (the bot grouped by
+id and said so); one asked for a total but the reference split it per customer; two had ties at a
+LIMIT; three questions allowed a second reasonable reading and were reworded. All are fixed in
+`make_gold.py`; the bot's answers were re-scored without asking the model again.
+
+**Descriptions (`--describe`):** Haiku drafted 220 tables for well under a dollar. They helped
+retrieval slightly (needed tables in the first request 38 -> 40 of 48) but not answers (44/45 both
+ways) and cost 10 % more tokens a question: Orbitra's names are already plain words. Kept optional;
+the drafts are saved in `data/orbitra/state_with_descriptions.db`. Untested on schemas with cryptic
+names (JMS), where they may matter.
+
+Asked when unsure, as intended: "open support tickets" -> *Only status Open (45) / all not yet
+resolved: Open, In progress, Pending customer, Escalated (120)*; "devices with problems" -> offline
+(5,637), with an open alert (1,554), with a warranty claim (3,681).

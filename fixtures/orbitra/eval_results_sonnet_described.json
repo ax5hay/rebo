@@ -1,0 +1,1692 @@
+{
+ "run": "2026-10-22",
+ "questions": "as in the cases file",
+ "model": "openrouter:anthropic/claude-sonnet-5.5",
+ "escalate": "",
+ "database": "postgresql+psycopg://orbitra_ro:***@127.0.0.1:5434/orbitra",
+ "summary": {
+  "reports": 48,
+  "clarify": 0,
+  "clarify_rate": 0.0,
+  "gate_answered": 0,
+  "errors": 0,
+  "escalated": 0,
+  "median_seconds": 11.4,
+  "total_cost_usd": 1.2612,
+  "execution_match": "42/48"
+ },
+ "cases": [
+  {
+   "id": "or-01",
+   "kind": "report",
+   "rows": 20,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 10.0,
+   "question": "How many employees with status Active are there in each department?",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 25131,
+    "output_tokens": 432,
+    "cache_read_tokens": 18791,
+    "tool_calls": 2,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For each department name, the SQL counts the employee rows whose status is exactly 'Active' and whose department matches a department record, then lists the departments from highest to lowest count.",
+    "trace_id": "a0a5d0a60208f437a6c3cdee83c422d2"
+   },
+   "cost_usd": 0.01888,
+   "title": "Active employees by department",
+   "sql": "SELECT d.dept_name AS department, COUNT(*) AS active_employees\nFROM employee e\nJOIN department d ON d.department_id = e.department_id\nWHERE e.status = 'Active'\nGROUP BY d.dept_name\nORDER BY active_employees DESC",
+   "assumptions": [
+    "Only employees whose current status is exactly 'Active' are counted; those on leave, in notice period or exited are excluded.",
+    "Departments are taken from each employee's current department assignment.",
+    "Departments with no active employees are not listed."
+   ]
+  },
+  {
+   "id": "or-02",
+   "kind": "report",
+   "rows": 16,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 12.5,
+   "question": "Headcount by office location for people still employed (no exit date).",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 25810,
+    "output_tokens": 503,
+    "cache_read_tokens": 18749,
+    "tool_calls": 2,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For each office site name, the SQL counts the employees linked to it that have no exit date, including every employment type, and lists all office locations (zero where none qualify), sorted from highest to lowest headcount.",
+    "trace_id": "9a1b4466b4d4f7bb3bf2696f49c9a5d4"
+   },
+   "cost_usd": 0.02103,
+   "title": "Current headcount by office location",
+   "sql": "SELECT o.site_name AS office_location, COUNT(e.employee_id) AS headcount\nFROM office_location o\nLEFT JOIN employee e ON e.office_location_id = o.office_location_id AND e.exit_date IS NULL\nGROUP BY o.site_name\nORDER BY headcount DESC",
+   "assumptions": [
+    "Still employed means the employee has no exit date recorded, as you specified; employment status is not used.",
+    "Every office location is listed, including any with zero current employees.",
+    "Headcount counts all employment types (permanent, contract, intern, consultant)."
+   ]
+  },
+  {
+   "id": "or-03",
+   "kind": "report",
+   "rows": 78,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 16.7,
+   "question": "Who left the company in 2025, and what reason did they give in the exit interview?",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 26310,
+    "output_tokens": 957,
+    "cache_read_tokens": 16585,
+    "tool_calls": 4,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "concern",
+    "review_restated": "For every employee whose exit date is in 2025, the SQL returns one row per exit interview on file, with their code, name, exit date, interview reason, would-rejoin flag and comments, sorted by exit date. Employees with no interview still appear, with blank interview fields.",
+    "trace_id": "eed5272cb3297ed088520868f846e6ec"
+   },
+   "cost_usd": 0.03068,
+   "title": "Employees who left in 2025 and their exit interview reasons",
+   "sql": "select e.employee_code as \"Employee code\", e.first_name as \"First name\", e.last_name as \"Last name\", e.exit_date as \"Exit date\", x.reason as \"Exit interview reason\", x.would_rejoin as \"Would rejoin\", x.comments as \"Comments\"\nfrom employee e\nleft join exit_interview x on x.employee_id = e.employee_id\nwhere e.exit_date >= '2025-01-01' and e.exit_date < '2026-01-01'\norder by e.exit_date, e.employee_code, x.exit_interview_id",
+   "assumptions": [
+    "'Left the company in 2025' means the employee's recorded exit date falls between 1 Jan and 31 Dec 2025.",
+    "Employees with no exit interview on file are still listed, with a blank reason.",
+    "Some employees have more than one exit interview record, sometimes with different reasons; each record is shown as its own row, since interviews carry no date to pick one.",
+    "Check: Several people have two or three interview rows with different reasons and no date to tell which one is their real exit reason, so the report does not give one reason per leaver as the question asks; check with HR which interview counts before sharing it."
+   ]
+  },
+  {
+   "id": "or-04",
+   "kind": "report",
+   "rows": 12,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 12.8,
+   "question": "Total net pay paid by the Indian entity per month in FY25-26.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 27132,
+    "output_tokens": 867,
+    "cache_read_tokens": 16989,
+    "tool_calls": 4,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For every payroll run belonging to a legal entity whose country is India, with a pay month from April 2025 through March 2026, the query counts the payslips and sums their net pay, grouped by pay month, giving one row per month.",
+    "trace_id": "6938ef65a32362dd3dccc87ecddd148d"
+   },
+   "cost_usd": 0.03065,
+   "title": "Net pay by month, Indian entity, FY25-26",
+   "sql": "SELECT pr.pay_month AS \"Pay month\", COUNT(*) AS \"Payslips\", SUM(p.net_pay) AS \"Total net pay (INR)\"\nFROM payslip p\nJOIN payroll_run pr ON pr.payroll_run_id = p.payroll_run_id\nJOIN legal_entity le ON le.legal_entity_id = pr.legal_entity_id\nJOIN country c ON c.country_id = le.country_id\nWHERE c.country_name = 'India'\n  AND pr.pay_month >= DATE '2025-04-01' AND pr.pay_month < DATE '2026-04-01'\nGROUP BY pr.pay_month\nORDER BY pr.pay_month",
+   "assumptions": [
+    "The Indian entity is Orbitra Energy Systems Pvt Ltd, the only legal entity based in India.",
+    "FY25-26 is the Indian fiscal year from April 2025 to March 2026.",
+    "Months are the payroll months the runs cover, not the calendar month of the payment date.",
+    "All payslips in the payroll runs are counted as paid, since every run is locked and processed.",
+    "Amounts are net pay in INR."
+   ]
+  },
+  {
+   "id": "or-05",
+   "kind": "report",
+   "rows": 8,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 9.3,
+   "question": "Approved leave days taken in 2025, by leave type.",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 14091,
+    "output_tokens": 594,
+    "cache_read_tokens": 6890,
+    "tool_calls": 2,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For each leave type name, this sums the recorded days and counts the requests where the status is Approved and the leave starts during 2025, sorted by total days descending.",
+    "trace_id": "9b7ebed5b5b74a47bf2b65bf67f11d18"
+   },
+   "cost_usd": 0.02103,
+   "title": "Approved leave days in 2025 by leave type",
+   "sql": "SELECT lt.name AS leave_type, SUM(lr.days) AS approved_leave_days, COUNT(*) AS approved_requests\nFROM leave_request lr\nJOIN leave_type lt ON lt.leave_type_id = lr.leave_type_id\nWHERE lr.status = 'Approved'\n  AND lr.from_date >= DATE '2025-01-01' AND lr.from_date < DATE '2026-01-01'\nGROUP BY lt.name\nORDER BY approved_leave_days DESC",
+   "assumptions": [
+    "Only requests with status Approved are counted.",
+    "A request belongs to 2025 if its leave starts in 2025; requests spanning year-end are counted fully in the year they start.",
+    "Days are the number of days recorded on each request.",
+    "All leave types are included, including work from home and loss of pay."
+   ]
+  },
+  {
+   "id": "or-06",
+   "kind": "report",
+   "rows": 31,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 10.5,
+   "question": "Completion rate of each mandatory training course (completed enrolments over all enrolments).",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 14316,
+    "output_tokens": 679,
+    "cache_read_tokens": 6890,
+    "tool_calls": 2,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For each course flagged as mandatory, this returns the course code and title, the count of all its enrolments, the count of those enrolments with status 'Completed', and that completed count as a percentage of all enrolments (one decimal), with courses with no enrolments left blank and sorted highes",
+    "trace_id": "8b2c87a09d34c668532c249b43666337"
+   },
+   "cost_usd": 0.02233,
+   "title": "Completion rate by mandatory training course",
+   "sql": "SELECT c.course_code AS \"Course code\", c.course_title AS \"Course title\", COUNT(e.training_enrollment_id) AS \"Total enrolments\", COUNT(*) FILTER (WHERE e.status = 'Completed') AS \"Completed enrolments\", ROUND(100.0 * COUNT(*) FILTER (WHERE e.status = 'Completed') / NULLIF(COUNT(e.training_enrollment_id), 0), 1) AS \"Completion rate %\" FROM training_course c LEFT JOIN training_enrollment e ON e.training_course_id = c.training_course_id WHERE c.is_mandatory = true GROUP BY c.training_course_id, c.course_code, c.course_title ORDER BY \"Completion rate %\" DESC NULLS LAST",
+   "assumptions": [
+    "Mandatory courses are those flagged as mandatory in the course catalogue.",
+    "An enrolment counts as completed when its status is 'Completed'; all other statuses (Enrolled, In progress, Dropped) count only in the total.",
+    "Rate is shown as a percentage rounded to one decimal; courses with no enrolments show no rate.",
+    "All enrolments across all dates are included."
+   ]
+  },
+  {
+   "id": "or-07",
+   "kind": "report",
+   "rows": 20,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 13.5,
+   "question": "Average performance rating per department for the FY24-25 annual cycle.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 28340,
+    "output_tokens": 706,
+    "cache_read_tokens": 17397,
+    "tool_calls": 4,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "concern",
+    "review_restated": "For each department name, the SQL averages the rating (rounded to 2 decimals) and counts all review rows for employees currently in that department, limited to reviews in the cycle named 'FY24-25 Annual', sorted by average from highest to lowest.",
+    "trace_id": "41ad91244641bb7528ad0d4e6184f883"
+   },
+   "cost_usd": 0.03069,
+   "title": "Average performance rating by department, FY24-25 Annual cycle",
+   "sql": "SELECT d.dept_name AS department, ROUND(AVG(pr.rating)::numeric, 2) AS average_rating, COUNT(*) AS review_count\nFROM performance_review pr\nJOIN performance_cycle pc ON pc.performance_cycle_id = pr.performance_cycle_id\nJOIN employee e ON e.employee_id = pr.employee_id\nJOIN department d ON d.department_id = e.department_id\nWHERE pc.cycle_name = 'FY24-25 Annual'\nGROUP BY d.dept_name\nORDER BY average_rating DESC",
+   "assumptions": [
+    "Rating is the 1-5 numeric score, where 5 is Outstanding and 1 is Below expectations.",
+    "Each employee is placed in their current department, not the department at the time of the review.",
+    "All reviews in the cycle are included, whether or not they have a submission date.",
+    "Departments with no reviews in this cycle do not appear.",
+    "Check: The review count uses every review row, including any without a submitted rating, while the average skips missing ratings, so the counts may not match the number of ratings behind each average; check whether unsubmitted reviews have blank ratings before relying on the counts."
+   ]
+  },
+  {
+   "id": "or-08",
+   "kind": "report",
+   "rows": 12,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 12.9,
+   "question": "Order value in rupees per month in FY25-26, leaving out cancelled orders.",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 15598,
+    "output_tokens": 680,
+    "cache_read_tokens": 6890,
+    "tool_calls": 2,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For each fiscal period whose fiscal year is FY25-26, the query counts the sales orders dated within that period whose status is not 'Cancelled' and sums their total amount in INR, showing one row per period with the period number, month label, order count and value, sorted by start date. Periods wit",
+    "trace_id": "515c19a77a90dca026ff5c8e49704a7d"
+   },
+   "cost_usd": 0.02491,
+   "title": "Monthly order value (INR), FY25-26, excluding cancelled orders",
+   "sql": "SELECT fp.period_no AS \"Fiscal period no\", to_char(fp.start_date, 'Mon YYYY') AS \"Month\", COUNT(so.sales_order_id) AS \"Orders\", SUM(so.total_amount_inr) AS \"Order value (INR)\"\nFROM fiscal_period fp\nLEFT JOIN sales_order so ON so.order_date BETWEEN fp.start_date AND fp.end_date AND so.status <> 'Cancelled'\nWHERE fp.fiscal_year = 'FY25-26'\nGROUP BY fp.period_no, fp.start_date\nORDER BY fp.start_date",
+   "assumptions": [
+    "FY25-26 is the Indian fiscal year April 2025 to March 2026.",
+    "Order value is the total order amount including tax, converted to rupees (at the fixed budget rate used in the order data).",
+    "Orders are placed in months by order date.",
+    "Cancelled orders are excluded; all other statuses (including Draft and On hold) are included.",
+    "Months with no orders still appear, with an empty value."
+   ]
+  },
+  {
+   "id": "or-09",
+   "kind": "report",
+   "rows": 10,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 11.4,
+   "question": "Top 10 products by units ordered in FY25-26 (not counting cancelled orders).",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 16704,
+    "output_tokens": 722,
+    "cache_read_tokens": 6890,
+    "tool_calls": 4,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For each product, this SQL adds up the quantities on its order lines for orders dated 1 April 2025 through 31 March 2026, excluding orders whose status is exactly 'Cancelled', and returns the 10 products with the highest totals.",
+    "trace_id": "9527d9459c9b65efee899b3e784bff3e"
+   },
+   "cost_usd": 0.02754,
+   "title": "Top 10 products by units ordered, FY25-26 (excluding cancelled orders)",
+   "sql": "SELECT p.product_id AS \"Product ID\", p.product_name AS \"Product\", SUM(l.quantity) AS \"Units ordered\"\nFROM sales_order_line l\nJOIN sales_order o ON o.sales_order_id = l.sales_order_id\nJOIN product p ON p.product_id = l.product_id\nWHERE o.order_date >= DATE '2025-04-01' AND o.order_date <= DATE '2026-03-31'\n  AND o.status <> 'Cancelled'\nGROUP BY p.product_id, p.product_name\nORDER BY SUM(l.quantity) DESC\nLIMIT 10",
+   "assumptions": [
+    "FY25-26 is the Indian fiscal year from 1 April 2025 to 31 March 2026, based on order date.",
+    "Units ordered is the total quantity on order lines, in each product's own unit of measure.",
+    "Cancelled orders are excluded; all other statuses (including Draft and On hold) are counted."
+   ]
+  },
+  {
+   "id": "or-10",
+   "kind": "report",
+   "rows": 271,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 8.8,
+   "question": "List our customers with a site in Karnataka, with their GSTIN.",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 16192,
+    "output_tokens": 620,
+    "cache_read_tokens": 6890,
+    "tool_calls": 2,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For each customer account that has at least one site whose state_name is exactly 'Karnataka', it returns the account number, name, GSTIN, status, and a count of those Karnataka sites, one row per account, sorted by name.",
+    "trace_id": "3ea730b8b56e508efed78ba2d4eaa23b"
+   },
+   "cost_usd": 0.02549,
+   "title": "Customers with a site in Karnataka, with GSTIN",
+   "sql": "SELECT ca.account_number AS \"Account Number\", ca.account_name AS \"Customer\", ca.gstin AS \"GSTIN\", ca.status AS \"Account Status\", COUNT(cs.customer_site_id) AS \"Karnataka Sites\"\nFROM customer_account ca\nJOIN customer_site cs ON cs.customer_account_id = ca.customer_account_id\nWHERE cs.state_name = 'Karnataka'\nGROUP BY ca.account_number, ca.account_name, ca.gstin, ca.status\nORDER BY ca.account_name, ca.account_number",
+   "assumptions": [
+    "'Our customers' means all customer accounts regardless of status (Active, Prospect, Dormant, Blacklisted); status is shown so you can filter.",
+    "A site in Karnataka means a customer site whose state is recorded as Karnataka; sites with no state recorded are not counted.",
+    "Customers with no GSTIN on file are still listed, with a blank GSTIN.",
+    "Each customer appears once, with the number of its Karnataka sites."
+   ]
+  },
+  {
+   "id": "or-11",
+   "kind": "report",
+   "rows": 72,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 11.6,
+   "question": "Number of customer accounts per country and segment.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 25945,
+    "output_tokens": 562,
+    "cache_read_tokens": 16118,
+    "tool_calls": 3,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "The SQL counts every customer account, with no status filter, grouped by country (full name, or the country code when no name matches) and by segment name, sorted by country and then segment.",
+    "trace_id": "85548699db24c976c030a39d9e7736c9"
+   },
+   "cost_usd": 0.02689,
+   "title": "Customer accounts by country and segment",
+   "sql": "SELECT COALESCE(co.country_name, ca.country_code) AS country, cs.name AS segment, COUNT(*) AS customer_accounts\nFROM customer_account ca\nLEFT JOIN country co ON co.iso_code = ca.country_code\nLEFT JOIN customer_segment cs ON cs.customer_segment_id = ca.customer_segment_id\nGROUP BY COALESCE(co.country_name, ca.country_code), cs.name\nORDER BY country, segment",
+   "assumptions": [
+    "All customer accounts are counted regardless of status (Active, Prospect, Dormant, Blacklisted).",
+    "Country is the customer's country shown by its full name.",
+    "Segment is the customer segment name."
+   ]
+  },
+  {
+   "id": "or-12",
+   "kind": "report",
+   "rows": 11,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 15.0,
+   "question": "Win rate of opportunities closed in FY25-26, by the customer's sales territory.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 27622,
+    "output_tokens": 1089,
+    "cache_read_tokens": 16189,
+    "tool_calls": 5,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For each sales territory of the customer account, the query counts opportunities whose stage is CLOSED_WON or CLOSED_LOST and whose closed date falls between 1 April 2025 and 31 March 2026, shows the won and lost counts, and gives won as a percentage of all closed opportunities, sorted from highest ",
+    "trace_id": "35e944561a6660edd95134b19a1f7d0d"
+   },
+   "cost_usd": 0.03537,
+   "title": "Win rate by customer sales territory \u2013 opportunities closed in FY25-26",
+   "sql": "select st.name as sales_territory,\n  count(*) as closed_opportunities,\n  count(*) filter (where s.code = 'CLOSED_WON') as won,\n  count(*) filter (where s.code = 'CLOSED_LOST') as lost,\n  round(100.0 * count(*) filter (where s.code = 'CLOSED_WON') / count(*), 1) as win_rate_pct\nfrom opportunity o\njoin opportunity_stage s on s.opportunity_stage_id = o.opportunity_stage_id\njoin customer_account ca on ca.customer_account_id = o.customer_account_id\njoin sales_territory st on st.sales_territory_id = ca.sales_territory_id\nwhere s.code in ('CLOSED_WON','CLOSED_LOST')\n  and o.closed_on between date '2025-04-01' and date '2026-03-31'\ngroup by st.name\norder by win_rate_pct desc",
+   "assumptions": [
+    "FY25-26 means the Indian fiscal year from 1 April 2025 to 31 March 2026, matched on the date the opportunity was closed.",
+    "Win rate = closed-won opportunities divided by all opportunities that were closed (won or lost) in that period; open opportunities are excluded.",
+    "Territory is the one assigned to the customer account, not the sales rep's territory.",
+    "Counts are by number of opportunities, not deal value."
+   ]
+  },
+  {
+   "id": "or-13",
+   "kind": "report",
+   "rows": 12,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": false,
+    "ExecutionMatch": true
+   },
+   "seconds": 20.0,
+   "question": "Which competitors did we lose the most deals to in FY25-26?",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 34657,
+    "output_tokens": 1120,
+    "cache_read_tokens": 21906,
+    "tool_calls": 5,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For each competitor linked to an opportunity in stage 7 with a close date from 1 April 2025 through 31 March 2026, the query counts the distinct lost opportunities and lists competitors from highest to lowest count.",
+    "trace_id": "74cde48252be3026d9bde14f364557bc"
+   },
+   "cost_usd": 0.03889,
+   "title": "Competitors we lost the most deals to, FY25-26",
+   "sql": "select c.name as competitor, count(distinct o.opportunity_id) as deals_lost\nfrom opportunity o\njoin opportunity_competitor oc on oc.opportunity_id = o.opportunity_id\njoin competitor c on c.competitor_id = oc.competitor_id\nwhere o.opportunity_stage_id = 7\n  and o.closed_on between '2025-04-01' and '2026-03-31'\ngroup by c.name\norder by deals_lost desc",
+   "assumptions": [
+    "FY25-26 means 1 April 2025 to 31 March 2026, matching the fiscal periods on record.",
+    "A deal is lost when its current stage is 'Closed lost'; it counts in the year of its close date. Closed-lost deals with no close date are excluded.",
+    "A deal counts toward every competitor linked to it, so deals with several competitors appear under each one.",
+    "Being linked as a competitor on a lost deal is treated as losing to that competitor; the data doesn't say which competitor actually won."
+   ]
+  },
+  {
+   "id": "or-14",
+   "kind": "report",
+   "rows": 6,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 11.4,
+   "question": "Total monthly recurring revenue of active subscriptions billed in INR, per plan.",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 14862,
+    "output_tokens": 562,
+    "cache_read_tokens": 6890,
+    "tool_calls": 2,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For subscriptions with status exactly 'Active' and currency 'INR', the SQL counts them and sums their recorded mrr, grouped by plan code, plan name and billing period, sorted by total MRR from highest to lowest.",
+    "trace_id": "903c4e0d97f226a216879dfef6e343db"
+   },
+   "cost_usd": 0.02225,
+   "title": "Active INR subscriptions: total MRR per plan",
+   "sql": "SELECT p.plan_code AS plan_code, p.plan_name AS plan_name, p.billing_period AS billing_period, COUNT(*) AS active_subscriptions, SUM(s.mrr) AS total_mrr_inr\nFROM subscription s\nJOIN subscription_plan p ON p.subscription_plan_id = s.subscription_plan_id\nWHERE s.status = 'Active' AND s.currency = 'INR'\nGROUP BY p.plan_code, p.plan_name, p.billing_period\nORDER BY total_mrr_inr DESC",
+   "assumptions": [
+    "Active means subscriptions whose current status is Active (Trial and Past due are excluded).",
+    "Billed in INR means the subscription's own billing currency is INR; no currency conversion is done.",
+    "MRR is summed as recorded on each subscription, grouped by plan."
+   ]
+  },
+  {
+   "id": "or-15",
+   "kind": "report",
+   "rows": 7,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 10.3,
+   "question": "Subscriptions cancelled in 2025, by churn reason.",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 14433,
+    "output_tokens": 627,
+    "cache_read_tokens": 6890,
+    "tool_calls": 2,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For subscriptions with a cancellation date in 2025 (1 Jan to 31 Dec), the query counts how many there are for each churn reason name, with any missing reason grouped as one blank row, sorted from highest to lowest count.",
+    "trace_id": "2f92b39c753116500dd68576fa1f76e1"
+   },
+   "cost_usd": 0.02204,
+   "title": "Subscriptions cancelled in 2025 by churn reason",
+   "sql": "SELECT cr.name AS churn_reason, COUNT(*) AS cancelled_subscriptions\nFROM subscription s\nLEFT JOIN churn_reason cr ON cr.churn_reason_id = s.churn_reason_id\nWHERE s.cancelled_on >= DATE '2025-01-01' AND s.cancelled_on < DATE '2026-01-01'\nGROUP BY cr.name\nORDER BY cancelled_subscriptions DESC",
+   "assumptions": [
+    "A subscription counts as cancelled in 2025 if its cancellation date falls between 1 Jan and 31 Dec 2025.",
+    "The measure is the number of cancelled subscriptions; revenue is not summed because it is in mixed currencies.",
+    "Any cancelled subscription with no recorded reason would appear under a blank reason."
+   ]
+  },
+  {
+   "id": "or-16",
+   "kind": "report",
+   "rows": 15,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 14.0,
+   "question": "Sales reps ranked by order value in rupees in FY25-26 (excluding cancelled orders), top 15.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 28800,
+    "output_tokens": 946,
+    "cache_read_tokens": 16784,
+    "tool_calls": 4,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For each sales rep record, the query sums the INR order totals of non-cancelled orders dated 1 April 2025 to 31 March 2026, ranks reps by that sum from highest to lowest, and returns the top 15 with their rank, ID, name, order count and total.",
+    "trace_id": "6ef94767cdeb2ce0f1d9d3b40ae18e25"
+   },
+   "cost_usd": 0.03517,
+   "title": "Top 15 sales reps by order value (INR), FY25-26",
+   "sql": "SELECT RANK() OVER (ORDER BY SUM(so.total_amount_inr) DESC) AS \"Rank\",\n       sr.sales_rep_id AS \"Sales Rep ID\",\n       e.first_name || ' ' || e.last_name AS \"Sales Rep\",\n       COUNT(*) AS \"Orders\",\n       SUM(so.total_amount_inr) AS \"Order Value (INR)\"\nFROM sales_order so\nJOIN sales_rep sr ON sr.sales_rep_id = so.sales_rep_id\nJOIN employee e ON e.employee_id = sr.employee_id\nWHERE so.order_date BETWEEN DATE '2025-04-01' AND DATE '2026-03-31'\n  AND so.status <> 'Cancelled'\nGROUP BY sr.sales_rep_id, e.first_name, e.last_name\nORDER BY \"Order Value (INR)\" DESC\nLIMIT 15",
+   "assumptions": [
+    "FY25-26 means the Indian fiscal year from 1 April 2025 to 31 March 2026, based on order date.",
+    "Order value is the order total including tax, converted to rupees at the fixed budget rate stored on each order.",
+    "Cancelled orders are excluded; all other statuses (including Draft and On hold) are counted.",
+    "Each sales rep record is ranked separately, even where the same person holds more than one rep record, so a name may appear twice (the Sales Rep ID tells them apart)."
+   ]
+  },
+  {
+   "id": "or-17",
+   "kind": "report",
+   "rows": 1,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 8.1,
+   "question": "How many customer invoices are overdue, and what is their total in rupees?",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 14473,
+    "output_tokens": 405,
+    "cache_read_tokens": 6890,
+    "tool_calls": 1,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "It counts the receivable invoice rows whose status is exactly 'Overdue' and sums their INR total amount into a single row.",
+    "trace_id": "f60c1ca6c7e694812bdeb9e02fb241dd"
+   },
+   "cost_usd": 0.0199,
+   "title": "Overdue customer invoices: count and total in INR",
+   "sql": "SELECT COUNT(*) AS overdue_invoice_count, SUM(total_amount_inr) AS total_overdue_inr FROM ar_invoice WHERE status = 'Overdue'",
+   "assumptions": [
+    "Customer invoices means invoices raised to customers (receivables), not supplier invoices.",
+    "Overdue means invoices whose recorded payment status is 'Overdue'; I did not recalculate from due dates.",
+    "Total is the invoice total (including tax) converted to Indian rupees, not the remaining unpaid balance."
+   ]
+  },
+  {
+   "id": "or-18",
+   "kind": "report",
+   "rows": 10,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 20.9,
+   "question": "Top 10 customers by outstanding balance on unpaid and partly paid invoices, in rupees.",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 37300,
+    "output_tokens": 1408,
+    "cache_read_tokens": 25991,
+    "tool_calls": 4,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For each customer, the SQL adds up the rupee total of their invoices whose status is Open, Overdue or Partially paid, subtracts a rupee-converted share of the receipts recorded against each invoice, and returns the 10 customers with the largest remaining balance, with invoice count, invoiced total, ",
+    "trace_id": "ee418916ae5ab2b9f64c2dd1595f4c7f"
+   },
+   "cost_usd": 0.0393,
+   "title": "Top 10 customers by outstanding balance (INR) on unpaid and partly paid invoices",
+   "sql": "with rec as (\n  select ar_invoice_id, sum(amount) as received\n  from ar_receipt\n  group by ar_invoice_id\n), inv as (\n  select i.customer_account_id, i.ar_invoice_id, i.total_amount_inr,\n         i.total_amount_inr * coalesce(r.received, 0) / nullif(i.total_amount, 0) as received_inr\n  from ar_invoice i\n  left join rec r on r.ar_invoice_id = i.ar_invoice_id\n  where i.status in ('Open', 'Overdue', 'Partially paid')\n)\nselect c.account_number as \"Account number\",\n       c.account_name as \"Customer\",\n       count(*) as \"Open invoices\",\n       round(sum(inv.total_amount_inr), 2) as \"Invoiced (INR)\",\n       round(sum(inv.received_inr), 2) as \"Received (INR)\",\n       round(sum(inv.total_amount_inr - inv.received_inr), 2) as \"Outstanding balance (INR)\"\nfrom inv\njoin customer_account c on c.customer_account_id = inv.customer_account_id\ngroup by c.customer_account_id, c.account_number, c.account_name\norder by sum(inv.total_amount_inr - inv.received_inr) desc\nlimit 10",
+   "assumptions": [
+    "Unpaid and partly paid invoices means invoices with status Open, Overdue or Partially paid; fully paid invoices are excluded.",
+    "Outstanding balance is the invoice total minus payments received against that invoice, in rupees.",
+    "Payments received are converted to rupees at each invoice's own rate (invoice rupee total divided by invoice currency total).",
+    "Credit notes are not deducted from the balance.",
+    "Customers are ranked by total outstanding balance across all their qualifying invoices."
+   ]
+  },
+  {
+   "id": "or-19",
+   "kind": "report",
+   "rows": 6,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 15.7,
+   "question": "On average, how many days after the due date do customers pay, by customer segment? Count every receipt.",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 41677,
+    "output_tokens": 1029,
+    "cache_read_tokens": 29857,
+    "tool_calls": 5,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For each customer segment name, the query counts every receipt linked to an invoice and a customer account in that segment, and returns that count plus the average of (receipt date minus invoice due date), rounded to two decimals, with no status, currency or date filters.",
+    "trace_id": "0d838ed8e9d3ea76bb403a3d81bc404b"
+   },
+   "cost_usd": 0.03692,
+   "title": "Average days paid after due date, by customer segment",
+   "sql": "SELECT s.name AS \"Customer segment\", COUNT(*) AS \"Receipts\", ROUND(AVG(r.receipt_date - i.due_date),2) AS \"Avg days after due date\"\nFROM ar_receipt r\nJOIN ar_invoice i ON i.ar_invoice_id = r.ar_invoice_id\nJOIN customer_account c ON c.customer_account_id = i.customer_account_id\nJOIN customer_segment s ON s.customer_segment_id = c.customer_segment_id\nGROUP BY s.name ORDER BY s.name",
+   "assumptions": [
+    "Every receipt is counted individually, so invoices with several receipts weigh more; the average is per receipt, not per invoice.",
+    "Days after due = receipt date minus the invoice's due date; negative values (early payments) are included in the average.",
+    "Segment is the segment of the customer account that was invoiced.",
+    "All receipts included regardless of invoice status, currency or date."
+   ]
+  },
+  {
+   "id": "or-20",
+   "kind": "report",
+   "rows": 1,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 13.0,
+   "question": "Total invoiced in GBP to UK customers in calendar 2025.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 26915,
+    "output_tokens": 781,
+    "cache_read_tokens": 16939,
+    "tool_calls": 3,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "The SQL returns the count of invoices and the sum of their total amounts, for invoices in GBP dated 1 January to 31 December 2025 whose customer account has country code GB, with no filter on invoice status or type.",
+    "trace_id": "396536c2238d85f10bf26f654f19dfa7"
+   },
+   "cost_usd": 0.02946,
+   "title": "Total invoiced in GBP to UK customers, calendar 2025",
+   "sql": "select count(*) as invoice_count, sum(a.total_amount) as total_invoiced_gbp from ar_invoice a join customer_account c on c.customer_account_id = a.customer_account_id where a.currency = 'GBP' and c.country_code = 'GB' and a.invoice_date >= '2025-01-01' and a.invoice_date < '2026-01-01'",
+   "assumptions": [
+    "UK customers are customer accounts with country GB.",
+    "Only invoices issued in GBP are counted (all invoices to UK customers in 2025 are in GBP anyway).",
+    "Calendar 2025 is based on invoice date, 1 Jan to 31 Dec 2025.",
+    "Total invoiced is the invoice total including tax; all statuses are included (paid, open, overdue). Excluding tax would be about 20.58M instead of 24.70M.",
+    "Credit notes are not deducted."
+   ]
+  },
+  {
+   "id": "or-21",
+   "kind": "report",
+   "rows": 6,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 7.5,
+   "question": "Credit notes issued in FY25-26 by reason, with their count.",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 14590,
+    "output_tokens": 494,
+    "cache_read_tokens": 6890,
+    "tool_calls": 2,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "This SQL counts the credit notes whose issue date falls between 1 April 2025 and 31 March 2026 inclusive, grouped by reason, and lists the reasons with the highest counts first.",
+    "trace_id": "25c812ccdf547136cb10624f9c599d69"
+   },
+   "cost_usd": 0.02103,
+   "title": "Credit notes issued in FY25-26 by reason",
+   "sql": "SELECT reason AS \"Reason\", COUNT(*) AS \"Credit notes\" FROM credit_note WHERE issued_on >= DATE '2025-04-01' AND issued_on <= DATE '2026-03-31' GROUP BY reason ORDER BY COUNT(*) DESC",
+   "assumptions": [
+    "FY25-26 is the Indian fiscal year from 1 April 2025 to 31 March 2026, based on the credit note issue date.",
+    "Credit notes with no issue date are excluded.",
+    "Count is the number of credit notes, regardless of currency or amount."
+   ]
+  },
+  {
+   "id": "or-22",
+   "kind": "report",
+   "rows": 460,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 14.2,
+   "question": "Suppliers with overdue invoices we have not paid, and the amount due in their currency.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 24750,
+    "output_tokens": 855,
+    "cache_read_tokens": 15906,
+    "tool_calls": 3,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "concern",
+    "review_restated": "For each supplier and invoice currency, the query counts and totals the full invoice amounts of invoices whose status is Overdue and that have no payment row, and shows the earliest due date, sorted by supplier name.",
+    "trace_id": "c937649641c024f566da113eda968e35"
+   },
+   "cost_usd": 0.02783,
+   "title": "Suppliers with unpaid overdue invoices and amount due",
+   "sql": "select s.supplier_code as \"Supplier code\", s.supplier_name as \"Supplier\", i.currency as \"Currency\", count(*) as \"Overdue invoices\", sum(i.amount) as \"Amount due\", min(i.due_date) as \"Oldest due date\"\nfrom ap_invoice i\njoin supplier s on s.supplier_id = i.supplier_id\nwhere i.status = 'Overdue'\n  and not exists (select 1 from ap_payment p where p.ap_invoice_id = i.ap_invoice_id)\ngroup by s.supplier_code, s.supplier_name, i.currency\norder by s.supplier_name, i.currency",
+   "assumptions": [
+    "Overdue invoices means supplier invoices marked Overdue that have no payment recorded against them.",
+    "Amount due is the full invoice amount (before any tax deducted at source), in the currency of each invoice.",
+    "A supplier invoiced in more than one currency appears on one row per currency, so amounts in different currencies are never added together.",
+    "Suppliers of every approval status are included.",
+    "Check: Several rows show oldest due dates in 2026 for invoices marked Overdue, so check that the status is current and that those due dates have really passed, since the \"Overdue\" flag may be stale."
+   ]
+  },
+  {
+   "id": "or-23",
+   "kind": "report",
+   "rows": 12,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 13.5,
+   "question": "Value of rupee purchase orders placed in FY25-26 by supplier category, excluding cancelled ones.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 28013,
+    "output_tokens": 787,
+    "cache_read_tokens": 17243,
+    "tool_calls": 4,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For purchase orders with currency INR, dated 1 April 2025 to 31 March 2026 and not having status 'Cancelled', the query counts the orders and sums their total amount, grouped by supplier category name, sorted by total value from highest to lowest (12 categories).",
+    "trace_id": "da0e001ab73792a93d2ee4b2ac092ded"
+   },
+   "cost_usd": 0.03113,
+   "title": "INR purchase order value by supplier category, FY25-26 (excl. cancelled)",
+   "sql": "SELECT sc.name AS supplier_category, COUNT(*) AS purchase_orders, SUM(po.total_amount) AS total_value_inr\nFROM purchase_order po\nJOIN supplier s ON s.supplier_id = po.supplier_id\nJOIN supplier_category sc ON sc.supplier_category_id = s.supplier_category_id\nWHERE po.currency = 'INR'\n  AND po.status <> 'Cancelled'\n  AND po.order_date >= DATE '2025-04-01' AND po.order_date <= DATE '2026-03-31'\nGROUP BY sc.name\nORDER BY total_value_inr DESC",
+   "assumptions": [
+    "Rupee purchase orders means orders whose currency is INR (Indian Rupee); no currency conversion is applied.",
+    "FY25-26 is the Indian fiscal year 1 April 2025 to 31 March 2026, based on the order date.",
+    "\"Placed\" is read as the order date; cancelled orders are excluded, all other statuses (including Draft) are included.",
+    "Value is the order total amount; supplier category is the category assigned to the supplier on the order."
+   ]
+  },
+  {
+   "id": "or-24",
+   "kind": "report",
+   "rows": 19,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 10.8,
+   "question": "Purchase requisitions still pending approval, by department.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 21399,
+    "output_tokens": 509,
+    "cache_read_tokens": 13985,
+    "tool_calls": 2,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "The SQL counts purchase requisitions whose status is exactly 'Pending approval', groups them by department name (an inner join, so requisitions without a matching department are dropped), and returns each department's count and earliest request date, sorted by count from highest to lowest, with no d",
+    "trace_id": "ac126cc9a8b9f8a11a959e886109763b"
+   },
+   "cost_usd": 0.02132,
+   "title": "Pending-approval purchase requisitions by department",
+   "sql": "SELECT d.dept_name AS department, COUNT(*) AS pending_requisitions, MIN(pr.requested_on) AS oldest_requested_on\nFROM purchase_requisition pr\nJOIN department d ON d.department_id = pr.department_id\nWHERE pr.status = 'Pending approval'\nGROUP BY d.dept_name\nORDER BY pending_requisitions DESC",
+   "assumptions": [
+    "'Still pending approval' means requisitions whose current status is 'Pending approval' (144 in total); converted, rejected and cancelled ones are excluded.",
+    "No date restriction applied; all requisitions of any age are counted.",
+    "Departments with no pending requisitions are not listed."
+   ]
+  },
+  {
+   "id": "or-25",
+   "kind": "report",
+   "rows": 3,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 13.7,
+   "question": "GST paid in cash per registration (GSTIN) in FY25-26, from the GSTR-3B returns.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 22119,
+    "output_tokens": 776,
+    "cache_read_tokens": 14416,
+    "tool_calls": 3,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "concern",
+    "review_restated": "The SQL counts GSTR-3B rows and sums cash paid for each GSTIN whose tax period falls between 2025-04 and 2026-03, with no status filter and no joins, and returns one row per GSTIN.",
+    "trace_id": "5f95a614cd5b97faabcad915f11877f0"
+   },
+   "cost_usd": 0.02461,
+   "title": "GST paid in cash per GSTIN, FY25-26 (GSTR-3B)",
+   "sql": "select gstin as \"GSTIN\", count(*) as \"Returns\", sum(cash_paid_inr) as \"Cash paid (INR)\" from gst_return where return_type = 'GSTR-3B' and tax_period between '2025-04' and '2026-03' group by gstin order by gstin",
+   "assumptions": [
+    "FY25-26 means April 2025 to March 2026, matching the company's fiscal calendar.",
+    "Returns are assigned to the year by the tax period they cover, not by the date they were filed.",
+    "Only GSTR-3B returns are included.",
+    "Cash paid is the cash amount recorded on each return, in INR, summed per registration.",
+    "All 36 returns in the period are marked Filed, so none are excluded by status.",
+    "Check: All three registrations show exactly the same cash-paid total (18,100,000) and the same 12 returns, which is unusual for separate state registrations; check the source rows for duplicated or copied data before sharing the per-registration figures."
+   ]
+  },
+  {
+   "id": "or-26",
+   "kind": "report",
+   "rows": 7,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 15.3,
+   "question": "Expense claims reimbursed in FY25-26, total per expense category in rupees (INR claims only).",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 24114,
+    "output_tokens": 895,
+    "cache_read_tokens": 15539,
+    "tool_calls": 4,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "concern",
+    "review_restated": "For INR claims with status Reimbursed and a claim date between the start of the earliest and the end of the latest FY25-26 fiscal period, it sums the expense line amounts and counts distinct claims for each expense category, sorted by total descending.",
+    "trace_id": "12e645f1af53b64d8af971a92a6a117e"
+   },
+   "cost_usd": 0.02765,
+   "title": "Reimbursed INR expense claims in FY25-26 by expense category",
+   "sql": "select l.category as \"Expense category\", count(distinct c.expense_claim_id) as \"Claims\", sum(l.amount) as \"Total (INR)\"\nfrom expense_claim c\njoin expense_line l on l.expense_claim_id = c.expense_claim_id\nwhere c.status = 'Reimbursed' and c.currency = 'INR'\n  and c.claim_date between (select min(start_date) from fiscal_period where fiscal_year = 'FY25-26') and (select max(end_date) from fiscal_period where fiscal_year = 'FY25-26')\ngroup by l.category\norder by sum(l.amount) desc",
+   "assumptions": [
+    "Only claims with status Reimbursed are included.",
+    "FY25-26 is the Indian fiscal year April 2025 to March 2026, placed by the claim date (no separate reimbursement date is stored).",
+    "Only claims in INR are included, so totals are in rupees with no conversion.",
+    "Category totals add up the individual expense lines, which sum to each claim's total.",
+    "Check: The question asks for claims reimbursed in FY25-26, but the SQL places claims by their claim date, not by when they were reimbursed. Claims submitted near the year boundary and paid in a different year will be counted in the wrong year, so confirm that claim date is an acceptable stand-in before using these totals."
+   ]
+  },
+  {
+   "id": "or-27",
+   "kind": "report",
+   "rows": 6,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 9.0,
+   "question": "Net book cost of fixed assets still in use, by asset category (cost only, before depreciation).",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 14570,
+    "output_tokens": 593,
+    "cache_read_tokens": 6890,
+    "tool_calls": 2,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For each asset category name, the SQL counts the fixed assets whose status is exactly 'In use' and sums their acquisition cost in INR, listing the categories from largest total cost to smallest.",
+    "trace_id": "fb59032f8fae0ecc020adc49592d93cd"
+   },
+   "cost_usd": 0.02198,
+   "title": "Cost of fixed assets in use, by asset category",
+   "sql": "SELECT ac.name AS \"Asset category\", COUNT(*) AS \"Assets in use\", SUM(fa.cost_inr) AS \"Total cost (INR)\"\nFROM fixed_asset fa\nJOIN asset_category ac ON ac.asset_category_id = fa.asset_category_id\nWHERE fa.status = 'In use'\nGROUP BY ac.name\nORDER BY SUM(fa.cost_inr) DESC",
+   "assumptions": [
+    "'Still in use' means assets whose current status is 'In use'; idle, under repair and disposed assets are excluded.",
+    "Cost is the original acquisition cost in INR, before any depreciation or salvage value adjustments.",
+    "Categories are shown by full category name, largest total cost first."
+   ]
+  },
+  {
+   "id": "or-28",
+   "kind": "report",
+   "rows": 16,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 12.7,
+   "question": "Machine downtime hours per work center in FY25-26.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 24868,
+    "output_tokens": 842,
+    "cache_read_tokens": 15500,
+    "tool_calls": 4,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For each work center, the SQL sums the durations (in minutes, converted to hours and rounded to one decimal) of all machine downtime events that started between 1 April 2025 and 31 March 2026, and counts those events. Every work center is listed, with zero where it had no events in that window, sort",
+    "trace_id": "1ef0a8a051a8f236b79bcd6236ffa1dd"
+   },
+   "cost_usd": 0.02871,
+   "title": "Machine downtime hours per work center, FY25-26",
+   "sql": "SELECT wc.wc_code AS work_center_code, wc.wc_name AS work_center, ROUND(COALESCE(SUM(md.duration_min), 0) / 60.0, 1) AS downtime_hours, COUNT(md.machine_downtime_id) AS downtime_events\nFROM work_center wc\nLEFT JOIN machine m ON m.work_center_id = wc.work_center_id\nLEFT JOIN machine_downtime md ON md.machine_id = m.machine_id\n  AND md.started_at >= DATE '2025-04-01' AND md.started_at < DATE '2026-04-01'\nGROUP BY wc.wc_code, wc.wc_name\nORDER BY downtime_hours DESC",
+   "assumptions": [
+    "FY25-26 is the Indian fiscal year from 1 April 2025 to 31 March 2026.",
+    "Downtime is assigned to the period in which the stoppage began.",
+    "All downtime reasons are included, including planned maintenance and changeovers.",
+    "Hours are the sum of event durations in minutes divided by 60, rounded to one decimal.",
+    "Work centers with no downtime in the period still appear, with zero hours."
+   ]
+  },
+  {
+   "id": "or-29",
+   "kind": "report",
+   "rows": 3,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 15.1,
+   "question": "Scrap rate per product category for work orders completed in 2026 (scrap over completed quantity).",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 26585,
+    "output_tokens": 937,
+    "cache_read_tokens": 16487,
+    "tool_calls": 4,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For each product category, this counts work orders with status 'Completed' whose actual end date is in 2026, sums their completed and scrap quantities, and shows scrap quantity as a percentage of completed quantity (ratio of sums), sorted from highest to lowest scrap rate.",
+    "trace_id": "19724e4d32027c17d9f094979d954248"
+   },
+   "cost_usd": 0.03121,
+   "title": "Scrap rate by product category \u2013 work orders completed in 2026",
+   "sql": "select pc.category_name as \"Product category\",\n       count(*) as \"Work orders\",\n       sum(w.completed_qty) as \"Completed quantity\",\n       sum(w.scrap_qty) as \"Scrap quantity\",\n       round(100.0 * sum(w.scrap_qty) / nullif(sum(w.completed_qty), 0), 2) as \"Scrap rate %\"\nfrom work_order w\njoin product p on p.product_id = w.product_id\njoin product_category pc on pc.product_category_id = p.product_category_id\nwhere w.status = 'Completed'\n  and w.actual_end >= date '2026-01-01' and w.actual_end < date '2027-01-01'\ngroup by pc.category_name\norder by \"Scrap rate %\" desc",
+   "assumptions": [
+    "Work orders 'completed in 2026' are those with status Completed whose actual end date falls in 2026 (Closed orders are not included).",
+    "Scrap rate = total scrapped quantity divided by total completed quantity, per category, shown as a percentage (a ratio of sums, not an average of per-order rates).",
+    "Products are grouped by their catalogue category; categories with no matching work orders do not appear."
+   ]
+  },
+  {
+   "id": "or-30",
+   "kind": "report",
+   "rows": 12,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 9.8,
+   "question": "Most frequent defect types found in quality inspections during 2026.",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 14948,
+    "output_tokens": 707,
+    "cache_read_tokens": 6890,
+    "tool_calls": 3,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For each defect type and severity, the SQL counts the defect records linked to quality inspections dated 1 Jan 2026 to 31 Dec 2026, also counts the distinct inspections affected and sums units affected, and lists the groups ordered from most to fewest defect records.",
+    "trace_id": "ccd2a169a39b659bcf82ebeb1ac5dd40"
+   },
+   "cost_usd": 0.02388,
+   "title": "Most frequent defect types in 2026 quality inspections",
+   "sql": "SELECT dt.name AS defect_type, dt.severity AS severity, COUNT(*) AS defect_records, COUNT(DISTINCT d.quality_inspection_id) AS inspections_affected, SUM(d.units_affected) AS units_affected\nFROM defect d\nJOIN quality_inspection qi ON qi.quality_inspection_id = d.quality_inspection_id\nJOIN defect_type dt ON dt.defect_type_id = d.defect_type_id\nWHERE qi.inspected_on >= DATE '2026-01-01' AND qi.inspected_on < DATE '2027-01-01'\nGROUP BY dt.name, dt.severity\nORDER BY defect_records DESC",
+   "assumptions": [
+    "2026 means inspections dated 1 Jan 2026 through today (22 Oct 2026, the latest data).",
+    "Frequency is measured as the number of recorded defects of each type; inspections affected and units affected are shown for context.",
+    "All inspection stages and results are included.",
+    "All 12 defect types are listed, ranked from most to least frequent."
+   ]
+  },
+  {
+   "id": "or-31",
+   "kind": "report",
+   "rows": 9,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 11.2,
+   "question": "How many stock positions are below their reorder level (on hand minus reserved), per warehouse?",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 14573,
+    "output_tokens": 657,
+    "cache_read_tokens": 6890,
+    "tool_calls": 2,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For each warehouse, the query counts the stock_balance rows where on-hand minus reserved is strictly below the reorder level, and also counts all stock_balance rows, listing every warehouse sorted by the below-reorder count, highest first.",
+    "trace_id": "8e59071342dbf790adff435ed0e359ae"
+   },
+   "cost_usd": 0.02262,
+   "title": "Stock positions below reorder level, per warehouse",
+   "sql": "SELECT w.warehouse_name AS warehouse, w.warehouse_code AS warehouse_code,\n  COUNT(*) FILTER (WHERE sb.on_hand_qty - sb.reserved_qty < sb.reorder_level) AS positions_below_reorder_level,\n  COUNT(sb.stock_balance_id) AS total_positions\nFROM warehouse w\nLEFT JOIN stock_balance sb ON sb.warehouse_id = w.warehouse_id\nGROUP BY w.warehouse_name, w.warehouse_code\nORDER BY positions_below_reorder_level DESC",
+   "assumptions": [
+    "A stock position is one item (product or material) held in one warehouse.",
+    "Available stock = quantity on hand minus quantity reserved; a position is below reorder level when available stock is strictly less than its reorder level.",
+    "All warehouses are listed, including any with none below reorder level; total positions is shown for context."
+   ]
+  },
+  {
+   "id": "or-32",
+   "kind": "report",
+   "rows": 11,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 11.2,
+   "question": "Freight cost per carrier for shipments delivered in 2026, with how many arrived after the expected date.",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 14965,
+    "output_tokens": 726,
+    "cache_read_tokens": 6890,
+    "tool_calls": 2,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For each carrier name, the query counts shipments whose actual delivery date falls in 2026, sums and averages their freight cost in rupees, and counts how many of those were delivered after their expected date. Results are sorted by total freight cost, highest first.",
+    "trace_id": "e91f639d8dcb3f5414445608cf262802"
+   },
+   "cost_usd": 0.0241,
+   "title": "Freight cost and late deliveries per carrier (delivered in 2026)",
+   "sql": "SELECT c.carrier_name AS carrier,\n       COUNT(*) AS shipments_delivered,\n       SUM(s.freight_cost_inr) AS total_freight_cost_inr,\n       ROUND(AVG(s.freight_cost_inr), 2) AS avg_freight_cost_inr,\n       COUNT(*) FILTER (WHERE s.delivered_on > s.expected_delivery) AS arrived_after_expected_date\nFROM shipment s\nJOIN carrier c ON c.carrier_id = s.carrier_id\nWHERE s.delivered_on >= DATE '2026-01-01' AND s.delivered_on < DATE '2027-01-01'\nGROUP BY c.carrier_name\nORDER BY total_freight_cost_inr DESC",
+   "assumptions": [
+    "'Delivered in 2026' means the actual delivery date falls between 1 Jan and 31 Dec 2026.",
+    "Freight cost is shown in Indian rupees, both as a total and an average per shipment.",
+    "A shipment is 'late' if its actual delivery date is later than its expected delivery date; shipments with no expected date are not counted as late.",
+    "Carriers with no 2026 deliveries are not listed."
+   ]
+  },
+  {
+   "id": "or-33",
+   "kind": "report",
+   "rows": 6,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 9.6,
+   "question": "Customer returns by reason in FY25-26.",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 14781,
+    "output_tokens": 611,
+    "cache_read_tokens": 6890,
+    "tool_calls": 3,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "This SQL counts return authorizations whose request date falls from 1 April 2025 up to but not including 1 April 2026, joins each one to its return reason, and returns one row per reason name with its count, sorted from highest to lowest.",
+    "trace_id": "23bec456a260e15778b68f284e0d048d"
+   },
+   "cost_usd": 0.02258,
+   "title": "Customer returns by reason, FY25-26",
+   "sql": "SELECT rr.name AS \"Return reason\", COUNT(*) AS \"Returns\" FROM return_authorization ra JOIN return_reason rr ON rr.return_reason_id = ra.return_reason_id WHERE ra.requested_on >= DATE '2025-04-01' AND ra.requested_on < DATE '2026-04-01' GROUP BY rr.name ORDER BY COUNT(*) DESC",
+   "assumptions": [
+    "FY25-26 is the Indian fiscal year from 1 April 2025 to 31 March 2026.",
+    "A return is one return authorization, dated by the day the customer requested it.",
+    "Returns with no request date are excluded.",
+    "All returns are counted whatever their resolution, including pending and rejected ones."
+   ]
+  },
+  {
+   "id": "or-34",
+   "kind": "report",
+   "rows": 20,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 11.8,
+   "question": "The 20 customers with the most offline devices right now.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 24733,
+    "output_tokens": 658,
+    "cache_read_tokens": 14443,
+    "tool_calls": 3,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For each customer account, the query counts the devices with status 'Offline' at all sites belonging to that account, and returns the 20 accounts with the highest counts, with ties ordered by customer name.",
+    "trace_id": "6a02b0438208802b13b337f16e287cb2"
+   },
+   "cost_usd": 0.0286,
+   "title": "Top 20 customers by number of offline devices",
+   "sql": "SELECT ca.account_number AS \"Account number\", ca.account_name AS \"Customer\", COUNT(*) AS \"Offline devices\"\nFROM device d\nJOIN customer_site cs ON cs.customer_site_id = d.customer_site_id\nJOIN customer_account ca ON ca.customer_account_id = cs.customer_account_id\nWHERE d.status = 'Offline'\nGROUP BY ca.customer_account_id, ca.account_number, ca.account_name\nORDER BY COUNT(*) DESC, ca.account_name, ca.account_number\nLIMIT 20",
+   "assumptions": [
+    "'Offline' means devices whose current status is Offline (decommissioned devices are excluded).",
+    "Devices are attributed to the customer that owns the site where they are installed, counted across all of that customer's sites.",
+    "Customers are grouped by account, so two accounts with the same name are shown separately.",
+    "Ties at the cutoff are broken alphabetically by customer name."
+   ]
+  },
+  {
+   "id": "or-35",
+   "kind": "report",
+   "rows": 10,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 8.8,
+   "question": "EV charging sessions per month in 2026, with the energy delivered in kWh.",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 13865,
+    "output_tokens": 459,
+    "cache_read_tokens": 9853,
+    "tool_calls": 1,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For each calendar month of 2026 (by the session start time), the query counts all charging sessions and sums their energy in kWh, rounded to two decimals, sorted by month. Only months with data appear, January through October.",
+    "trace_id": "a67b6c18f0bb30d97c78b1bd70b14e4b"
+   },
+   "cost_usd": 0.0136,
+   "title": "EV charging sessions and energy delivered per month, 2026",
+   "sql": "SELECT date_trunc('month', started_at)::date AS month, COUNT(*) AS charging_sessions, ROUND(SUM(energy_kwh), 2) AS energy_delivered_kwh FROM charging_session WHERE started_at >= '2026-01-01' AND started_at < '2027-01-01' GROUP BY 1 ORDER BY 1",
+   "assumptions": [
+    "Sessions are assigned to the month in which they started.",
+    "Year 2026 means 1 Jan 2026 onward; data runs only to 19 Oct 2026, so October is partial.",
+    "All sessions are counted regardless of how they ended (including faults and power cuts).",
+    "Energy delivered is the total kWh summed across sessions in each month."
+   ]
+  },
+  {
+   "id": "or-36",
+   "kind": "report",
+   "rows": 14,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 8.5,
+   "question": "Which vehicle models charge at our chargers most often?",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 13745,
+    "output_tokens": 453,
+    "cache_read_tokens": 6890,
+    "tool_calls": 1,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For each vehicle model in the charging_session table, the SQL returns the number of sessions, the total energy in kWh (rounded to whole numbers), and that model's percentage share of all sessions (one decimal), sorted from most to least sessions.",
+    "trace_id": "a96bb03950416f5d963f869ff3d3142b"
+   },
+   "cost_usd": 0.01893,
+   "title": "Vehicle models by number of charging sessions",
+   "sql": "SELECT vehicle_model AS \"Vehicle model\", COUNT(*) AS \"Charging sessions\", ROUND(SUM(energy_kwh),0) AS \"Total energy (kWh)\", ROUND(100.0*COUNT(*)/SUM(COUNT(*)) OVER (),1) AS \"Share of sessions (%)\" FROM charging_session GROUP BY vehicle_model ORDER BY COUNT(*) DESC",
+   "assumptions": [
+    "\"Most often\" is measured by number of charging sessions, across all time.",
+    "All chargers and all sessions are included, regardless of how the session ended.",
+    "Vehicle models are shown as stored, ranked from most to least sessions."
+   ]
+  },
+  {
+   "id": "or-37",
+   "kind": "report",
+   "rows": 4,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 7.6,
+   "question": "Support tickets opened in 2025 that breached their SLA, by priority.",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 15186,
+    "output_tokens": 559,
+    "cache_read_tokens": 6890,
+    "tool_calls": 2,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For each priority level (code and name), the SQL counts support tickets opened between 1 January 2025 and 31 December 2025 whose SLA-breached flag is true, sorted by priority code.",
+    "trace_id": "5b1659e5463d0a69481ab34006f63d3a"
+   },
+   "cost_usd": 0.02287,
+   "title": "SLA-breached support tickets opened in 2025, by priority",
+   "sql": "SELECT p.code AS priority_code, p.name AS priority, COUNT(*) AS breached_tickets\nFROM support_ticket t\nJOIN ticket_priority p ON p.ticket_priority_id = t.ticket_priority_id\nWHERE t.sla_breached = TRUE\n  AND t.opened_at >= '2025-01-01' AND t.opened_at < '2026-01-01'\nGROUP BY p.code, p.name\nORDER BY p.code",
+   "assumptions": [
+    "Breached SLA means the ticket's SLA-breached flag is set to true.",
+    "Opened in 2025 means the ticket's opened date falls between 1 Jan 2025 and 31 Dec 2025.",
+    "Counts are numbers of tickets, shown for each priority level (P1 to P4) with its name."
+   ]
+  },
+  {
+   "id": "or-38",
+   "kind": "report",
+   "rows": 6,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 9.0,
+   "question": "Average CSAT score per support channel.",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 15706,
+    "output_tokens": 559,
+    "cache_read_tokens": 6890,
+    "tool_calls": 3,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For each support channel name, the SQL averages the scores of all CSAT survey responses linked to tickets from that channel (rounded to two decimals), shows the number of responses, and sorts channels from highest to lowest average.",
+    "trace_id": "901b30bae502bb674e812f28724580ff"
+   },
+   "cost_usd": 0.02391,
+   "title": "Average CSAT score per support channel",
+   "sql": "SELECT sc.name AS support_channel, ROUND(AVG(cr.score), 2) AS average_csat_score, COUNT(*) AS responses\nFROM csat_response cr\nJOIN support_ticket st ON st.support_ticket_id = cr.support_ticket_id\nJOIN support_channel sc ON sc.support_channel_id = st.support_channel_id\nGROUP BY sc.name\nORDER BY average_csat_score DESC",
+   "assumptions": [
+    "CSAT score is the 1\u20135 survey rating, with 5 presumed most satisfied.",
+    "Channel is the one the support ticket came in through.",
+    "All survey responses across all time are included; tickets without a survey response are not counted.",
+    "Number of responses is shown alongside the average."
+   ]
+  },
+  {
+   "id": "or-39",
+   "kind": "report",
+   "rows": 10,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 10.1,
+   "question": "Average hours to close service requests reported in 2025, by problem.",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 14006,
+    "output_tokens": 610,
+    "cache_read_tokens": 6890,
+    "tool_calls": 1,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For service requests reported from 1 January 2025 through 31 December 2025 that have a closed_at timestamp, the query groups them by problem, counts them, and returns the average hours from reported_at to closed_at, rounded to one decimal, sorted from slowest to fastest.",
+    "trace_id": "2768c692b529aa5fcb32fbc9712b5e69"
+   },
+   "cost_usd": 0.02102,
+   "title": "Average hours to close service requests reported in 2025, by problem",
+   "sql": "SELECT problem AS \"Problem\",\n       COUNT(*) AS \"Closed requests\",\n       ROUND(AVG(EXTRACT(EPOCH FROM (closed_at - reported_at)) / 3600.0)::numeric, 1) AS \"Avg hours to close\"\nFROM service_request\nWHERE reported_at >= '2025-01-01' AND reported_at < '2026-01-01'\n  AND closed_at IS NOT NULL\nGROUP BY problem\nORDER BY \"Avg hours to close\" DESC",
+   "assumptions": [
+    "Requests reported between 1 Jan and 31 Dec 2025 are included.",
+    "Hours to close is the time from when the request was reported to when it was closed.",
+    "Requests with no closing time (still open) are excluded from the averages.",
+    "Both Resolved and Closed requests are included as long as they have a closing time."
+   ]
+  },
+  {
+   "id": "or-40",
+   "kind": "report",
+   "rows": 10,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 17.0,
+   "question": "The 10 technicians with the most service visits in September 2026.",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 35318,
+    "output_tokens": 940,
+    "cache_read_tokens": 25006,
+    "tool_calls": 4,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "The SQL returns up to 10 technicians, ranked by how many service visits they have with a visit date from 1 to 30 September 2026 (all outcomes counted), showing each technician's ID, full name and visit count, with ties at the cutoff broken alphabetically by name.",
+    "trace_id": "e7bd8c78dfc1c66cbcd00ab374689500"
+   },
+   "cost_usd": 0.03252,
+   "title": "Top 10 technicians by service visits, September 2026",
+   "sql": "SELECT t.technician_id AS \"Technician ID\", e.first_name || ' ' || e.last_name AS \"Technician\", COUNT(*) AS \"Service visits\" FROM service_visit v JOIN technician t ON t.technician_id = v.technician_id JOIN employee e ON e.employee_id = t.employee_id WHERE v.visit_date >= '2026-09-01' AND v.visit_date < '2026-10-01' GROUP BY t.technician_id, e.first_name, e.last_name ORDER BY COUNT(*) DESC, \"Technician\" LIMIT 10",
+   "assumptions": [
+    "September 2026 means visits dated 1 to 30 September 2026.",
+    "Every visit counts, whatever its outcome (including 'Customer not available').",
+    "Seven technicians tie at 7 visits for the last places; ties are broken alphabetically by name, so 2 others with 7 visits (Nicholas Jones, Pushti Ghose) are left out."
+   ]
+  },
+  {
+   "id": "or-41",
+   "kind": "report",
+   "rows": 3,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 8.9,
+   "question": "Warranty claims approved and rejected, per product category.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 24217,
+    "output_tokens": 601,
+    "cache_read_tokens": 15562,
+    "tool_calls": 3,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For each product category, the query counts warranty claims whose decision is Approved and claims whose decision is Rejected, joining each claim to its device, then the device's product, then the product's category; claims with any other decision (such as pending) are excluded, and no date filter is",
+    "trace_id": "16a381a9094c1a5970618f2f7659dfbd"
+   },
+   "cost_usd": 0.02488,
+   "title": "Approved and rejected warranty claims per product category",
+   "sql": "SELECT pc.category_name AS \"Product category\",\n       COUNT(*) FILTER (WHERE wc.decision = 'Approved') AS \"Approved claims\",\n       COUNT(*) FILTER (WHERE wc.decision = 'Rejected') AS \"Rejected claims\"\nFROM warranty_claim wc\nJOIN device d ON d.device_id = wc.device_id\nJOIN product p ON p.product_id = d.product_id\nJOIN product_category pc ON pc.product_category_id = p.product_category_id\nWHERE wc.decision IN ('Approved', 'Rejected')\nGROUP BY pc.category_name\nORDER BY pc.category_name",
+   "assumptions": [
+    "Each claim is assigned to a product category through the device it was raised on and that device's product.",
+    "Counts are numbers of claims; pending claims are excluded.",
+    "All dates are included, since no period was given."
+   ]
+  },
+  {
+   "id": "or-42",
+   "kind": "report",
+   "rows": 100,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 12.5,
+   "question": "Projects whose health is Red, with the project manager and the customer.",
+   "usage": {
+    "requests": 4,
+    "input_tokens": 38078,
+    "output_tokens": 698,
+    "cache_read_tokens": 26318,
+    "tool_calls": 4,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "The SQL returns every project whose health is exactly 'Red', with its code, name, status, the project manager's full name and the customer account name, sorted by project code; projects with no matching manager or customer keep their row with that field blank.",
+    "trace_id": "e5e74ad1c8d0603022992a7c26ca9b37"
+   },
+   "cost_usd": 0.03313,
+   "title": "Red-health projects with project manager and customer",
+   "sql": "select p.project_code as \"Project code\", p.project_name as \"Project\", p.status as \"Status\", e.first_name || ' ' || e.last_name as \"Project manager\", c.account_name as \"Customer\" from project p left join employee e on e.employee_id = p.project_manager_id left join customer_account c on c.customer_account_id = p.customer_account_id where p.health = 'Red' order by p.project_code",
+   "assumptions": [
+    "Health 'Red' means the project's recorded health rating is Red (100 projects).",
+    "The project manager is the employee whose id is stored on the project.",
+    "Projects with no linked customer (27 of the 100) are kept, with the customer left blank."
+   ]
+  },
+  {
+   "id": "or-43",
+   "kind": "report",
+   "rows": 20,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 8.4,
+   "question": "The 20 projects with the most approved billable hours in September 2026.",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 14620,
+    "output_tokens": 550,
+    "cache_read_tokens": 6890,
+    "tool_calls": 2,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "The SQL returns up to 20 projects, each with its code, name, and total hours from timesheet entries that are marked Approved and billable, with work dates from 1 to 30 September 2026, ranked from highest to lowest total.",
+    "trace_id": "3319723d34e6cd8d2c4642a471f198c1"
+   },
+   "cost_usd": 0.02165,
+   "title": "Top 20 projects by approved billable hours, September 2026",
+   "sql": "SELECT p.project_code AS project_code, p.project_name AS project_name, SUM(t.hours) AS approved_billable_hours\nFROM timesheet_entry t\nJOIN project p ON p.project_id = t.project_id\nWHERE t.approval_status = 'Approved' AND t.is_billable = true\n  AND t.work_date >= DATE '2026-09-01' AND t.work_date < DATE '2026-10-01'\nGROUP BY p.project_id, p.project_code, p.project_name\nORDER BY approved_billable_hours DESC, p.project_code\nLIMIT 20",
+   "assumptions": [
+    "September 2026 means work dates from 1 to 30 September 2026.",
+    "Only timesheet entries with status Approved and marked billable are counted.",
+    "Entries not linked to a project are excluded.",
+    "Ties at the cutoff are broken by project code."
+   ]
+  },
+  {
+   "id": "or-44",
+   "kind": "report",
+   "rows": 8,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 11.6,
+   "question": "Email open and click rates by campaign channel for emails sent in 2025.",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 15487,
+    "output_tokens": 879,
+    "cache_read_tokens": 6890,
+    "tool_calls": 3,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For emails sent during 2025, joined to their campaign and that campaign's channel, the query counts sent emails, opened emails and clicked emails per channel name, and divides opened and clicked counts by all sent emails to give open and click percentages, sorted by sent volume.",
+    "trace_id": "2d38162c3fbe36840afce4bc79837dd4"
+   },
+   "cost_usd": 0.02667,
+   "title": "Email open and click rates by campaign channel, 2025 sends",
+   "sql": "SELECT cc.name AS campaign_channel,\n  COUNT(*) AS emails_sent,\n  SUM(CASE WHEN e.opened THEN 1 ELSE 0 END) AS emails_opened,\n  SUM(CASE WHEN e.clicked THEN 1 ELSE 0 END) AS emails_clicked,\n  ROUND(100.0 * SUM(CASE WHEN e.opened THEN 1 ELSE 0 END) / COUNT(*), 2) AS open_rate_pct,\n  ROUND(100.0 * SUM(CASE WHEN e.clicked THEN 1 ELSE 0 END) / COUNT(*), 2) AS click_rate_pct\nFROM email_send e\nJOIN campaign c ON c.campaign_id = e.campaign_id\nJOIN campaign_channel cc ON cc.campaign_channel_id = c.campaign_channel_id\nWHERE e.sent_at >= DATE '2025-01-01' AND e.sent_at < DATE '2026-01-01'\nGROUP BY cc.name\nORDER BY emails_sent DESC",
+   "assumptions": [
+    "Channel is the marketing channel of the campaign the email belongs to.",
+    "Only emails sent between 1 Jan 2025 and 31 Dec 2025 are included.",
+    "Open rate and click rate are measured against all emails sent, including any that bounced.",
+    "Click rate is clicks divided by emails sent, not by emails opened."
+   ]
+  },
+  {
+   "id": "or-45",
+   "kind": "report",
+   "rows": 12,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": false
+   },
+   "seconds": 10.5,
+   "question": "Website sessions in 2026 that came from LinkedIn, by visitor country.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 21780,
+    "output_tokens": 584,
+    "cache_read_tokens": 14147,
+    "tool_calls": 2,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For sessions that started from 1 January 2026 up to but not including 1 January 2027, and whose source is exactly 'LinkedIn', the query counts sessions and distinct visitors per visitor country, shown by country name (or the raw country code if no name matches), sorted by session count from highest ",
+    "trace_id": "c0aa2ba95bd0bef845893e1fad8b9e07"
+   },
+   "cost_usd": 0.02252,
+   "title": "2026 LinkedIn website sessions by visitor country",
+   "sql": "SELECT COALESCE(c.country_name, ws.country_code) AS visitor_country, COUNT(*) AS sessions, COUNT(DISTINCT ws.visitor_key) AS unique_visitors\nFROM web_session ws\nLEFT JOIN country c ON c.iso_code = ws.country_code\nWHERE ws.source = 'LinkedIn' AND ws.started_at >= '2026-01-01' AND ws.started_at < '2027-01-01'\nGROUP BY COALESCE(c.country_name, ws.country_code)\nORDER BY sessions DESC",
+   "assumptions": [
+    "'Came from LinkedIn' means the session's traffic source is LinkedIn.",
+    "2026 means sessions started between 1 Jan 2026 and today's data (latest session is 19 Oct 2026).",
+    "Visitor country is the country recorded on the session, shown by full country name.",
+    "Counted both sessions and distinct visitors."
+   ]
+  },
+  {
+   "id": "or-46",
+   "kind": "report",
+   "rows": 2,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 11.2,
+   "question": "Grid and solar electricity used at our plants in FY25-26, per plant.",
+   "usage": {
+    "requests": 3,
+    "input_tokens": 24079,
+    "output_tokens": 676,
+    "cache_read_tokens": 15617,
+    "tool_calls": 3,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For each site whose type is 'plant', the query sums grid kWh and solar kWh from energy consumption records dated April 2025 through March 2026, shows them per site name alongside their sum as a total, and orders the rows by site name.",
+    "trace_id": "237ceaf3c3e26d1b921d0ec2401e0457"
+   },
+   "cost_usd": 0.02525,
+   "title": "Grid and solar electricity per plant, FY25-26",
+   "sql": "select o.site_name as plant, sum(e.grid_kwh) as grid_kwh, sum(e.solar_kwh) as solar_kwh, sum(e.grid_kwh)+sum(e.solar_kwh) as total_electricity_kwh\nfrom energy_consumption e\njoin office_location o on o.office_location_id = e.office_location_id\nwhere o.site_type = 'plant' and e.month >= date '2025-04-01' and e.month <= date '2026-03-31'\ngroup by o.site_name\norder by o.site_name",
+   "assumptions": [
+    "Plants are sites classified as 'plant' (Chakan Plant 1 and Hosur Plant 2).",
+    "FY25-26 means April 2025 to March 2026, per the company's fiscal calendar.",
+    "Electricity used is grid plus solar, in kWh; both are shown separately along with a total.",
+    "Diesel is excluded as it was not requested."
+   ]
+  },
+  {
+   "id": "or-47",
+   "kind": "report",
+   "rows": 5,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 8.3,
+   "question": "CSR spend by Schedule VII area in FY24-25.",
+   "usage": {
+    "requests": 2,
+    "input_tokens": 14261,
+    "output_tokens": 564,
+    "cache_read_tokens": 6890,
+    "tool_calls": 2,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "For activities dated 1 April 2024 through 31 March 2025, the query returns one row per Schedule VII area with the count of activities, the total spent in INR, and the total beneficiaries, sorted by total spent from highest to lowest.",
+    "trace_id": "123824b2cd14e43a9ba559e29e966acb"
+   },
+   "cost_usd": 0.02107,
+   "title": "CSR spend by Schedule VII area, FY24-25",
+   "sql": "SELECT schedule_vii_area AS \"Schedule VII area\", COUNT(*) AS \"Activities\", SUM(spent_inr) AS \"Total spent (INR)\", SUM(beneficiaries) AS \"Beneficiaries\" FROM csr_activity WHERE activity_date BETWEEN DATE '2024-04-01' AND DATE '2025-03-31' GROUP BY schedule_vii_area ORDER BY SUM(spent_inr) DESC",
+   "assumptions": [
+    "FY24-25 is the Indian fiscal year from 1 April 2024 to 31 March 2025.",
+    "Activities are assigned to the fiscal year by their activity date.",
+    "Spend is the amount spent in INR, summed per focus area."
+   ]
+  },
+  {
+   "id": "or-48",
+   "kind": "report",
+   "rows": 82,
+   "scores": {
+    "IsReport": true,
+    "RowsInRange": true,
+    "UsesTables": true,
+    "ExecutionMatch": true
+   },
+   "seconds": 16.4,
+   "question": "Open audit findings rated High or Critical, with their owner and target date.",
+   "usage": {
+    "requests": 5,
+    "input_tokens": 43689,
+    "output_tokens": 1265,
+    "cache_read_tokens": 33442,
+    "tool_calls": 3,
+    "model": "openrouter:anthropic/claude-sonnet-5.5",
+    "escalated": false,
+    "route": "new",
+    "review": "ok",
+    "review_restated": "The SQL returns each audit finding that has no closure date and a risk rating of High or Critical, showing its ID, audit name, finding text, rating, owner ID, owner name and target date, sorted by earliest target date with blank dates last.",
+    "trace_id": "811e9291b26eb73b042ebb1363752c59"
+   },
+   "cost_usd": 0.03649,
+   "title": "Open High and Critical audit findings with owner and target date",
+   "sql": "SELECT af.audit_finding_id AS \"Finding ID\", ia.audit_name AS \"Audit\", af.finding AS \"Finding\", af.risk_rating AS \"Risk rating\", af.owner_id AS \"Owner ID\", e.first_name || ' ' || e.last_name AS \"Owner\", af.target_date AS \"Target date\"\nFROM audit_finding af\nLEFT JOIN internal_audit ia ON ia.internal_audit_id = af.internal_audit_id\nLEFT JOIN employee e ON e.employee_id = af.owner_id\nWHERE af.closed_on IS NULL AND af.risk_rating IN ('High','Critical')\nORDER BY af.target_date NULLS LAST, af.risk_rating",
+   "assumptions": [
+    "Open means the finding has no closure date yet.",
+    "Owner is taken to be the employee whose ID matches the finding's owner ID; the owner ID is shown too in case the name doesn't match.",
+    "Findings with no target date are included and listed last.",
+    "Sorted by earliest target date first."
+   ]
+  }
+ ]
+}

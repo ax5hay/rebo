@@ -49,6 +49,11 @@ model can avoid them), but no values or statistics samples.
 
 ### 4. Draft descriptions (optional, `--describe`)
 
+**Measured 2026-10-22 on Orbitra** (fixtures/orbitra/README.md): no change in answers (44/45 both
+ways), +10 % input tokens a question, retrieval slightly better. Worth it only where names are cryptic;
+not measured there yet.
+
+
 `App._describe_table(payload)` sends one table at a time to the **fast model** (Haiku 5.5) with
 typed output `TableDoc {table: str, columns: {name: meaning}}`. The payload holds the table name,
 row count, comment, foreign keys, and per column the type, statistics and up to 8 sample values

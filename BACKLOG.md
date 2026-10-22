@@ -461,8 +461,9 @@ result: 2026-10-22. `fixtures/orbitra` (README): 221 tables, ~3.1M rows (Faker 4
 ### [x] B-063 · Protected-column detection: secrets, not ids, flags or customer codes
 result: 2026-10-22. Found on Orbitra: the name rule hid api_key_id, mfa_enabled and customer codes and missed bank account numbers and PAN. Now exactly the 8 real secrets; JMS only unhides five *_token_id identifiers (docs/07 §2).
 
-### [ ] B-064 · Model runs on Orbitra
+### [x] B-064 · Model runs on Orbitra
 needs: llm, human (the user starts the paid runs)
+result: 2026-10-22, asked by the user. Sonnet: 48 gold 39/48 strict, 44/48 same numbers, $1.11; with --describe 42/48, 47/48, $1.26 (identical on the 45 unchanged questions, 44/45); conversations 7/8 strict, 8/8 same numbers, $0.24. The run found 8 mistakes in the gold set (fixed). fixtures/orbitra/README.md.
 do: `REBO_CONFIG=fixtures/orbitra/rebo.yaml uv run python tools/eval_run.py fixtures/orbitra/gold.jsonl fixtures/orbitra/eval_results_<model>.json`, then `tools/eval_conversations.py fixtures/orbitra/conversations.jsonl ...`. Compare with the offline retrieval misses (employee and customer_account are the hub tables most often outside the first 8).
 
 ### [x] B-066 · Likely tables include what the best matches join to

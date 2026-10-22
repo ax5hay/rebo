@@ -1,0 +1,253 @@
+{
+ "run": "2026-10-22",
+ "model": "openrouter:anthropic/claude-sonnet-5.5",
+ "fast_model": "openrouter:anthropic/claude-haiku-5.5",
+ "escalate": "",
+ "database": "postgresql+psycopg://orbitra_ro:***@127.0.0.1:5434/orbitra",
+ "summary": {
+  "conversations": 8,
+  "solved": 5,
+  "mean_turns_to_first_correct": 1.8,
+  "clarify_rate": 0.2,
+  "total_cost_usd": 0.2381
+ },
+ "conversations": [
+  {
+   "id": "oc-01",
+   "turns_to_first_correct": 2,
+   "asked": 2,
+   "clarify": 1,
+   "cost_usd": 0.02107,
+   "turns": [
+    {
+     "step": {
+      "say": "open support tickets"
+     },
+     "text": "open support tickets",
+     "kind": "clarify",
+     "rows": 0,
+     "correct": false,
+     "route": "new",
+     "cost_usd": 0.01227
+    },
+    {
+     "step": {
+      "say": "everything not yet resolved, counted by priority"
+     },
+     "text": "everything not yet resolved, counted by priority",
+     "kind": "report",
+     "rows": 4,
+     "correct": true,
+     "route": "new",
+     "cost_usd": 0.0088
+    }
+   ]
+  },
+  {
+   "id": "oc-02",
+   "turns_to_first_correct": null,
+   "asked": 2,
+   "clarify": 0,
+   "cost_usd": 0.0323,
+   "turns": [
+    {
+     "step": {
+      "say": "sales last fiscal year"
+     },
+     "text": "sales last fiscal year",
+     "kind": "report",
+     "rows": 12,
+     "correct": false,
+     "route": "new",
+     "cost_usd": 0.02485
+    },
+    {
+     "step": {
+      "say": "order value in rupees per month for FY25-26, without cancelled orders"
+     },
+     "text": "order value in rupees per month for FY25-26, without cancelled orders",
+     "kind": "report",
+     "rows": 12,
+     "correct": false,
+     "route": "new",
+     "cost_usd": 0.00745
+    }
+   ]
+  },
+  {
+   "id": "oc-03",
+   "turns_to_first_correct": null,
+   "asked": 2,
+   "clarify": 0,
+   "cost_usd": 0.04187,
+   "turns": [
+    {
+     "step": {
+      "say": "who owes us money"
+     },
+     "text": "who owes us money",
+     "kind": "report",
+     "rows": 500,
+     "correct": false,
+     "route": "new",
+     "cost_usd": 0.03307
+    },
+    {
+     "step": {
+      "say": "customers with overdue invoices and how many each"
+     },
+     "text": "customers with overdue invoices and how many each",
+     "kind": "report",
+     "rows": 253,
+     "correct": false,
+     "route": "new",
+     "cost_usd": 0.0088
+    }
+   ]
+  },
+  {
+   "id": "oc-04",
+   "turns_to_first_correct": 2,
+   "asked": 2,
+   "clarify": 0,
+   "cost_usd": 0.02554,
+   "turns": [
+    {
+     "step": {
+      "say": "how many people work here"
+     },
+     "text": "how many people work here",
+     "kind": "report",
+     "rows": 1,
+     "correct": false,
+     "route": "new",
+     "cost_usd": 0.0174
+    },
+    {
+     "step": {
+      "say": "employees with status Active, per department"
+     },
+     "text": "employees with status Active, per department",
+     "kind": "report",
+     "rows": 20,
+     "correct": true,
+     "route": "new",
+     "cost_usd": 0.00814
+    }
+   ]
+  },
+  {
+   "id": "oc-05",
+   "turns_to_first_correct": null,
+   "asked": 2,
+   "clarify": 1,
+   "cost_usd": 0.03331,
+   "turns": [
+    {
+     "step": {
+      "say": "devices with problems"
+     },
+     "text": "devices with problems",
+     "kind": "clarify",
+     "rows": 0,
+     "correct": false,
+     "route": "new",
+     "cost_usd": 0.02022
+    },
+    {
+     "step": {
+      "say": "the 20 customers with the most offline devices"
+     },
+     "text": "the 20 customers with the most offline devices",
+     "kind": "report",
+     "rows": 20,
+     "correct": false,
+     "route": "new",
+     "cost_usd": 0.01309
+    }
+   ]
+  },
+  {
+   "id": "oc-06",
+   "turns_to_first_correct": 2,
+   "asked": 2,
+   "clarify": 1,
+   "cost_usd": 0.03408,
+   "turns": [
+    {
+     "step": {
+      "say": "recurring revenue"
+     },
+     "text": "recurring revenue",
+     "kind": "clarify",
+     "rows": 0,
+     "correct": false,
+     "route": "new",
+     "cost_usd": 0.0232
+    },
+    {
+     "step": {
+      "say": "MRR of active subscriptions billed in INR, by plan"
+     },
+     "text": "MRR of active subscriptions billed in INR, by plan",
+     "kind": "report",
+     "rows": 6,
+     "correct": true,
+     "route": "new",
+     "cost_usd": 0.01088
+    }
+   ]
+  },
+  {
+   "id": "oc-07",
+   "turns_to_first_correct": 2,
+   "asked": 2,
+   "clarify": 0,
+   "cost_usd": 0.03202,
+   "turns": [
+    {
+     "step": {
+      "say": "downtime in the plants"
+     },
+     "text": "downtime in the plants",
+     "kind": "report",
+     "rows": 14,
+     "correct": false,
+     "route": "new",
+     "cost_usd": 0.01871
+    },
+    {
+     "step": {
+      "say": "machine downtime hours per work center in FY25-26"
+     },
+     "text": "machine downtime hours per work center in FY25-26",
+     "kind": "report",
+     "rows": 16,
+     "correct": true,
+     "route": "new",
+     "cost_usd": 0.01331
+    }
+   ]
+  },
+  {
+   "id": "oc-08",
+   "turns_to_first_correct": 1,
+   "asked": 1,
+   "clarify": 0,
+   "cost_usd": 0.01791,
+   "turns": [
+    {
+     "step": {
+      "say": "what cars use our chargers"
+     },
+     "text": "what cars use our chargers",
+     "kind": "report",
+     "rows": 14,
+     "correct": true,
+     "route": "new",
+     "cost_usd": 0.01791
+    }
+   ]
+  }
+ ]
+}

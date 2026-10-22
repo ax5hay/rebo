@@ -1,0 +1,42 @@
+[
+ {
+  "id": "oc-01",
+  "strict": true,
+  "same_numbers": true
+ },
+ {
+  "id": "oc-02",
+  "strict": false,
+  "same_numbers": true
+ },
+ {
+  "id": "oc-03",
+  "strict": true,
+  "same_numbers": true
+ },
+ {
+  "id": "oc-04",
+  "strict": true,
+  "same_numbers": true
+ },
+ {
+  "id": "oc-05",
+  "strict": true,
+  "same_numbers": true
+ },
+ {
+  "id": "oc-06",
+  "strict": true,
+  "same_numbers": true
+ },
+ {
+  "id": "oc-07",
+  "strict": true,
+  "same_numbers": true
+ },
+ {
+  "id": "oc-08",
+  "strict": true,
+  "same_numbers": true
+ }
+]
