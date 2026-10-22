@@ -1,12 +1,15 @@
-// "You": who you are to ReBo, what you can do, your pinned and scheduled reports, how ReBo looks for
-// you, and keyboard shortcuts. Locally it also switches who is signed in (behind the company login the
-// proxy decides that).
+// "You": who you are to ReBo, your pinned and scheduled reports, how ReBo looks for you, what you can do,
+// keyboard shortcuts, and (locally) who is signed in. Laid out like a settings app: an identity card,
+// a glass rail of sections, and grouped lists of uniform rows, so the page reads as one surface.
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Keyboard, LogIn, Pin, Play, Timer } from "lucide-react";
-import { useState } from "react";
+import {
+  ArrowRight, CalendarClock, Check, Keyboard, LogIn, MessagesSquare, Palette, Pin, Play, Plus, ShieldCheck, Sparkles, SquarePen, Timer, type LucideIcon,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 import { Switch, ToggleButton, ToggleButtonGroup } from "react-aria-components";
 import { Link, useNavigate } from "react-router";
 import { get, identity, setIdentity, when, type Identity } from "../api";
+import { Glass } from "../glass";
 import { setPrefs, usePrefs, type Prefs } from "../prefs";
 import { ROLE, useMe } from "../shell";
 
@@ -19,6 +22,15 @@ const CAN: Record<string, string[]> = {
   owner: ["Everything an admin can", "Change the configuration, with a check before saving and a history to roll back"],
 };
 
+const SECTIONS: { id: string; label: string; icon: LucideIcon }[] = [
+  { id: "pinned", label: "Pinned", icon: Pin },
+  { id: "scheduled", label: "Sent to you", icon: Timer },
+  { id: "preferences", label: "Appearance", icon: Palette },
+  { id: "abilities", label: "What you can do", icon: ShieldCheck },
+  { id: "shortcuts", label: "Shortcuts", icon: Keyboard },
+  { id: "sign-in", label: "Signed in as", icon: LogIn },
+];
+
 export default function MePage() {
   const me = useMe();
   const prefs = usePrefs();
@@ -30,105 +42,150 @@ export default function MePage() {
   const pinned = mine.filter((i) => i.pinned && i.status !== "retired");
   const live = mine.filter((i) => i.status !== "retired");
   if (!me) return null;
+  const can = me.role === "user" ? CAN.user : me.role === "admin" ? CAN.admin : [...CAN.admin.slice(1), ...CAN.owner];
+  const run = (q: string) => navigate(`/?q=${encodeURIComponent(q)}`);
 
   return (
-    <div className="page">
-      <section className="profile">
-        <span className="avatar xl">{me.id.slice(0, 1)}</span>
-        <div>
+    <div className="page you">
+      <Glass as="section" className="idcard" aria-label="Your profile" strength={34}>
+        <span className="halo" aria-hidden><span className="avatar xl">{me.id.slice(0, 1)}</span></span>
+        <div className="who">
           <h1>{me.id}</h1>
-          <p className="muted">{ROLE[me.role]}{me.team ? `, team ${me.team}` : ""}</p>
+          <p><span className="rolechip">{ROLE[me.role]}</span>{me.team ? <span className="muted">team {me.team}</span> : null}</p>
         </div>
-        <div className="stats">
-          <Stat n={conv.data?.length} label="conversations" />
-          <Stat n={live.filter((i) => i.kind === "example").length} label="saved reports" />
-          <Stat n={live.filter((i) => i.kind !== "example").length} label="things taught" />
-          <Stat n={schedules.data?.length} label="scheduled" />
+        <div className="quick">
+          <Link className="btn ghostglass" to="/"><SquarePen />New question</Link>
+          <Link className="btn ghostglass" to="/knowledge?teach=1"><Plus />Teach ReBo</Link>
         </div>
-      </section>
+        <dl className="figs">
+          <Fig n={conv.data?.length} label="Conversations" icon={MessagesSquare} />
+          <Fig n={live.filter((i) => i.kind === "example").length} label="Saved reports" icon={Sparkles} />
+          <Fig n={live.filter((i) => i.kind !== "example").length} label="Things taught" icon={Check} />
+          <Fig n={schedules.data?.length} label="Scheduled" icon={CalendarClock} />
+        </dl>
+      </Glass>
 
-      <div className="grid2">
-        <section className="card">
-          <h2>What you can do</h2>
-          <ul className="ticks">{(me.role === "user" ? CAN.user : me.role === "admin" ? CAN.admin : [...CAN.admin.slice(1), ...CAN.owner]).map((c) => <li key={c}>{c}</li>)}</ul>
-          <Link className="more" to="/help">How to use ReBo<ArrowRight /></Link>
-        </section>
-
-        <section className="card" id="pinned">
-          <h2><Pin />Pinned reports</h2>
-          {pinned.length === 0 ? <p className="muted">Pin a report from its menu (⋯ → Pin to my start page) to run it from here with one click.</p> : (
-            <ul className="rows">
-              {pinned.map((i) => (
-                <li key={i.id}><span>{i.title}</span>
-                  <button className="btn small" onClick={() => navigate(`/?q=${encodeURIComponent(i.question || i.title)}`)}><Play />Run</button></li>
+      <div className="yougrid">
+        <Rail />
+        <div className="groups">
+          <Group id="pinned" title="Pinned reports" note="One click runs them on today's data.">
+            {pinned.length === 0
+              ? <Row muted>Pin a report from its ⋯ menu and it appears here and on your start page.</Row>
+              : pinned.map((i) => (
+                <Row key={i.id} label={i.title}>
+                  <button className="btn small ghostglass" onClick={() => run(i.question || i.title)}><Play />Run</button>
+                </Row>
               ))}
-            </ul>
-          )}
-        </section>
+          </Group>
 
-        <section className="card" id="scheduled">
-          <h2><Timer />Sent to you regularly</h2>
-          {(schedules.data ?? []).length === 0 ? <p className="muted">Choose “Send me this regularly” in a report's menu. It reruns the same query: no model, no cost.</p> : (
-            <ul className="rows">{schedules.data!.map((s: any) => <li key={s.id}><span>{s.question ?? "A report"}</span><span className="muted small">{s.every}, next {when(s.next_at)}</span></li>)}</ul>
-          )}
-          <Link className="more" to="/knowledge#schedules">Manage<ArrowRight /></Link>
-        </section>
+          <Group id="scheduled" title="Sent to you regularly" note="The same query runs again on that day's data: no model, no cost."
+                 footer={<Link className="more" to="/knowledge#schedules">Manage schedules<ArrowRight /></Link>}>
+            {(schedules.data ?? []).length === 0
+              ? <Row muted>Choose “Send me this regularly” in a report's ⋯ menu.</Row>
+              : schedules.data!.map((s: any) => <Row key={s.id} label={s.question ?? "A report"}><span className="value">{s.every}, next {when(s.next_at)}</span></Row>)}
+          </Group>
 
-        <section className="card" id="shortcuts">
-          <h2><Keyboard />Shortcuts</h2>
-          <dl className="keys">
-            <dt><kbd>⌘</kbd><kbd>K</kbd></dt><dd>Search, ask or jump anywhere</dd>
-            <dt><kbd>⌘</kbd><kbd>/</kbd></dt><dd>Your conversations</dd>
-            <dt><kbd>Enter</kbd></dt><dd>Ask; <kbd>Shift</kbd>+<kbd>Enter</kbd> for a new line</dd>
-            <dt><kbd>?</kbd></dt><dd>Help</dd>
-            <dt><kbd>Esc</kbd></dt><dd>Close a sheet or dialog</dd>
-          </dl>
-        </section>
-      </div>
+          <Group id="preferences" title="How ReBo looks for you" note="Kept in this browser. It changes how answers look, never what they say.">
+            <Row label="Appearance">
+              <Seg label="Appearance" value={prefs.theme} set={(v) => setPrefs({ theme: v as Prefs["theme"] })}
+                   options={[["auto", "Auto"], ["light", "Light"], ["dark", "Dark"]]} />
+            </Row>
+            <Row label="Table spacing">
+              <Seg label="Table spacing" value={prefs.density} set={(v) => setPrefs({ density: v as Prefs["density"] })}
+                   options={[["comfortable", "Comfortable"], ["compact", "Compact"]]} />
+            </Row>
+            <Toggle label="Shade every other row" hint="Easier to follow a row across wide tables" on={prefs.stripes} set={(v) => setPrefs({ stripes: v })} />
+            <Toggle label="Show how I read your question" hint="Open under every answer; off folds it to one line" on={prefs.reading === "open"} set={(v) => setPrefs({ reading: v ? "open" : "folded" })} />
+            <Toggle label="Open trends as a chart" hint="Answers by date or category start as a chart" on={prefs.chartFirst} set={(v) => setPrefs({ chartFirst: v })} />
+            <Toggle label="Liquid Glass" hint="Off: solid surfaces, for less motion and more contrast" on={prefs.glass} set={(v) => setPrefs({ glass: v })} />
+          </Group>
 
-      <section className="card" id="preferences">
-        <h2>How ReBo looks for you</h2>
-        <p className="muted small">Kept in this browser. It changes how answers look, never what they say.</p>
-        <div className="prefs">
-          <Choice label="Appearance" value={prefs.theme} set={(v) => setPrefs({ theme: v as Prefs["theme"] })}
-                  options={[["auto", "Match my device"], ["light", "Light"], ["dark", "Dark"]]} />
-          <Choice label="Table spacing" value={prefs.density} set={(v) => setPrefs({ density: v as Prefs["density"] })}
-                  options={[["comfortable", "Comfortable"], ["compact", "Compact"]]} />
-          <Toggle label="Shade every other row" hint="Easier to follow a row across wide tables" on={prefs.stripes} set={(v) => setPrefs({ stripes: v })} />
-          <Toggle label="Show how I read your question" hint="Open under every answer; off folds it to one line" on={prefs.reading === "open"} set={(v) => setPrefs({ reading: v ? "open" : "folded" })} />
-          <Toggle label="Open trends as a chart" hint="Answers by date or category start as a chart" on={prefs.chartFirst} set={(v) => setPrefs({ chartFirst: v })} />
-          <Toggle label="Liquid Glass" hint="Off: solid bars, for less motion and more contrast" on={prefs.glass} set={(v) => setPrefs({ glass: v })} />
+          <Group id="abilities" title={`What ${/^[aeiou]/i.test(ROLE[me.role]) ? "an" : "a"} ${ROLE[me.role].toLowerCase()} can do`}
+                 footer={<Link className="more" to="/help">How to use ReBo<ArrowRight /></Link>}>
+            {can.map((c) => <Row key={c} icon={Check} label={c} />)}
+          </Group>
+
+          <Group id="shortcuts" title="Keyboard shortcuts">
+            <Row label="Search, ask or jump anywhere"><Keys k={["⌘", "K"]} /></Row>
+            <Row label="Your conversations"><Keys k={["⌘", "/"]} /></Row>
+            <Row label="Ask"><Keys k={["Enter"]} /></Row>
+            <Row label="New line in a question"><Keys k={["Shift", "Enter"]} /></Row>
+            <Row label="Help"><Keys k={["?"]} /></Row>
+            <Row label="Close a sheet or dialog"><Keys k={["Esc"]} /></Row>
+          </Group>
+
+          <SignInAs />
         </div>
-      </section>
-
-      <SignInAs />
+      </div>
     </div>
   );
 }
 
-function Stat({ n, label }: { n?: number; label: string }) {
-  return <div className="stat"><b>{n ?? "–"}</b><span>{label}</span></div>;
+function Fig({ n, label, icon: Icon }: { n?: number; label: string; icon: LucideIcon }) {
+  return <div className="fig"><dt><Icon />{label}</dt><dd>{n ?? "–"}</dd></div>;
 }
 
-function Choice({ label, value, set, options }: { label: string; value: string; set: (v: string) => void; options: [string, string][] }) {
+// The sections as a floating glass rail; the one you are reading is lit.
+function Rail() {
+  const [at, setAt] = useState(SECTIONS[0].id);
+  useEffect(() => {
+    const io = new IntersectionObserver((es) => {
+      const top = es.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+      if (top) setAt(top.target.id);
+    }, { rootMargin: "-100px 0px -55% 0px" });
+    SECTIONS.forEach((s) => { const el = document.getElementById(s.id); if (el) io.observe(el); });
+    return () => io.disconnect();
+  }, []);
   return (
-    <div className="pref">
-      <span className="plabel">{label}</span>
-      <ToggleButtonGroup aria-label={label} selectionMode="single" disallowEmptySelection className="segmented"
-                         selectedKeys={[value]} onSelectionChange={(k) => set(String([...k][0]))}>
-        {options.map(([k, l]) => <ToggleButton key={k} id={k}>{l}</ToggleButton>)}
-      </ToggleButtonGroup>
+    <Glass as="nav" className="yourail" aria-label="Sections" strength={20}>
+      {SECTIONS.map((s) => (
+        <a key={s.id} href={`#${s.id}`} className={at === s.id ? "on" : undefined} aria-current={at === s.id ? "location" : undefined}><s.icon />{s.label}</a>
+      ))}
+    </Glass>
+  );
+}
+
+function Group({ id, title, note, footer, children }: { id: string; title: string; note?: string; footer?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <section id={id} className="group" aria-labelledby={`${id}-h`}>
+      <h2 id={`${id}-h`}>{title}</h2>
+      {note && <p className="gnote">{note}</p>}
+      <Glass className="glist" strength={22}>{children}</Glass>
+      {footer && <div className="gfoot">{footer}</div>}
+    </section>
+  );
+}
+
+function Row({ label, icon: Icon, muted, children }: { label?: string; icon?: LucideIcon; muted?: boolean; children?: React.ReactNode }) {
+  return (
+    <div className={`grow-row${muted ? " muted" : ""}`}>
+      {Icon && <span className="ricon"><Icon /></span>}
+      <span className="rlabel">{label ?? children}</span>
+      {label && children ? <span className="rend">{children}</span> : null}
     </div>
+  );
+}
+
+function Seg({ label, value, set, options }: { label: string; value: string; set: (v: string) => void; options: [string, string][] }) {
+  return (
+    <ToggleButtonGroup aria-label={label} selectionMode="single" disallowEmptySelection className="segmented"
+                       selectedKeys={[value]} onSelectionChange={(k) => set(String([...k][0]))}>
+      {options.map(([k, l]) => <ToggleButton key={k} id={k}>{l}</ToggleButton>)}
+    </ToggleButtonGroup>
   );
 }
 
 function Toggle({ label, hint, on, set }: { label: string; hint: string; on: boolean; set: (v: boolean) => void }) {
   return (
-    <Switch className="pref switch" isSelected={on} onChange={set}>
-      <span className="plabel">{label}<small>{hint}</small></span>
+    <Switch className="grow-row switch" isSelected={on} onChange={set}>
+      <span className="rlabel">{label}<small>{hint}</small></span>
       <span className="track" aria-hidden><span className="knob" /></span>
     </Switch>
   );
+}
+
+function Keys({ k }: { k: string[] }) {
+  return <span className="keyset">{k.map((x, i) => <kbd key={i}>{x}</kbd>)}</span>;
 }
 
 function SignInAs() {
@@ -137,16 +194,15 @@ function SignInAs() {
   const [user, setUser] = useState(current?.user ?? me?.id ?? "alice");
   const [role, setRole] = useState<Identity["role"]>(current?.role ?? me?.role ?? "user");
   return (
-    <section className="card" id="sign-in">
-      <h2><LogIn />Sign in as someone else</h2>
-      <p className="muted small">For trying ReBo on your own machine. Behind your company's sign-in this is decided there and this has no effect.</p>
-      <form className="row" onSubmit={(e) => { e.preventDefault(); setIdentity({ user: user.trim() || "alice", role }); }}>
-        <input className="input" style={{ maxWidth: 220 }} aria-label="Name" value={user} onChange={(e) => setUser(e.target.value)} />
-        <select className="select" style={{ maxWidth: 160 }} aria-label="Role" value={role} onChange={(e) => setRole(e.target.value as Identity["role"])}>
-          <option value="user">Member</option><option value="admin">Admin</option><option value="owner">Owner</option>
-        </select>
-        <button className="btn" type="submit">Switch</button>
+    <Group id="sign-in" title="Signed in as" note="For trying ReBo on your own machine. Behind your company's sign-in this is decided there and has no effect.">
+      <form className="grow-row signin" onSubmit={(e) => { e.preventDefault(); setIdentity({ user: user.trim() || "alice", role }); }}>
+        <input className="input" aria-label="Name" value={user} onChange={(e) => setUser(e.target.value)} />
+        <ToggleButtonGroup aria-label="Role" selectionMode="single" disallowEmptySelection className="segmented" selectedKeys={[role]}
+                           onSelectionChange={(k) => setRole(String([...k][0]) as Identity["role"])}>
+          <ToggleButton id="user">Member</ToggleButton><ToggleButton id="admin">Admin</ToggleButton><ToggleButton id="owner">Owner</ToggleButton>
+        </ToggleButtonGroup>
+        <button className="btn primary" type="submit">Switch</button>
       </form>
-    </section>
+    </Group>
   );
 }

@@ -876,3 +876,67 @@ body::before { content: ""; position: fixed; inset: -10vmax; z-index: -1; pointe
 .toc.glass { align-self: start; padding: 6px; border-radius: 20px; }
 .toc.glass a.on { background: var(--lens-pill); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 0 0 0.5px var(--glass-edge); }
 .toc.glass a.on svg { color: var(--accent); }
+
+/* ---------- You: a settings surface in Liquid Glass ----------
+   An identity card, a glass rail of sections, and grouped lists of uniform rows (52px, hairlines
+   inset past the icon), so the page reads as one continuous surface instead of a wall of cards. */
+.you { max-width: 1080px; }
+.idcard { display: grid; grid-template-columns: auto 1fr auto; grid-template-rows: auto auto; gap: 18px 22px; align-items: center;
+  margin: 18px 0 26px; padding: 26px 28px 22px; border-radius: 30px; background: var(--glass-tint); }
+.idcard .halo { position: relative; display: grid; place-items: center; width: 96px; height: 96px; border-radius: 50%;
+  background: conic-gradient(from 210deg, #3fd0a6, #e6a93c, #4078c8, #3fd0a6); }
+.idcard .halo .avatar.xl { width: 84px; height: 84px; font-size: 34px; box-shadow: 0 0 0 3px var(--card); }
+.idcard .quick { display: flex; gap: 8px; align-self: start; flex-wrap: wrap; justify-content: flex-end; }
+.idcard .quick .btn:hover { text-decoration: none; }
+.idcard .who h1 { margin: 0 0 8px; font: 740 36px/1.05 var(--display); letter-spacing: -0.035em; }
+.idcard .who p { margin: 0; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.rolechip { display: inline-flex; align-items: center; height: 26px; padding: 0 12px; border-radius: 999px; font: 650 13px var(--font);
+  color: var(--accent-text); background: color-mix(in srgb, var(--accent-soft) 80%, transparent); border: 0.5px solid color-mix(in srgb, var(--accent) 25%, transparent); }
+.idcard .figs { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 4px 0 0;
+  border-top: 0.5px solid var(--glass-edge); padding-top: 16px; }
+.idcard .fig { padding: 0 18px; border-left: 0.5px solid var(--glass-edge); }
+.idcard .fig:first-child { padding-left: 0; border-left: 0; }
+.idcard .fig dt { display: flex; align-items: center; gap: 6px; color: var(--ink-2); font: 600 12.5px var(--font); }
+.idcard .fig dt svg { width: 14px; height: 14px; color: var(--accent); }
+.idcard .fig dd { margin: 4px 0 0; font: 720 30px/1 var(--display); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+
+.yougrid { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 28px; align-items: start; }
+.yourail { position: sticky; top: 86px; display: flex; flex-direction: column; gap: 2px; padding: 6px; border-radius: 20px; }
+.yourail a { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 13px; color: var(--ink-2); font: 560 14px var(--font); }
+.yourail a svg { width: 16px; height: 16px; color: var(--ink-3); }
+.yourail a:hover { background: var(--fill); color: var(--ink); text-decoration: none; }
+.yourail a.on { background: var(--lens-pill); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 0 0 0.5px var(--glass-edge); }
+.yourail a.on svg { color: var(--accent); }
+
+.groups { display: grid; gap: 30px; padding-bottom: 40px; }
+.group { scroll-margin-top: 90px; }
+.group h2 { margin: 0 0 4px 16px; font: 680 17px var(--display); letter-spacing: -0.01em; }
+.gnote { margin: 0 0 10px 16px; color: var(--ink-2); font-size: 13.5px; }
+.gfoot { margin: 8px 0 0 16px; }
+.gfoot .more { margin-top: 0; }
+.glist { border-radius: 20px; padding: 0; overflow: hidden; background: var(--glass-pop); }
+.grow-row { position: relative; display: flex; align-items: center; gap: 14px; min-height: 54px; padding: 8px 16px; }
+.grow-row + .grow-row::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; height: 0.5px; background: var(--line-2); }
+.grow-row .ricon { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 8px; background: var(--accent-soft); color: var(--accent-text); flex: none; }
+.grow-row .ricon svg { width: 15px; height: 15px; }
+.grow-row:has(.ricon) + .grow-row::before { left: 56px; }
+.grow-row .rlabel { flex: 1; min-width: 0; font-size: 15px; display: flex; flex-direction: column; gap: 2px; }
+.grow-row .rlabel small { color: var(--ink-2); font-size: 12.5px; }
+.grow-row .rend { flex: none; display: flex; align-items: center; gap: 8px; }
+.grow-row .value { color: var(--ink-2); font-size: 13.5px; }
+.grow-row.muted .rlabel { color: var(--ink-2); font-size: 14px; }
+.grow-row.switch { cursor: pointer; }
+.grow-row.switch:hover { background: color-mix(in srgb, var(--fill) 60%, transparent); }
+.glist .segmented { background: color-mix(in srgb, var(--fill-2) 80%, transparent); }
+.keyset { display: inline-flex; gap: 4px; }
+.btn.ghostglass { background: var(--lens-pill); border-color: var(--glass-edge); }
+.signin { flex-wrap: wrap; padding: 12px 16px; }
+.signin .input { flex: 1; min-width: 160px; max-width: 260px; }
+@media (max-width: 860px) {
+  .yougrid { grid-template-columns: 1fr; }
+  .yourail { position: static; flex-direction: row; overflow-x: auto; border-radius: 999px; scrollbar-width: none; }
+  .yourail a { white-space: nowrap; border-radius: 999px; }
+  .idcard { grid-template-columns: auto 1fr; } .idcard .quick { grid-column: 1 / -1; justify-content: flex-start; }
+  .idcard .figs { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 14px; }
+  .idcard .fig:nth-child(3) { padding-left: 0; border-left: 0; }
+}
