@@ -509,11 +509,6 @@ table.data tbody tr[data-focus-visible] td { box-shadow: inset 0 0 0 2px color-m
 @media (max-width: 860px) { .helpgrid { grid-template-columns: 1fr; } .toc { display: none; } }
 
 /* ---------- sign in ---------- */
-.signin { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
-.signin .card { max-width: 460px; padding: 32px; text-align: left; }
-.signin h1 { font: 730 30px var(--display); letter-spacing: -0.03em; margin: 18px 0 8px; }
-.signin p { color: var(--ink-2); margin: 0 0 18px; }
-.signin .input { max-width: 240px; }
 
 /* ---------- insights ---------- */
 .kpis { display: grid; grid-template-columns: 1.4fr repeat(4, 1fr); gap: 0; margin-top: 8px; }
@@ -939,4 +934,65 @@ body::before { content: ""; position: fixed; inset: -10vmax; z-index: -1; pointe
   .idcard { grid-template-columns: auto 1fr; } .idcard .quick { grid-column: 1 / -1; justify-content: flex-start; }
   .idcard .figs { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 14px; }
   .idcard .fig:nth-child(3) { padding-left: 0; border-left: 0; }
+}
+
+/* ---------- Welcome: name and role, shown once on a machine without a company login ----------
+   The one orchestrated moment in the app: a slow light field drifting behind a single lensed glass
+   panel. Everything else on the screen is still. */
+.welcome { position: relative; min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; overflow: hidden; }
+.aurora { position: fixed; inset: 0; z-index: 0; pointer-events: none; filter: blur(40px) saturate(1.2); }
+.aurora span { position: absolute; border-radius: 50%; opacity: .55; animation: drift 26s ease-in-out infinite alternate; }
+.aurora span:nth-child(1) { width: 52vmax; height: 40vmax; left: -12vmax; top: -10vmax; background: radial-gradient(closest-side, #3fd0a6, transparent); }
+.aurora span:nth-child(2) { width: 46vmax; height: 38vmax; right: -14vmax; top: 10vmax; background: radial-gradient(closest-side, #e6a93c, transparent); animation-duration: 31s; animation-delay: -8s; }
+.aurora span:nth-child(3) { width: 60vmax; height: 40vmax; left: 20vmax; bottom: -22vmax; background: radial-gradient(closest-side, #4078c8, transparent); animation-duration: 36s; animation-delay: -14s; }
+:root[data-theme="dark"] .aurora span { opacity: .38; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .aurora span { opacity: .38; } }
+@keyframes drift { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(6vmax, 4vmax, 0) scale(1.12); } }
+@media (prefers-reduced-motion: reduce) { .aurora span { animation: none; } }
+:root[data-glass="false"] .aurora { display: none; }
+
+.welcomecard { position: relative; z-index: 1; width: min(760px, 100%); border-radius: 34px; padding: 30px 36px 22px;
+  background: color-mix(in srgb, var(--glass-tint) 85%, transparent); animation: pop .6s var(--spring); }
+.whead h1 { margin: 18px 0 8px; font: 760 40px/1.04 var(--display); letter-spacing: -0.04em; text-wrap: balance; }
+.whead p { margin: 0; max-width: 58ch; color: var(--ink-2); font-size: 16.5px; line-height: 1.55; }
+.whead p b { color: var(--ink); font-weight: 650; }
+.welcomecard form { display: grid; gap: 18px; margin-top: 22px; }
+.wfield { display: grid; gap: 8px; }
+.wfield > span, .wlabel { font: 650 14px var(--font); color: var(--ink); }
+.winput { width: 100%; height: 54px; padding: 0 18px; border-radius: 16px; font: 500 18px var(--font); color: var(--ink);
+  background: color-mix(in srgb, var(--card) 72%, transparent); border: 0.5px solid var(--glass-edge);
+  box-shadow: inset 0 1px 2px rgba(12,28,40,.08); outline: none; transition: box-shadow .2s, background .2s; }
+.winput::placeholder { color: var(--ink-3); }
+.winput:focus { background: var(--card); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 30%, transparent); }
+.roles { display: grid; gap: 10px; }
+.rolegrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.rolecard { position: relative; display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: 22px; cursor: pointer; outline: none;
+  background: color-mix(in srgb, var(--card) 55%, transparent); border: 0.5px solid var(--glass-edge);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.6), 0 1px 2px rgba(12,28,40,.05);
+  transition: transform .25s var(--spring), box-shadow .25s, background .25s; }
+.rolecard[data-hovered] { transform: translateY(-2px); background: color-mix(in srgb, var(--card) 72%, transparent); }
+.rolecard[data-selected] { background: var(--card); box-shadow: 0 0 0 2px var(--accent), 0 12px 30px -10px color-mix(in srgb, var(--accent) 45%, transparent); }
+.rolecard[data-focus-visible] { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 55%, transparent); }
+.rtop { display: flex; align-items: center; gap: 10px; }
+.rolecard .ricon { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 11px; background: var(--accent-soft); color: var(--accent-text); }
+.rolecard .ricon svg { width: 18px; height: 18px; }
+.rname { font: 700 17px var(--display); letter-spacing: -0.01em; flex: 1; }
+.rtick { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--line-2); display: grid; place-items: center; transition: background .2s, border-color .2s; }
+.rtick.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.rtick svg { width: 14px; height: 14px; }
+.rgist { font-size: 14px; line-height: 1.4; color: var(--ink); }
+.rbase { font: 600 12px var(--font); color: var(--ink-3); }
+.runlocks { display: flex; flex-wrap: wrap; gap: 5px; }
+.unlock { font: 560 12px/1 var(--font); padding: 6px 9px; border-radius: 999px; color: var(--ink-2); background: var(--fill); }
+.rolecard[data-selected] .unlock { color: var(--accent-text); background: var(--accent-soft); }
+.wgo { justify-self: start; height: 48px; padding: 0 22px; font-size: 15px; border-radius: 14px; }
+.wgo svg { width: 18px; height: 18px; }
+.wnotice, .wlearn { display: flex; gap: 10px; align-items: flex-start; margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--ink-2); }
+.wnotice { margin-top: 20px; padding: 12px 14px; border-radius: 14px; background: color-mix(in srgb, var(--fill) 70%, transparent); }
+.wlearn { margin-top: 12px; padding: 0 14px; }
+.wnotice svg, .wlearn svg { width: 16px; height: 16px; flex: none; margin-top: 2px; color: var(--accent); }
+@media (max-width: 720px) {
+  .welcomecard { padding: 26px 20px 20px; border-radius: 28px; }
+  .whead h1 { font-size: 34px; }
+  .rolegrid { grid-template-columns: 1fr; }
 }

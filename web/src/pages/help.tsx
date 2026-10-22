@@ -30,7 +30,7 @@ export default function HelpPage() {
         <ol className="steps big">
           <li><b>Ask</b> for a report in your own words, the way you would ask a colleague.</li>
           <li><b>Check</b> the answer: the rows, where it came from, and how ReBo read your question.</li>
-          <li><b>Say if it is right.</b> ReBo remembers, for you first, and gets faster and better each time.</li>
+          <li><b>Say if it is right.</b> ReBo learns from it, for you first, and gets faster and more accurate the more your team uses it.</li>
         </ol>
         {examples.length > 0 && <div className="tries"><span className="muted small">Try one of these:</span>{examples.map((q) => <Try key={q} q={q} />)}</div>}
       </>

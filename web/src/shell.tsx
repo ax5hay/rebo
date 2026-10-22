@@ -13,6 +13,7 @@ import { toast, Toaster } from "sonner";
 import { get, setIdentity, when } from "./api";
 import { Mark, Wordmark } from "./brand";
 import { Glass } from "./glass";
+import { Welcome } from "./welcome";
 import { Md } from "./md";
 import { applyPrefs, getPrefs, setPrefs } from "./prefs";
 
@@ -60,7 +61,7 @@ export default function Shell() {
   }, [navigate]);
   useEffect(() => setHistory(false), [location.pathname]);
 
-  if (me.isError) return <SignIn />;
+  if (me.isError) return <Welcome />;
   const m = me.data ?? null;
   return (
     <MeContext.Provider value={m}>
@@ -210,20 +211,3 @@ function Palette({ me, close, openHistory }: { me: Me; close: () => void; openHi
   );
 }
 
-function SignIn() {
-  const [user, setUser] = useState("alice");
-  return (
-    <div className="signin">
-      <div className="card">
-        <Mark size={56} />
-        <h1>Who is asking?</h1>
-        <p>ReBo answers as a person: what you teach it stays yours until it is shared. Behind your company's
-          sign-in this is filled in for you; here, give a name.</p>
-        <form className="row" onSubmit={(e) => { e.preventDefault(); setIdentity({ user, role: "user" }); }}>
-          <input className="input" aria-label="Your name" value={user} onChange={(e) => setUser(e.target.value)} />
-          <button className="btn primary" type="submit">Continue</button>
-        </form>
-      </div>
-    </div>
-  );
-}

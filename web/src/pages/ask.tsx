@@ -112,7 +112,7 @@ export default function AskPage() {
             </button>
           </form>
           <p className="notice" role="note"><Sparkle />ReBo is an AI. The rows are real data, but it can misread a question,
-            so each answer says how it read yours. <Link to="/help#safety">How to check</Link></p>
+            so each answer says how it read yours, and your corrections teach it. <Link to="/help#safety">How to check</Link></p>
         </Glass>
       </div>
     </>
@@ -148,7 +148,7 @@ function Start({ ask, name }: { ask: (q: string) => void; name: string }) {
       <section className="hello">
         <h1>{greeting}, {name}.</h1>
         <p>Ask for any report in your own words. You get the rows, how your question was read, and where the
-          answer came from.</p>
+          answer came from. Each answer you confirm or correct makes the next one better.</p>
       </section>
       {(starters.data?.length ?? 0) > 0 && (
         <section className="block">

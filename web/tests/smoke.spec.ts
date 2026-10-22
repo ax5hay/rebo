@@ -67,6 +67,19 @@ test("a value filter is switched from the Read as strip, without a model", async
   await expect(second).toContainText("No model was asked");
 });
 
+test("first visit: a name and a role, each role saying what it unlocks", async ({ page }) => {
+  await page.goto("/app/");
+  await expect(page.getByRole("heading", { name: "Reports in plain words." })).toBeVisible();
+  await expect(page.getByText("This is a preview sign-in.")).toBeVisible();
+  const go = page.getByRole("button", { name: /^Start/ });
+  await expect(go).toBeDisabled();
+  await page.getByLabel("Your name").fill(`dana-${test.info().project.name}`);
+  await page.getByRole("radio", { name: /Admin/ }).click({ force: true });
+  await expect(page.getByRole("button", { name: "Start as admin" })).toBeEnabled();
+  await page.getByRole("button", { name: "Start as admin" }).click();
+  await expect(page.getByRole("link", { name: "Review" })).toBeVisible();   // admin pages are there
+});
+
 test("every page opens without script errors, and the glass bar is there", async ({ page }) => {
   const errors: string[] = [];
   // WebKit reports requests cancelled by leaving a page as errors "... due to access control checks"

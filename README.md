@@ -5,7 +5,7 @@
 <p align="center">
   <b>A self-learning reports bot for any SQL database.</b><br>
   Ask in plain words; get one read-only query, the rows, and how your question was read.
-  It learns from the people who use it, not from configuration.
+  It learns from the people who use it, not from configuration, so it gets more accurate the more your team uses it.
 </p>
 
 <p align="center">

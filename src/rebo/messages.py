@@ -38,7 +38,7 @@ MESSAGES: dict[str, str] = {
 
     # --- feedback: "Yes, this is right" --------------------------------------------
     "confirm_saved_personal": (
-        "Thanks, saved. Next time you ask something like this, I'll start from this report. "
+        "Thanks, saved: this is how ReBo gets better. Next time you ask something like this, I'll start from this report. "
         "This only tunes the bot for you; other people won't see the change unless an admin shares it."
     ),
     "confirm_reinforced": "Thanks. You've confirmed this report before, so I'll keep relying on it for you.",
