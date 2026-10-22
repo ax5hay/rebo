@@ -15,6 +15,7 @@ import { usePrefs } from "./prefs";
 import { useMe, useToast } from "./shell";
 import { Md } from "./md";
 import { SqlCode } from "./code";
+import { Glass } from "./glass";
 import { chartShape } from "./chart";
 const ResultChart = lazy(() => import("./chart"));
 
@@ -125,7 +126,8 @@ function Report({ r, ask, onTurn, onFix }: { r: any; ask: (q: string) => void; o
           )}
           <MenuTrigger>
             <Button className="btn icon" aria-label="More actions"><MoreHorizontal /></Button>
-            <Popover placement="bottom end" offset={6}>
+            <Popover placement="bottom end" offset={6} className="glasspop">
+              <Glass className="menuglass" strength={24}>
               <Menu className="menu" onAction={(k) => menu(String(k))}>
                 <MenuItem id="rerun"><RotateCcw />Run again on today's data</MenuItem>
                 <MenuItem id="schedule"><Timer />Send me this regularly</MenuItem>
@@ -135,6 +137,7 @@ function Report({ r, ask, onTurn, onFix }: { r: any; ask: (q: string) => void; o
                 <MenuItem id="fix"><Flag />Ask an admin to fix this</MenuItem>
                 {me?.is_admin && r.trace_id ? <MenuItem id="trace"><ExternalLink />Open the trace</MenuItem> : null}
               </Menu>
+              </Glass>
             </Popover>
           </MenuTrigger>
         </div>
@@ -211,7 +214,8 @@ function FilterToken({ f, onPick }: { f: any; onPick: (values: string[], negated
   return (
     <DialogTrigger>
       <Button className="token" aria-label={`${label}: ${said}. Change`}><span className="k">{label}</span><span className="v">{said}</span><ChevronDown /></Button>
-      <Popover placement="bottom start" offset={8} className="tokenpop">
+      <Popover placement="bottom start" offset={8} className="glasspop">
+        <Glass className="tokenpop" strength={28}>
         <Dialog aria-label={`Change ${label}`}>
           {({ close }) => (
             <>
@@ -244,6 +248,7 @@ function FilterToken({ f, onPick }: { f: any; onPick: (values: string[], negated
             </>
           )}
         </Dialog>
+        </Glass>
       </Popover>
     </DialogTrigger>
   );
@@ -388,8 +393,9 @@ export function Sheet({ title, intro, close, children, icon: Icon, wide }: {
 }) {
   return (
     <ModalOverlay className="overlay" isOpen isDismissable onOpenChange={(open) => !open && close()}>
-      <Modal>
-        <Dialog className={`dialog${wide ? " wide" : ""}`}>
+      <Modal className="glassmodal">
+        <Glass className={`dialog${wide ? " wide" : ""}`} strength={30}>
+        <Dialog className="dialogbody">
           <div className="dialoghead">
             {Icon && <span className="dialogicon"><Icon /></span>}
             <div className="grow">
@@ -400,6 +406,7 @@ export function Sheet({ title, intro, close, children, icon: Icon, wide }: {
           </div>
           {children}
         </Dialog>
+        </Glass>
       </Modal>
     </ModalOverlay>
   );

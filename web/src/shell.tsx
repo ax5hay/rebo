@@ -177,6 +177,7 @@ function Palette({ me, close, openHistory }: { me: Me; close: () => void; openHi
   const places = [...visible(me), { to: "/me", label: "You and your settings", icon: UserRound }, { to: "/help", label: "Help", icon: CircleHelp }];
   return (
     <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && close()}>
+      <Glass className="palette" strength={30}>
       <Command label="Command palette" onKeyDown={(e) => e.key === "Escape" && close()}>
         <Command.Input autoFocus value={q} onValueChange={setQ} placeholder="Ask a question or jump to…" />
         <Command.List>
@@ -204,6 +205,7 @@ function Palette({ me, close, openHistory }: { me: Me; close: () => void; openHi
           )}
         </Command.List>
       </Command>
+      </Glass>
     </div>
   );
 }

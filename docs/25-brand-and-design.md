@@ -90,3 +90,25 @@ One kit (`web/src/ui.tsx`) for Knowledge, Review, Admin, Insights, Configuration
   **Insights** has KPI cards with an icon and tone, and health checks sorted problems-first with a
   status chip.
 - **⌘K** also runs actions: new question, teach something, change appearance, open history.
+
+## Liquid Glass, wider (2026-10-22)
+
+Glass is the floating layer, never the content. Now lensed glass (per-element displacement map,
+`web/src/glass.tsx`):
+
+| Surface | Before | Now |
+|---|---|---|
+| Island bar, composer, history sheet, review bulk bar | glass | glass |
+| Menus (⋯), Read as popover | blurred card | lensed glass, denser tint `--glass-pop` so text stays crisp |
+| Dialogs (Sheet) | solid card | glass sheet over a light veil: the page bends at its edge |
+| Command palette | blurred card | one glass slab |
+| Knowledge and Review section tabs | underline bar | sticky glass capsule; lists scroll under it |
+| Help contents | plain list | sticky glass rail, current section lit (scroll spy) |
+| Start page suggestions | chips | glass capsules |
+| "Latest answer" | – | floating glass button above the composer when you scroll up |
+
+An **ambient light field** (three soft radial fields in the logo's teal, amber and a blue, fixed
+behind the page) gives every glass surface something to refract; on a flat grey page glass reads as
+white plastic. Answers, tables and cards stay solid. "Reduce transparency", the You-page glass switch
+and forced colours still turn everything solid (and hide the field). Chromium lenses; WebKit and
+Firefox get blur only. Playwright passes on Chromium and WebKit.

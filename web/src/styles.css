@@ -811,3 +811,68 @@ blockquote.reply { margin: 8px 0 0; padding: 8px 12px; border-left: 3px solid va
 .cm-host .cm-scroller { overflow-x: auto; }
 /* without lensing (Safari, Firefox) the frost carries legibility alone: use the denser tint */
 .glass:not(.lensed) { background: var(--glass-strong); }
+
+/* ---------- Liquid Glass, wider (2026-10-22) ----------
+   Glass belongs to the layer that floats: navigation, menus, popovers, dialogs, the palette, sticky bars,
+   floating buttons. Content (answers, tables, cards) stays solid so data reads cleanly. */
+
+/* An ambient light field behind everything, in the brand's three colours, so glass has something to
+   bend. Fixed: content scrolls over it and every floating layer shows a slightly different part. */
+:root { --field-a: rgba(63, 208, 166, 0.26); --field-b: rgba(230, 169, 60, 0.20); --field-c: rgba(64, 120, 200, 0.15);
+  --glass-pop: rgba(252, 253, 254, 0.56); }
+:root[data-theme="dark"] { --field-a: rgba(63, 208, 166, 0.12); --field-b: rgba(230, 169, 60, 0.08); --field-c: rgba(80, 130, 230, 0.12);
+  --glass-pop: rgba(30, 37, 44, 0.62); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --field-a: rgba(63, 208, 166, 0.12);
+  --field-b: rgba(230, 169, 60, 0.08); --field-c: rgba(80, 130, 230, 0.12); --glass-pop: rgba(30, 37, 44, 0.62); } }
+body { background: transparent; }  /* html carries --bg; the field paints between them */
+body::before { content: ""; position: fixed; inset: -10vmax; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(40vmax 32vmax at 20% 16%, var(--field-a), transparent 70%),
+    radial-gradient(36vmax 30vmax at 86% 34%, var(--field-b), transparent 70%),
+    radial-gradient(48vmax 34vmax at 48% 92%, var(--field-c), transparent 70%); }
+:root[data-glass="false"] body::before { display: none; }
+
+/* Popovers and menus: lensed glass, denser so text stays crisp over anything. */
+.glasspop { outline: none; }
+.glasspop[data-entering] { animation: pop .22s var(--spring); }
+.menuglass, .tokenpop, .palette, .glassmodal .dialog { background: var(--glass-pop); }
+.glass.menuglass, .glass.tokenpop, .glass.palette, .glassmodal .glass.dialog { border-color: var(--glass-edge); }
+.menuglass { border-radius: 18px; padding: 0; overflow: hidden; }
+.menuglass .menu { background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; border: 0; box-shadow: none; }
+.tokenpop { box-shadow: var(--glass-shadow); }
+.tokenpop .dist button:hover { background: var(--fill-2); }
+
+/* Dialogs: glass sheet over a light veil, so the page still shows through and bends at the edge. */
+.overlay { background: rgba(8, 14, 20, 0.16); }
+.glassmodal .dialog { padding: 22px 24px; max-height: 76vh; overflow: auto; }
+.glassmodal .dialogbody { outline: none; }
+.glassmodal .textarea, .glassmodal .input, .glassmodal .select { background: color-mix(in srgb, var(--card) 86%, transparent); }
+
+/* Command palette: one glass slab. */
+.palette { width: min(620px, 100%); border-radius: 24px; overflow: hidden; animation: pop .25s var(--spring); }
+.palette [cmdk-root] { width: 100%; background: transparent; border: 0; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+
+/* Section tabs on Knowledge and Review: a sticky glass capsule; lists scroll under it. */
+.tabbar.glass { position: sticky; top: 76px; z-index: 15; width: fit-content; max-width: 100%; margin: 22px 0 18px;
+  padding: 4px; gap: 2px; border-radius: 999px; border-bottom: 0.5px solid var(--glass-edge); }
+.tabbar.glass button { height: 36px; border-radius: 999px; padding: 0 14px; transition: background .2s, color .2s; }
+.tabbar.glass button.on { background: var(--lens-pill); box-shadow: 0 1px 3px rgba(0,0,0,.1), 0 0 0 0.5px var(--glass-edge); }
+.tabbar.glass button.on::after { display: none; }
+.tabbar.glass button:focus-visible { outline-offset: -2px; border-radius: 999px; }
+@media (max-width: 640px) { .tabbar.glass { top: 64px; } }
+
+/* Start page: the suggestions are glass capsules floating on the light field. */
+.chip.glass { background: var(--glass-tint); border: 0.5px solid var(--glass-edge); color: var(--ink); }
+.chip.glass:hover { background: var(--glass-pop); }
+.chip.glass svg { color: var(--accent); }
+
+/* Back to the newest answer, floating above the composer when you have scrolled up. */
+.jump { position: absolute; left: 50%; bottom: calc(100% + 10px); transform: translateX(-50%); display: inline-flex; align-items: center;
+  gap: 6px; height: 36px; padding: 0 14px 0 11px; border-radius: 999px; cursor: pointer; font: 600 13.5px/1 var(--font); color: var(--ink);
+  animation: pop .25s var(--spring); }
+.jump svg { width: 16px; height: 16px; }
+
+/* Help contents: a sticky glass rail, the current section lit. */
+.toc.glass { align-self: start; padding: 6px; border-radius: 20px; }
+.toc.glass a.on { background: var(--lens-pill); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 0 0 0.5px var(--glass-edge); }
+.toc.glass a.on svg { color: var(--accent); }

@@ -40,10 +40,10 @@ export default function ReviewPage() {
           { n: reqs.length, label: "Open requests", tone: reqs.length ? "warn" : undefined },
         ]} />
 
-      <nav className="tabbar" aria-label="Review sections">
+      <Glass as="nav" className="tabbar" aria-label="Review sections" strength={18}>
         <button className={tab === "queue" ? "on" : ""} onClick={() => navigate({ hash: "" }, { replace: true })}>Waiting to be shared{items.length ? <span className="count">{items.length}</span> : null}</button>
         <button className={tab === "requests" ? "on" : ""} onClick={() => navigate({ hash: "requests" }, { replace: true })}>Requests{reqs.length ? <span className="count">{reqs.length}</span> : null}</button>
-      </nav>
+      </Glass>
 
       {tab === "queue" && (items.length === 0 ? (
         <div className="panel"><Empty icon={Inbox} title="Nothing is waiting">Items arrive when an owner asks to share them, or when three people independently confirm the same report.</Empty></div>

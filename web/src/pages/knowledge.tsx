@@ -12,6 +12,7 @@ import { useLocation, useNavigate, useSearchParams } from "react-router";
 import { call, get, plural, when } from "../api";
 import { Sheet } from "../answer";
 import { CodeEditor, SqlCode } from "../code";
+import { Glass } from "../glass";
 import { Md } from "../md";
 import { useMe, useToast } from "../shell";
 import { Empty, KINDS, KindIcon, MoreMenu, PageHead, Timeline, type MenuAction } from "../ui";
@@ -91,13 +92,13 @@ export default function KnowledgePage() {
 
       <Lookup />
 
-      <nav className="tabbar" aria-label="Knowledge sections">
+      <Glass as="nav" className="tabbar" aria-label="Knowledge sections" strength={18}>
         {TABS.map((t) => (
           <button key={t.id} id={t.id} className={tab === t.id ? "on" : ""} aria-current={tab === t.id ? "page" : undefined} onClick={() => setTab(t.id)}>
             {t.label}{counts[t.id] ? <span className="count">{counts[t.id]}</span> : null}
           </button>
         ))}
-      </nav>
+      </Glass>
 
       {tab === "saved" && (
         <>

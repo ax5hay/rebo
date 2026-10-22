@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, ArrowUp, Check, CircleHelp, History, Pin, Sparkle } from "lucide-react";
+import { ArrowDown, ArrowRight, ArrowUp, Check, CircleHelp, History, Pin, Sparkle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { askStream, call, get, when, type Step } from "../api";
@@ -20,6 +20,7 @@ export default function AskPage() {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [trail, setTrail] = useState<string[]>([]);
+  const [away, setAway] = useState(false);  // scrolled up, away from the newest answer
   const [fixing, setFixing] = useState<string | null>(null);
   const end = useRef<HTMLDivElement>(null);
   const box = useRef<HTMLTextAreaElement>(null);
@@ -32,6 +33,13 @@ export default function AskPage() {
     if (!conversationId) { setTurns([]); setThread(newThread()); }
   }, [conversationId, history.data]);
   useEffect(() => { end.current?.scrollIntoView({ behavior: "smooth", block: "end" }); }, [turns.length, busy]);
+  useEffect(() => {
+    const el = end.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => setAway(!e.isIntersecting), { rootMargin: "0px 0px -120px 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [turns.length > 0]);
   useEffect(() => {  // a question typed in the command palette
     const q = search.get("q");
     if (q) { setSearch({}, { replace: true }); ask(q); }
@@ -87,6 +95,11 @@ export default function AskPage() {
         </div>
       )}
       <div className="composer">
+        {away && turns.length > 1 && (
+          <Glass as="button" className="jump" strength={14} onClick={() => end.current?.scrollIntoView({ behavior: "smooth", block: "end" })}>
+            <ArrowDown />Latest answer
+          </Glass>
+        )}
         <Glass className="composerglass" strength={20}>
           {fixing && <div className="hint">Say what should be different, for example “only count the active ones”. ReBo redoes the report.</div>}
           <form onSubmit={(e) => { e.preventDefault(); ask(text); }}>
@@ -140,7 +153,7 @@ function Start({ ask, name }: { ask: (q: string) => void; name: string }) {
       {(starters.data?.length ?? 0) > 0 && (
         <section className="block">
           <h2>Try a known report</h2>
-          <div className="chips">{starters.data!.slice(0, 8).map((s) => <button key={s} className="chip big" onClick={() => ask(s)}><Sparkle />{s}</button>)}</div>
+          <div className="chips">{starters.data!.slice(0, 8).map((s) => <Glass as="button" key={s} className="chip big" strength={12} onClick={() => ask(s)}><Sparkle />{s}</Glass>)}</div>
         </section>
       )}
       <div className="startgrid">

@@ -1,6 +1,7 @@
 // Shared building blocks for the internal pages, so Knowledge, Review, Admin, Insights, Configuration,
 // You and Help share one structure: a page head (title, one-line purpose, actions, a strip of numbers),
 // section heads, empty states that say what to do next, kind icons, an overflow menu and a timeline.
+import { Glass } from "./glass";
 import { BookMarked, BookOpenText, GitMerge, Lightbulb, MoreHorizontal, ScrollText, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { Button, Menu, MenuItem, MenuTrigger, Popover, Separator } from "react-aria-components";
@@ -67,13 +68,15 @@ export function MoreMenu({ label, actions, onAction }: { label: string; actions:
   return (
     <MenuTrigger>
       <Button className="btn icon ghost" aria-label={label}><MoreHorizontal /></Button>
-      <Popover placement="bottom end" offset={6}>
-        <Menu className="menu" onAction={(k) => onAction(String(k))}>
-          {actions.flatMap((a) => [
-            ...(a.separator ? [<Separator key={`${a.id}-sep`} />] : []),
-            <MenuItem key={a.id} id={a.id} className={a.danger ? "danger" : undefined}>{a.icon && <a.icon />}{a.label}</MenuItem>,
-          ])}
-        </Menu>
+      <Popover placement="bottom end" offset={6} className="glasspop">
+        <Glass className="menuglass" strength={24}>
+          <Menu className="menu" onAction={(k) => onAction(String(k))}>
+            {actions.flatMap((a) => [
+              ...(a.separator ? [<Separator key={`${a.id}-sep`} />] : []),
+              <MenuItem key={a.id} id={a.id} className={a.danger ? "danger" : undefined}>{a.icon && <a.icon />}{a.label}</MenuItem>,
+            ])}
+          </Menu>
+        </Glass>
       </Popover>
     </MenuTrigger>
   );

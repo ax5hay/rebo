@@ -5,9 +5,10 @@ import {
   ArrowRight, BadgeCheck, BookMarked, CircleAlert, Download, Eye, Hand, Keyboard, Lightbulb, ListChecks, MessageSquareText,
   MousePointerClick, Pin, RotateCcw, ShieldCheck, Sparkles, Timer, Undo2, Users,
 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router";
 import { get } from "../api";
+import { Glass } from "../glass";
 import { useMe } from "../shell";
 import { PageHead } from "../ui";
 
@@ -108,9 +109,7 @@ export default function HelpPage() {
     <div className="page help">
       <PageHead title="How to use ReBo" lede="Ask for reports in plain words, check how they were read, and teach ReBo as you go. Two minutes to read; everything links to where it lives." />
       <div className="helpgrid">
-        <nav className="toc" aria-label="On this page">
-          {shown.map((s) => <a key={s.id} href={`#${s.id}`}><s.icon />{s.title}</a>)}
-        </nav>
+        <Toc items={shown} />
         <div className="helpbody">
           {shown.map((s) => (
             <section key={s.id} id={s.id} className="card helpsec">
@@ -121,5 +120,23 @@ export default function HelpPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// The contents as a floating glass rail; the section you are reading is lit (scroll spy).
+function Toc({ items }: { items: { id: string; title: string; icon: any }[] }) {
+  const [at, setAt] = useState(items[0]?.id);
+  useEffect(() => {
+    const io = new IntersectionObserver((es) => {
+      const top = es.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+      if (top) setAt(top.target.id);
+    }, { rootMargin: "-90px 0px -60% 0px" });
+    items.forEach((s) => { const el = document.getElementById(s.id); if (el) io.observe(el); });
+    return () => io.disconnect();
+  }, [items]);
+  return (
+    <Glass as="nav" className="toc" aria-label="On this page" strength={20}>
+      {items.map((s) => <a key={s.id} href={`#${s.id}`} className={at === s.id ? "on" : undefined} aria-current={at === s.id ? "location" : undefined}><s.icon />{s.title}</a>)}
+    </Glass>
   );
 }
