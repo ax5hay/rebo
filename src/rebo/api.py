@@ -509,17 +509,18 @@ def create_app(app: App, *, with_ui: bool = True, with_worker: bool = False) -> 
         from fastapi.responses import FileResponse, RedirectResponse
 
         if not with_ui:  # without the NiceGUI pages, the root opens the app
-            @api.get("/", include_in_schema=False)
+            @api.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
             def root():
                 return RedirectResponse("/app/")
 
-        @api.get("/app", include_in_schema=False)
+        # HEAD as well as GET: link unfurlers (Slack, Teams, LinkedIn) may check a page before reading it
+        @api.api_route("/app", methods=["GET", "HEAD"], include_in_schema=False)
         def web_root():
             return RedirectResponse("/app/")
 
         from fastapi.responses import HTMLResponse
 
-        @api.get("/app/{path:path}", include_in_schema=False)
+        @api.api_route("/app/{path:path}", methods=["GET", "HEAD"], include_in_schema=False)
         def web_page(path: str, request: Request):
             """Files of the built app, and index.html for its pages (so /app/insights can be reloaded).
             Link previews (Open Graph) need absolute URLs, so %ORIGIN% in index.html becomes the address

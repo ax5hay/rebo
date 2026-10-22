@@ -53,3 +53,4 @@ def test_link_previews_get_absolute_urls_for_the_address_they_came_to(app):
     client = TestClient(create_app(app, with_ui=False))
     html = client.get("/app/", headers={"Host": "rebo-oes.example.org", "X-Forwarded-Proto": "https"}).text
     assert '<meta property="og:image" content="https://rebo-oes.example.org/app/og.png"' in html and "%ORIGIN%" not in html
+    assert client.head("/app/").status_code == 200 and client.head("/app/og.png").status_code == 200   # unfurlers may check first
