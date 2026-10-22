@@ -28,6 +28,12 @@
 
 <table>
   <tr>
+    <td colspan="2" align="center">
+      <img src="docs/screenshots/00-welcome.png" alt="The welcome screen" width="100%"><br>
+      <sub><i>First visit without a company login: a name and a role, each saying what it unlocks.</i></sub>
+    </td>
+  </tr>
+  <tr>
     <td width="50%" align="center">
       <img src="docs/screenshots/01-start.png" alt="The start page" width="100%"><br>
       <sub><i>Start: Liquid Glass bar and composer, known reports, the AI notice in plain words.</i></sub>

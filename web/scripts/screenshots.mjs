@@ -22,6 +22,16 @@ const ask = async (p, text) => {
   await p.getByRole("button", { name: /^(Ask|Fix it)$/ }).click();
 };
 
+// first visit, no login: name and role
+{
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 860 } });
+  const w = await ctx.newPage();
+  await w.goto(`${base}/app/`); await w.waitForTimeout(1200);
+  await w.getByLabel("Your name").fill("Priya"); await w.getByRole("radio", { name: /Admin/ }).click({ force: true });
+  await w.waitForTimeout(400); await w.screenshot({ path: `${out}/00-welcome.png` });
+  await ctx.close();
+}
+
 // a person asks, confirms, undoes, asks for a fix, and teaches something
 const alice = await page("alice", "user");
 await alice.goto(`${base}/app/`); await alice.waitForTimeout(600); await shot(alice, "01-start");
