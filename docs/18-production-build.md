@@ -156,7 +156,7 @@ Each line is one commit. "Gate" is the measurable condition to merge the phase.
 ### Phase P2: production plumbing (1–2 weeks)
 - **P2.1** `feat(store): Postgres state backend` (`state_url`): Postgres 18 + pgvector 0.8.7 + pg_textsearch 1.5.1 (BM25, PostgreSQL licence) with RRF in SQL; SQLite stays the default (doc 19 §3)
 - **P2.2** `build: alembic migrations for the state schema` (one migration per later schema change)
-- **P2.3** `feat(retrieval): optional TEI embeddings service` (`embeddings_url`) with Qwen3-Embedding-0.6B (CPU) or 4B (GPU); fastembed default switched to EmbeddingGemma-300m or Qwen3-0.6B after an eval
+- **P2.3** `feat(retrieval): optional TEI embeddings service` (`embeddings_url`) with snowflake-arctic-embed or EmbeddingGemma; fastembed default switched to EmbeddingGemma-300m or Qwen3-0.6B after an eval
 - **P2.4** `feat(api): streaming` with Pydantic AI's AG-UI adapter (`/api/agui`): live tool progress, faster first byte
 - **P2.5** `feat(jobs): durable long runs` with DBOS (library, SQLite/Postgres) for scheduled reports and slow queries; mock for JMS's SQS + WebSocket push in `mocks/jms`
 - **P2.6** `feat(api): exact answer cache` keyed by normalised question + knowledge version + user scope + SQL hash (never a semantic cache for SQL, doc 19 §5)

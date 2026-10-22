@@ -22,8 +22,7 @@ from rebo.retrieval import Embedder, Index
 from rebo.safety import tables_in
 from rebo.store import Store
 
-MODELS = ["Xenova/ms-marco-MiniLM-L-6-v2", "Xenova/ms-marco-MiniLM-L-12-v2", "jinaai/jina-reranker-v1-turbo-en",
-          "BAAI/bge-reranker-v2-m3-int8"]
+MODELS = ["Xenova/ms-marco-MiniLM-L-6-v2", "Xenova/ms-marco-MiniLM-L-12-v2", "jinaai/jina-reranker-v1-turbo-en"]
 
 
 def tables(refs: list[str], k: int = 5) -> list[str]:

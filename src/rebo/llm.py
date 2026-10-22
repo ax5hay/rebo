@@ -74,10 +74,10 @@ PRICES = {
     "anthropic/claude-sonnet-5.5": (2.00, 0.10, 10.00),
     "google/gemini-3.8-flash": (0.825, 0.0825, 4.125),
     "google/gemini-3.5-flash-lite": (0.30, 0.03, 2.50),
-    # candidates measured as cheap agent models (docs/20 §5c), OpenRouter list prices 2026-10-21
+    # candidates measured as cheaper agent / light models (docs/20 §5b), OpenRouter list prices 2026-10-22.
+    # Chinese-origin models are excluded by policy.
     "openai/gpt-6-luna-pro": (0.10, 0.01, 0.50),
-    "deepseek/deepseek-v4.1-flash-1017": (0.15, 0.003, 0.60),
-    "xiaomi/mimo-v2.6-pro": (0.435, 0.004, 0.87),
+    "openai/gpt-6-luna": (0.10, 0.01, 0.50),
     # Google direct (google: models), ai.google.dev/gemini-api/docs/pricing checked 2026-10-21: these prices hold
     # through 2026-12-31 and double on 2027-01-01.
     "gemini-3.8-flash": (0.75, 0.075, 3.75),

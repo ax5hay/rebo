@@ -63,7 +63,7 @@ also in git history; this file is the short version a new session reads first.
 | Learning loop | confirm → repeat question answered in 5 s with 0 tool calls; correction → remembered term reused in a new conversation | doc 17 §3 |
 | Schema drift | renamed column → item stale → restored automatically after the fix | doc 17 §4 |
 | SQL-trap checks (B-046), demo gold, Sonnet | 8/10 → 8/10, $0.236 → $0.242, no trap fired | `fixtures/demo_property/eval_results_sonnet_traps.json` |
-| Embedding models on the JMS catalogue (12 validated questions, recall@5 of gold tables, hybrid) | arctic-embed-s 0.621 (kept), embeddinggemma-300m 0.552, Qwen3-Embedding-0.6B 0.517 | `fixtures/jms_staging/embed_compare_2026-10-21.json`, doc 08 §4b |
+| Embedding models on the JMS catalogue (12 validated questions, recall@5 of gold tables, hybrid) | arctic-embed-s 0.621 (kept), embeddinggemma-300m 0.552 | `fixtures/jms_staging/embed_compare_2026-10-21.json`, doc 08 §4b |
 | Synthetic data date order | 9,809 violations → 0 with the derived spec | doc 12 §3 |
 | Orbitra (221 tables, 3.1M rows), Sonnet, 48 gold questions | 44/48 same numbers (39 strict), $0.023 a question, 0 errors; `--describe` no answer gain, +10 % tokens; conversations 8/8 | `fixtures/orbitra/eval_results_sonnet_*.json`, `rescore_*.json` |
 | genai-prices vs OpenRouter list prices (2026-10-21) | Sonnet 5.5 equal; Haiku 5.5 5× high; Gemini 3.8 Flash 9% low (cost cap scaled) | doc 20 §2.2 |

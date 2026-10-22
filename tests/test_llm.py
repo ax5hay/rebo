@@ -11,7 +11,7 @@ from rebo.llm import build_model, parse
 
 def test_parse_prefixes_and_openrouter_shorthand():
     assert parse("google:gemini-x") == ("google", "gemini-x")
-    assert parse("lmstudio:qwen/qwen3-coder") == ("lmstudio", "qwen/qwen3-coder")
+    assert parse("lmstudio:local/model-7b") == ("lmstudio", "local/model-7b")
     assert parse("anthropic/claude-sonnet-5.5") == ("openrouter", "anthropic/claude-sonnet-5.5")
     with pytest.raises(ValueError):
         parse("gemini-x")
@@ -445,7 +445,7 @@ def test_turn_limits_put_the_cost_cap_in_list_prices(monkeypatch):
     haiku = llm.turn_limits("openrouter:anthropic/claude-haiku-5.5", tool_calls=25, cost_cap_usd=0.5)
     theirs, ours = llm.genai_price("openrouter:anthropic/claude-haiku-5.5"), 0.15
     assert haiku.cost_limit == Decimal(str(round(0.5 * theirs / ours, 6)))
-    assert llm.turn_limits("lmstudio:qwen", tool_calls=25, cost_cap_usd=0.5).cost_limit is None
+    assert llm.turn_limits("lmstudio:local-model", tool_calls=25, cost_cap_usd=0.5).cost_limit is None
     assert llm.turn_limits("openrouter:anthropic/claude-sonnet-5.5", tool_calls=25, cost_cap_usd=0).cost_limit is None
     monkeypatch.setattr(llm, "genai_price", lambda spec, **kw: None)           # not covered: token limits instead
     fallback = llm.turn_limits("openrouter:anthropic/claude-sonnet-5.5", tool_calls=25, cost_cap_usd=0.5)

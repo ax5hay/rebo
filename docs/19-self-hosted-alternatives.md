@@ -35,15 +35,13 @@ P1.2/P1.4/P1.7 build on it.
 
 | Option | Version | Licence | Runs | Verdict |
 |---|---|---|---|---|
-| **fastembed** (in-process, current) | 0.9.0 | Apache-2.0 | CPU ONNX | **Keep for lean installs.** Switch the model from arctic-embed-s to **EmbeddingGemma-300m** (supported since 0.8.1) or Qwen3-Embedding-0.6B after an eval (doc 18 P2.3) |
-| **HF TEI** | 1.9.4 (2026-09-15) | Apache-2.0 | Docker CPU/CUDA | **Adopt for production embeddings**: Qwen3-Embedding 0.6B (CPU) / 4B (GPU, about 8 GB). Does **not** serve Qwen3-Reranker (issue #643) |
-| vLLM pooling | 0.32.0 | Apache-2.0 | GPU | Optional reranker host (`/v1/rerank`, Qwen3-Reranker) |
+| **fastembed** (in-process, current) | 0.9.0 | Apache-2.0 | CPU ONNX | **Keep for lean installs.** A switch to **EmbeddingGemma-300m** (supported since 0.8.1) was measured and rejected (doc 08 §4b) |
+| **HF TEI** | 1.9.4 (2026-09-15) | Apache-2.0 | Docker CPU/CUDA | Optional production embedding server: snowflake-arctic-embed (Snowflake, Apache-2.0) or EmbeddingGemma (Google); measure before switching |
+| vLLM pooling | 0.32.0 | Apache-2.0 | GPU | Optional reranker host (`/v1/rerank`); rerank was measured and rejected (B-051) |
 | Infinity | 0.0.78 | MIT for the Python packages; V3 under "Restricted MIT" | Docker | Optional single server for embed + rerank; check the licence |
 | Ollama embeddings | 0.40.6 | MIT | — | Only if Ollama is already used |
 
-Models (model-card numbers): Qwen3-Embedding 0.6B / 4B / 8B: MTEB-Eng v2 70.70 / 74.60 / 75.22 (Apache-2.0).
-Qwen3-Reranker 0.6B / 4B: MTEB-R 65.80 / 69.76 vs 57.03 for bge-reranker-v2-m3. jina v4/v5 are not
-commercially usable. Add a reranker only if evals show retrieval recall is the bottleneck.
+Chinese-origin models (DeepSeek, Qwen, GLM, MiMo, Kimi, BAAI, ...) are excluded by policy (2026-10-22). jina v4/v5 are not commercially usable. Add a reranker only if evals show retrieval recall is the bottleneck.
 
 ## 3. State, search and vectors
 
@@ -154,8 +152,7 @@ container (about 0.5 GB). The test MySQL container adds about 0.5–1 GB.
 | bot-api | ours | ~1 GB |
 | web (assistant-ui build) | nginx | ~50 MB |
 | postgres (state, knowledge, BM25, vectors, DBOS) | `pgvector/pgvector:0.8.7-pg18` + pg_textsearch 1.5.1 | 1–2 GB |
-| embeddings | `ghcr.io/huggingface/text-embeddings-inference:cpu-1.9` (Qwen3-Embedding-0.6B) | ~2 GB CPU (GPU 4B: ~8–10 GB VRAM) |
-| reranker (optional) | `vllm/vllm-openai` + Qwen3-Reranker-0.6B | ~3–4 GB VRAM |
+| embeddings | `ghcr.io/huggingface/text-embeddings-inference:cpu-1.9` (snowflake-arctic-embed) | ~1–2 GB CPU |
 | valkey (exact cache, rate limits; optional) | `valkey/valkey:9.1` | ~200 MB |
 | phoenix | `arizephoenix/phoenix:version-20.23.0` | 0.5–1 GB |
 | oauth2-proxy (+ pocket-id) | `quay.io/oauth2-proxy/oauth2-proxy:v7.15.5` | ~50 MB |
@@ -164,7 +161,7 @@ container (about 0.5 GB). The test MySQL container adds about 0.5–1 GB.
 Total without a local LLM: about 6–8 GB RAM, 0–14 GB VRAM.
 
 Sources: github.com/Canner/WrenAI · github.com/Kaelio/ktx · github.com/huggingface/text-embeddings-inference (issue 643) ·
-github.com/QwenLM/Qwen3-Embedding · github.com/timescale/pg_textsearch · postgresql.org/about/news/pgvector-087-released-3392 ·
+github.com/timescale/pg_textsearch · postgresql.org/about/news/pgvector-087-released-3392 ·
 qdrant.tech/blog/qdrant-1.19.x · docs.litellm.ai/blog/security-update-march-2026 · arize.com/docs/phoenix/self-hosting/license ·
 langfuse.com/self-hosting · pydantic.dev/docs/ai/integrations/{ui,durable_execution} · docs.dbos.dev · github.com/NVIDIA-NeMo/DataDesigner ·
 docs.sdv.dev (DayZSynthesizer) · github.com/OtterMind/Chat2DB (LICENSE) · docs.openwebui.com/license · arxiv.org/abs/2606.29733

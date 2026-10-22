@@ -157,13 +157,13 @@ def test_config_preview_checks_database_and_models_without_saving(app, tmp_path,
     cfg = tmp_path / "rebo.yaml"
     cfg.write_text("database: sqlite:///x.db\n", encoding="utf-8")
     monkeypatch.setenv("REBO_CONFIG", str(cfg))
-    good = f"database: {app.settings.database_url}\nmodels:\n  agent: lmstudio:qwen\n"
+    good = f"database: {app.settings.database_url}\nmodels:\n  agent: lmstudio:local-model\n"
     r = admin.save_config(app, OWNER, good, preview=True)
-    assert r["ok"] and {"setting": "model", "from": app.settings.model, "to": "lmstudio:qwen"} in r["changes"]
+    assert r["ok"] and {"setting": "model", "from": app.settings.model, "to": "lmstudio:local-model"} in r["changes"]
     bad_db = f"database: sqlite:///{tmp_path}/no/such/dir/x.db\n"
     r = admin.save_config(app, OWNER, bad_db, preview=True)
     assert not r["ok"] and r["errors"][0].startswith("database: cannot connect")
-    r = admin.save_config(app, OWNER, good.replace("lmstudio:qwen", "qwen"), preview=True)
+    r = admin.save_config(app, OWNER, good.replace("lmstudio:local-model", "local-model"), preview=True)
     assert not r["ok"] and r["errors"][0].startswith("model:")
     assert cfg.read_text(encoding="utf-8") == "database: sqlite:///x.db\n"      # nothing saved
     assert app.store.one("SELECT COUNT(*) AS n FROM config_event")["n"] == 0

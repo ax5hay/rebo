@@ -62,11 +62,10 @@ of the hybrid search the bot uses (keyword + dense, RRF). No LLM. Results:
 |---|---|---|---|---|
 | snowflake-arctic-embed-s (default) | 0.13 GB | 37 s | 0.448 / 0.382 | **0.621** / 0.471 |
 | google/embeddinggemma-300m | 1.24 GB | 134 s | 0.552 / 0.534 | 0.552 / 0.534 |
-| Qwen/Qwen3-Embedding-0.6B | 2.38 GB | 350 s | 0.414 / 0.445 | 0.517 / 0.534 |
 
 "Validated" = the 12 PO-validated questions; "drafts" = the 67 agent-written draft questions (B-014,
 not validated, and written from the SQL, so they may echo its words). Query/passage prefixes
-(`asymmetric=True`) gave identical numbers for all three models: fastembed 0.9.0 applies none to
+(`asymmetric=True`) gave identical numbers for the models: fastembed 0.9.0 applies none to
 these. **Verdict: keep arctic-embed-s.** On the validated set it is best in the hybrid search the bot
 actually uses, and it is 10–18× smaller and 4–9× faster; the larger models only win on unvalidated
 drafts. Caveats: 12 questions is a small sample, and the local catalogue has no rows (no value lists

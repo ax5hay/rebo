@@ -4,7 +4,7 @@ from rebo.settings import Settings
 
 YAML = """
 database: sqlite:///x.db
-models: {agent: "google:gemini-x", fallback: ["lmstudio:qwen"]}
+models: {agent: "google:gemini-x", fallback: ["lmstudio:local-model"]}
 limits: {rows: 50, tool_calls: 9}
 allowed_tables: [a, b]
 sharing: {threshold: 5}
@@ -26,7 +26,7 @@ def cfg(tmp_path, monkeypatch):
 def test_yaml_keys_map_to_settings(cfg):
     s = Settings()
     assert s.database_url == "sqlite:///x.db"
-    assert s.model == "google:gemini-x" and s.fallback_models == ["lmstudio:qwen"]
+    assert s.model == "google:gemini-x" and s.fallback_models == ["lmstudio:local-model"]
     assert (s.row_limit, s.max_tool_calls, s.share_threshold) == (50, 9, 5)
     assert s.allow_tables == "a,b" and s.auth_mode == "jwt"
     assert s.fast_model.startswith("openrouter:")  # untouched keys keep defaults

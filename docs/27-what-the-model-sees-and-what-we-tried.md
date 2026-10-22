@@ -59,7 +59,7 @@ In production most traffic repeats, so these routes, not the model price, decide
 | Idea | What we measured | Verdict and why | File |
 |---|---|---|---|
 | Cross-encoder rerank of retrieval (B-051) | recall@5 of gold tables fell on both sets | rejected: the rerankers were trained on web text, not schema | doc 08 "Cross-encoder rerank" |
-| Larger embedding models (embeddinggemma-300m, Qwen3-Embedding-0.6B) | recall@5 0.552 and 0.517 vs arctic-embed-s 0.621 | kept the small one: better and 5× faster | `jms_staging/embed_compare_2026-10-21.json` |
+| A larger embedding model (embeddinggemma-300m) | recall@5 0.552 vs arctic-embed-s 0.621 | kept the small one: better and 5× faster | `jms_staging/embed_compare_2026-10-21.json` |
 | Execution agreement: 2 extra candidate queries, judge on disagreement (B-048) | 10/12 + 10/12 on vs 10/12 + 9/12 off, +$0.0007 per checked turn | built, **off**: no clear gain at 12 cases | doc 04, `demo_property/eval_results_sonnet_agreement_on_{1,2}.json` |
 | Retrieval by query shape (skeleton similarity, B-050) | finds the right saved report 13/17 vs words 1/17; answers 3/17 vs 3/18 at +22 % cost | built, **off**: strong retrieval signal, no answer gain yet (needs more saved reports) | `jms_staging/eval_results_shape_on_drafts20.json` |
 | Spelling fallback for values (B-047) | no change on Sonnet | kept (free, helps cheaper models), not counted as a gain | doc 08 |
@@ -70,7 +70,6 @@ In production most traffic repeats, so these routes, not the model price, decide
 | Explore cheaply, Sonnet always writes the answer from the findings | demo 8/12 at $0.243 | rejected: Sonnet anchored on the cheap draft (same misses as Haiku) and cost as much as Sonnet alone on a small schema | `demo_property/eval_results_decide.json` |
 | Gemini 3.8 Flash as agent, untuned | JMS 3 reports, 10 errors (tool budget) | not default; profiles added (B-012) | `jms_staging/eval_results_gemini38flash.json` |
 | Local model in LM Studio (gemma-4-e2b) | demo 1/10 | far too weak for agentic SQL at this size | doc 20 §4.1 |
-| DeepSeek V4.1 Flash as agent | demo 8/12 at $0.020 | weaker than GPT-6 Luna Pro at the same price | `demo_property/eval_results_deepseek-v4.1-flash.json` |
 | EXPLAIN cost gate (B-058) | not built | plan estimates are dialect-specific and unreliable; timeouts already bound runaway queries; cartesian joins are caught structurally | BACKLOG B-058 |
 | Rerun Haiku's answer on Sonnet only on doubt, without the doubt signal of a clarification | see B-053 | superseded by the doubt-gated decide below | |
 

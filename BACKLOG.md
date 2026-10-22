@@ -261,7 +261,7 @@ result: 2026-10-21, `git log --grep B-027`; 131 passed (SQLite), 213 with Postgr
 needs: docker
 do: **Research first.** Then:
 1. Add an `embeddings_url` key to use a TEI container; otherwise keep fastembed.
-2. Compare arctic-embed-s against EmbeddingGemma-300m and Qwen3-Embedding-0.6B on retrieval: hit@5 for schema search on the demo gold questions (new offline metric).
+2. Compare arctic-embed-s against EmbeddingGemma-300m on retrieval: hit@5 for schema search on the demo gold questions (new offline metric).
 3. Switch the default only if better.
 done when: a results table goes into doc 08, and the default is changed or kept with evidence.
 result: 2026-10-21, `git log --grep B-028`; default kept (arctic hybrid recall@5 0.621 vs 0.552 / 0.517 on 12 validated questions), fixtures/jms_staging/embed_compare_2026-10-21.json. `embeddings` key takes a model or TEI URL (no new key). TEI not run (amd64-only image).
@@ -452,7 +452,7 @@ result: 2026-10-21. `safety.value_filters/refine_sql`, `App.filter_choices/refin
 
 ### [x] B-061 · Not Sonnet for everything: cheaper agent models and doubt-gated decide
 why: the user asked for a hybrid instead of Sonnet by default, without losing accuracy.
-result: 2026-10-21. `models.decide` (off): the agent model answers, the decide model settles turns with doubt (clarify, trap, grain, review) from its lookups. Demo: GPT-6 Luna Pro 9/12 $0.030, MiMo 9/12 $0.026, DeepSeek 8/12, Haiku 7/12, Sonnet 9–11/12 $0.19–0.25; tiered demo 9/12 $0.028 but JMS-6 $0.395 vs Sonnet $0.373 (cheap model unsure on 5/6). Explore-then-always-decide rejected (8/12, $0.243). Sonnet stays the default; doc 20 §5b, doc 27.
+result: 2026-10-21. `models.decide` (off): the agent model answers, the decide model settles turns with doubt (clarify, trap, grain, review) from its lookups. Demo: GPT-6 Luna Pro 9/12 $0.030, Haiku 7/12, Sonnet 9–11/12 $0.19–0.25; tiered demo 9/12 $0.028 but JMS-6 $0.395 vs Sonnet $0.373 (cheap model unsure on 5/6). Explore-then-always-decide rejected (8/12, $0.243). Sonnet stays the default; doc 20 §5b, doc 27.
 
 ### [x] B-062 · Orbitra: a made-up enterprise database to test on (no JMS)
 why: the user asked for a large synthetic company (200+ tables, more data than JMS, Indian and foreign) with its own gold set, tested without models first.

@@ -131,11 +131,11 @@ Suggested local models (Q4, approximate VRAM; tool-use badge in LM Studio):
 
 | Model | VRAM | Use |
 |---|---|---|
-| Qwen3.8-27B | ~20–24 GB | default local agent |
-| Qwen3.6-35B-A3B (MoE) | ~24 GB | faster |
-| gpt-oss-20b | ~16 GB | smaller GPUs |
-| gpt-oss-120b | ~66–80 GB | server class |
-| Arctic-Text2SQL-R1-7B / OmniSQL-7B (Apache-2.0) | ~6–8 GB | SQL-specialised; tool calling not verified |
+| gpt-oss-120b (OpenAI, Apache-2.0) | ~66–80 GB | default local agent, server class |
+| gpt-oss-20b (OpenAI, Apache-2.0) | ~16 GB | smaller GPUs |
+| a recent Gemma (Google), Mistral or Llama (Meta) instruct model with tool use | varies | alternatives; measure before use |
+
+Chinese-origin models (DeepSeek, Qwen, GLM, MiMo, Kimi, BAAI, ...) are excluded by policy (2026-10-22).
 
 Verified: the `lmstudio:` path drives a full agent turn over the OpenAI-compatible protocol
 (`tests/test_llm.py::test_lmstudio_wire_protocol_end_to_end`, against a stand-in server).
@@ -237,7 +237,7 @@ What this shows:
 |---|---|---|---|---|
 | Accuracy first (default) | Sonnet 5.5 | Haiku 5.5 | — | `google:gemini-3.8-flash` |
 | Cost first (small schemas, §5b) | GPT-6 Luna Pro + `decide: Sonnet 5.5` | Haiku 5.5 | — | — |
-| Offline | `lmstudio:<Qwen3.8-27B>` | same | — | — |
+| Offline | `lmstudio:<gpt-oss-120b>` | same | — | — |
 | Gemini experiment | `google:gemini-3.8-flash` (after P1.10) | `google:gemini-3.5-flash-lite` | Sonnet 5.5 | — |
 
 ## Caching the growing turn (2026-10-21, B-052)
@@ -283,8 +283,6 @@ Demo gold (12), one run each, everything else unchanged:
 |---|---|---|---|
 | Sonnet 5.5 ($2/$10), recent runs | 9–11/12 | $0.19–0.25 | `eval_results_sonnet_compact.json`, `_fanout_probe.json` |
 | GPT-6 Luna Pro ($0.10/$0.50) | 9/12 | $0.030 | `eval_results_gpt-6-luna.json` |
-| MiMo v2.6 Pro ($0.435/$0.87) | 9/12 | $0.026 | `eval_results_mimo-v2.6-pro.json` |
-| DeepSeek V4.1 Flash ($0.15/$0.60) | 8/12 | $0.020 | `eval_results_deepseek-v4.1-flash.json` |
 | Haiku 5.5 ($0.10/$0.50) | 7/12 | $0.017 | `eval_results_haiku_only.json` |
 
 On the JMS schema (6 validated prompts) GPT-6 Luna Pro **asked a clarifying question on 5 of 6**

@@ -5,7 +5,7 @@ leaderboards and papers. Items marked *(unverified)* came only from secondary so
 
 ## 1. Text-to-SQL state of the art
 
-- **Spider 2.0** (spider2-sql.github.io): Lite top 76.23 (Tianqiong Data Agent + GLM 5.2); the open
+- **Spider 2.0** (spider2-sql.github.io): Lite top 76.23 (an agent built on a model excluded by our policy); the open
   source ktx (Kaelio, Apache-2.0) is at 73.67. Academic baselines are much lower (ProSPy 60.15 with
   Claude Opus 4.5, no voting).
 - **Annotation-error caution:** CIDR 2026 (Jin et al.) found 66.1% of the 121 Spider2-Snow tasks with
@@ -100,7 +100,7 @@ against `eval_results_sonnet_2026-10-21b.json`, and gains under ~20 points need 
 | Cross-encoder rerank of the RRF top 30 | fastembed 0.9 `TextCrossEncoder` ✓; ms-marco-MiniLM-L-6 (Apache, 80 MB) | **rejected** after measuring: recall@5 fell on both sets (JMS 0.621 → 0.483–0.586, demo 0.969 → 0.906–0.938) and added 0.13–2.6 s (doc 08, B-051) |
 | Separate schema-linking stage | RSL-SQL arXiv 2411.00073, SchemaGraphSQL (unverified) | rejected: the agent already explores with `search_schema`/`describe_table`; on enterprise schemas (BEAVER) knowledge, not linking, is the bottleneck |
 | MinHash/LSH value index | datasketch 2.0 (MIT) ✓ | rejected for now: only for high-cardinality free text, which is deliberately not indexed |
-| SQL-specialised open models (Arctic-Text2SQL-R1-7B, OmniSQL-7B, XiYanSQL-QwenCoder-7B; all Apache-2.0 ✓) | HF model cards | rejected as the agent (single-shot, no tool calling); possible offline candidate generator later |
+| SQL-specialised open 7B models | HF model cards | rejected: single-shot, no tool calling, and the published ones are built on Chinese-origin base models (excluded by policy) |
 | ragas, DeepEval | ragas 0.4.3 ✓ has no SQL metrics | rejected: pydantic-evals + Phoenix annotations cover it |
 
 ## 6. Primary sources

@@ -24,7 +24,7 @@ from rebo.retrieval import Embedder, Index, get_embedder
 from rebo.safety import tables_in
 from rebo.store import Store
 
-MODELS = ["snowflake/snowflake-arctic-embed-s", "google/embeddinggemma-300m", "Qwen/Qwen3-Embedding-0.6B"]
+MODELS = ["snowflake/snowflake-arctic-embed-s", "google/embeddinggemma-300m"]
 
 
 def top_tables(refs: list[str], k: int = 5) -> list[str]:

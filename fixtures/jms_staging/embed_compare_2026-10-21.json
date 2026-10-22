@@ -61,36 +61,6 @@
     "dense_recall@5": 0.534,
     "hybrid_recall@5": 0.534
    }
-  },
-  {
-   "model": "Qwen/Qwen3-Embedding-0.6B",
-   "docs": 2976,
-   "embed_seconds": 350.1,
-   "fixtures/jms_staging/gold_custom_reports.jsonl:validated": {
-    "cases": 12,
-    "dense_recall@5": 0.414,
-    "hybrid_recall@5": 0.517
-   },
-   "fixtures/jms_staging/gold_custom_reports.jsonl:drafts": {
-    "cases": 67,
-    "dense_recall@5": 0.445,
-    "hybrid_recall@5": 0.534
-   }
-  },
-  {
-   "model": "Qwen/Qwen3-Embedding-0.6B+qp",
-   "docs": 2976,
-   "embed_seconds": 193.0,
-   "fixtures/jms_staging/gold_custom_reports.jsonl:validated": {
-    "cases": 12,
-    "dense_recall@5": 0.414,
-    "hybrid_recall@5": 0.517
-   },
-   "fixtures/jms_staging/gold_custom_reports.jsonl:drafts": {
-    "cases": 67,
-    "dense_recall@5": 0.445,
-    "hybrid_recall@5": 0.534
-   }
   }
  ]
 }

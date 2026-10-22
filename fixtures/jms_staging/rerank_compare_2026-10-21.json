@@ -18,10 +18,6 @@
    "jinaai/jina-reranker-v1-turbo-en": {
     "recall@5": 0.586,
     "ms_per_question": 233
-   },
-   "BAAI/bge-reranker-v2-m3-int8": {
-    "recall@5": 0.483,
-    "ms_per_question": 2640
    }
   }
  ]
