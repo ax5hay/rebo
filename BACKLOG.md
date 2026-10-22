@@ -453,3 +453,14 @@ result: 2026-10-21. `safety.value_filters/refine_sql`, `App.filter_choices/refin
 ### [x] B-061 · Not Sonnet for everything: cheaper agent models and doubt-gated decide
 why: the user asked for a hybrid instead of Sonnet by default, without losing accuracy.
 result: 2026-10-21. `models.decide` (off): the agent model answers, the decide model settles turns with doubt (clarify, trap, grain, review) from its lookups. Demo: GPT-6 Luna Pro 9/12 $0.030, MiMo 9/12 $0.026, DeepSeek 8/12, Haiku 7/12, Sonnet 9–11/12 $0.19–0.25; tiered demo 9/12 $0.028 but JMS-6 $0.395 vs Sonnet $0.373 (cheap model unsure on 5/6). Explore-then-always-decide rejected (8/12, $0.243). Sonnet stays the default; doc 20 §5b, doc 27.
+
+### [x] B-062 · Orbitra: a made-up enterprise database to test on (no JMS)
+why: the user asked for a large synthetic company (200+ tables, more data than JMS, Indian and foreign) with its own gold set, tested without models first.
+result: 2026-10-22. `fixtures/orbitra` (README): 221 tables, ~3.1M rows (Faker 40.43, seeded), PostgreSQL service `orbitra-db` with a read-only login, `rebo.yaml`, 48 gold questions, 8 conversations, `tools/orbitra_check.py`. Offline: gold 48/48, retrieval recall@8 0.845 (all tables 32/48), saved reports answered with no model 48/48. `tests/test_orbitra.py` checks coherence on a small SQLite build.
+
+### [x] B-063 · Protected-column detection: secrets, not ids, flags or customer codes
+result: 2026-10-22. Found on Orbitra: the name rule hid api_key_id, mfa_enabled and customer codes and missed bank account numbers and PAN. Now exactly the 8 real secrets; JMS only unhides five *_token_id identifiers (docs/07 §2).
+
+### [ ] B-064 · Model runs on Orbitra
+needs: llm, human (the user starts the paid runs)
+do: `REBO_CONFIG=fixtures/orbitra/rebo.yaml uv run python tools/eval_run.py fixtures/orbitra/gold.jsonl fixtures/orbitra/eval_results_<model>.json`, then `tools/eval_conversations.py fixtures/orbitra/conversations.jsonl ...`. Compare with the offline retrieval misses (employee and customer_account are the hub tables most often outside the first 8).
