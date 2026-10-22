@@ -1,0 +1,309 @@
+{
+ "run": "2026-10-22",
+ "model": "openrouter:google/gemma-4-31b-it",
+ "cases": "fixtures/orbitra/gold.jsonl",
+ "review_pairs": 30,
+ "review_errors": 0,
+ "wrong_caught": "28/30",
+ "false_alarms": "2/30",
+ "fills_right": "19/24",
+ "cost_usd": 0.0115,
+ "review": [
+  {
+   "id": "or-01",
+   "flags_correct": false,
+   "flags_wrong": true
+  },
+  {
+   "id": "or-04",
+   "flags_correct": false,
+   "flags_wrong": false
+  },
+  {
+   "id": "or-05",
+   "flags_correct": false,
+   "flags_wrong": true
+  },
+  {
+   "id": "or-07",
+   "flags_correct": false,
+   "flags_wrong": true
+  },
+  {
+   "id": "or-08",
+   "flags_correct": false,
+   "flags_wrong": true
+  },
+  {
+   "id": "or-09",
+   "flags_correct": false,
+   "flags_wrong": true
+  },
+  {
+   "id": "or-10",
+   "flags_correct": false,
+   "flags_wrong": true
+  },
+  {
+   "id": "or-12",
+   "flags_correct": false,
+   "flags_wrong": true
+  },
+  {
+   "id": "or-13",
+   "flags_correct": false,
+   "flags_wrong": true
+  },
+  {
+   "id": "or-14",
+   "flags_correct": true,
+   "flags_wrong": true
+  },
+  {
+   "id": "or-16",
+   "flags_correct": false,
+   "flags_wrong": true
+  },
+  {
+   "id": "or-17",
+   "flags_correct": false,
+   "flags_wrong": true
+  },
+  {
+   "id": "or-18",
+   "flags_correct": false,
+   "flags_wrong": true
+  },
+  {
+   "id": "or-20",
+   "flags_correct": false,
+   "flags_wrong": true
+  },
+  {
+   "id": "or-22",
+   "flags_correct": false,
+   "flags_wrong": true
+  },
+  {
+   "id": "or-23",
+   "flags_correct": false,
+   "flags_wrong": true
+  },
+  {
+   "id": "or-24",
+   "flags_correct": false,
+   "flags_wrong": true
+  },
+  {
+   "id": "or-26",
+   "flags_correct": false,
+   "flags_wrong": true
+  },
+  {
+   "id": "or-27",
+   "flags_correct": false,
+   "flags_wrong": true
+  },
+  {
+   "id": "or-29",
+   "flags_correct": false,
+   "flags_wrong": true
+  },
+  {
+   "id": "or-34",
+   "flags_correct": false,
+   "flags_wrong": true
+  },
+  {
+   "id": "or-35",
+   "flags_correct": false,
+   "flags_wrong": true
+  },
+  {
+   "id": "or-37",
+   "flags_correct": false,
+   "flags_wrong": true
+  },
+  {
+   "id": "or-41",
+   "flags_correct": false,
+   "flags_wrong": false
+  },
+  {
+   "id": "or-42",
+   "flags_correct": false,
+   "flags_wrong": true
+  },
+  {
+   "id": "or-43",
+   "flags_correct": false,
+   "flags_wrong": true
+  },
+  {
+   "id": "or-44",
+   "flags_correct": false,
+   "flags_wrong": true
+  },
+  {
+   "id": "or-45",
+   "flags_correct": true,
+   "flags_wrong": true
+  },
+  {
+   "id": "or-46",
+   "flags_correct": false,
+   "flags_wrong": true
+  },
+  {
+   "id": "or-48",
+   "flags_correct": false,
+   "flags_wrong": true
+  }
+ ],
+ "fills": [
+  {
+   "id": "or-01",
+   "from": "Active",
+   "to": "Exited",
+   "ok": true
+  },
+  {
+   "id": "or-05",
+   "from": "Approved",
+   "to": "Cancelled",
+   "ok": true
+  },
+  {
+   "id": "or-07",
+   "from": "FY24-25 Annual",
+   "to": "FY25-26 Annual",
+   "ok": true
+  },
+  {
+   "id": "or-08",
+   "from": "Cancelled",
+   "to": "Delivered",
+   "ok": true
+  },
+  {
+   "id": "or-09",
+   "from": "Cancelled",
+   "to": "Delivered",
+   "ok": true
+  },
+  {
+   "id": "or-10",
+   "from": "Karnataka",
+   "to": "Uttar Pradesh",
+   "ok": true
+  },
+  {
+   "id": "or-14",
+   "from": "Active",
+   "to": "Cancelled",
+   "ok": true
+  },
+  {
+   "id": "or-16",
+   "from": "Cancelled",
+   "to": "Delivered",
+   "ok": true
+  },
+  {
+   "id": "or-17",
+   "from": "Overdue",
+   "to": "Paid",
+   "ok": true
+  },
+  {
+   "id": "or-18",
+   "from": "Paid",
+   "to": "Partially paid",
+   "ok": false
+  },
+  {
+   "id": "or-20",
+   "from": "GBP",
+   "to": "INR",
+   "ok": true
+  },
+  {
+   "id": "or-22",
+   "from": "Overdue",
+   "to": "Paid",
+   "ok": true
+  },
+  {
+   "id": "or-23",
+   "from": "Cancelled",
+   "to": "Closed",
+   "ok": true
+  },
+  {
+   "id": "or-24",
+   "from": "Pending approval",
+   "to": "Converted to PO",
+   "ok": true
+  },
+  {
+   "id": "or-26",
+   "from": "Reimbursed",
+   "to": "Rejected",
+   "ok": true
+  },
+  {
+   "id": "or-27",
+   "from": "In use",
+   "to": "Idle",
+   "ok": true
+  },
+  {
+   "id": "or-29",
+   "from": "Completed",
+   "to": "Cancelled",
+   "ok": false
+  },
+  {
+   "id": "or-34",
+   "from": "Offline",
+   "to": "Online",
+   "ok": true
+  },
+  {
+   "id": "or-41",
+   "from": "Approved",
+   "to": "Pending",
+   "ok": false
+  },
+  {
+   "id": "or-42",
+   "from": "Red",
+   "to": "Green",
+   "ok": true
+  },
+  {
+   "id": "or-43",
+   "from": "Approved",
+   "to": "Rejected",
+   "ok": true
+  },
+  {
+   "id": "or-45",
+   "from": "LinkedIn",
+   "to": "Organic search",
+   "ok": true
+  },
+  {
+   "id": "or-46",
+   "from": "plant",
+   "to": "office",
+   "ok": false
+  },
+  {
+   "id": "or-48",
+   "from": "High",
+   "to": "Medium",
+   "ok": false
+  }
+ ]
+}

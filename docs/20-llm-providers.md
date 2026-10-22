@@ -303,3 +303,32 @@ at stake instead: answer cache, saved-report reuse, parameter fill, re-runs, sch
 as" switches cost $0 per question (doc 27 §2); message caching cut JMS cost 2.2× (B-052) and compact
 tool results 25 % of input (B-054). Settings for a small, simple schema:
 `models: {agent: openrouter:openai/gpt-6-luna-pro, decide: openrouter:anthropic/claude-sonnet-5.5}`.
+
+## 5c. Other non-Claude models on Orbitra (2026-10-22): Claude stays
+
+Only models from non-Chinese labs are considered (policy, 2026-10-22). Orbitra gold (48 questions,
+221-table database), scored with `tools/rescore.py` ("same numbers" counts right answers presented
+differently):
+
+| Agent | Same numbers | Cost for 48 | Median s / question | Model requests / question | Note |
+|---|---|---|---|---|---|
+| **Claude Sonnet 5.5 (default)** | **44/48** | $1.11 | **11** | 3.0 | |
+| xAI Grok 4.3 ($1.25/$2.50) | 40/48 | $0.62 | 18 | 3.5 | cheaper, less accurate, slower |
+| Google Gemini 3.8 Flash ($0.83/$4.13) | stopped | $0.41 for 16 questions | ~100 | 7.3 | 3 errors in 16; 41k tokens a question |
+| Mistral Large 4 ($1.36/$4.18) | stopped | $0.42 for ~20 | ~45 | 4.1 | stopped at the user's request |
+
+Why the others are slower: they need more round-trips (each re-sends the turn), ReBo caches the growing
+turn only for Claude (OpenRouter keeps one cache breakpoint for other providers, so every request
+re-reads 15–40k prompt tokens), some reason silently before answering, and provider throughput varies.
+
+Light model (`tools/fast_model_check.py`: second opinion on 30 correct reports and 30 wrong twins, and
+24 value fills from saved reports):
+
+| Light model | Wrong caught | False alarms | Values filled | Cost |
+|---|---|---|---|---|
+| **Claude Haiku 5.5 (default)** | 30/30 | 9/30 | 19/24 | $0.018 |
+| OpenAI GPT-6 Luna | 30/30 | 15/30 | 18/24 | $0.010 |
+| Google Gemma 4 31B | 28/30 | 2/30 | 19/24 | $0.012 |
+
+**Decision (the user, 2026-10-22): Claude for both, Sonnet 5.5 agent and Haiku 5.5 light model.**
+Other providers remain usable through the same model strings; nothing in the bot depends on Claude.

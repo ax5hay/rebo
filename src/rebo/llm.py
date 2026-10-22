@@ -78,6 +78,13 @@ PRICES = {
     # Chinese-origin models are excluded by policy.
     "openai/gpt-6-luna-pro": (0.10, 0.01, 0.50),
     "openai/gpt-6-luna": (0.10, 0.01, 0.50),
+    "x-ai/grok-4.3": (1.25, 0.20, 2.50),
+    "mistralai/mistral-large-4-0": (1.36, 0.14, 4.18),
+    "meta/muse-spark-1.3": (1.25, 0.15, 4.25),
+    "nvidia/nemotron-3-ultra-550b-a55b": (0.60, 0.12, 2.40),
+    "google/gemma-4-31b-it": (0.20, 0.20, 0.40),
+    "mistralai/mistral-small-2603": (0.15, 0.015, 0.60),
+    "nvidia/nemotron-3.5-super-vl": (0.15, 0.02, 0.50),
     # Google direct (google: models), ai.google.dev/gemini-api/docs/pricing checked 2026-10-21: these prices hold
     # through 2026-12-31 and double on 2027-01-01.
     "gemini-3.8-flash": (0.75, 0.075, 3.75),
