@@ -5,7 +5,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Command } from "cmdk";
 import {
-  Activity, BookMarked, CircleHelp, ClipboardCheck, History, MessagesSquare, Plus, Search, Settings2, Shield, SquarePen, SunMoon, UserRound, X,
+  Activity, BookMarked, CircleHelp, ClipboardCheck, History, Info, MessagesSquare, Plus, Search, Settings2, Shield, SquarePen, SunMoon, UserRound, X,
 } from "lucide-react";
 import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
@@ -175,7 +175,7 @@ function Palette({ me, close, openHistory }: { me: Me; close: () => void; openHi
   const [q, setQ] = useState("");
   const recent = useQuery({ queryKey: ["conversations"], queryFn: () => get<any[]>("/conversations") });
   const go = (to: string) => { navigate(to); close(); };
-  const places = [...visible(me), { to: "/me", label: "You and your settings", icon: UserRound }, { to: "/help", label: "Help", icon: CircleHelp }];
+  const places = [...visible(me), { to: "/me", label: "You and your settings", icon: UserRound }, { to: "/help", label: "Help", icon: CircleHelp }, { to: "/about", label: "About ReBo", icon: Info }];
   return (
     <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && close()}>
       <Glass className="palette" strength={30}>

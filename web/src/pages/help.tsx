@@ -117,6 +117,7 @@ export default function HelpPage() {
               {s.body}
             </section>
           ))}
+          <p className="aboutlink"><Link to="/about">About ReBo<ArrowRight /></Link></p>
         </div>
       </div>
     </div>

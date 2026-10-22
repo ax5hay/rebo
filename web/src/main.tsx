@@ -12,6 +12,7 @@ const ConfigPage = lazy(() => import("./pages/config"));
 const InsightsPage = lazy(() => import("./pages/insights"));
 const MePage = lazy(() => import("./pages/me"));
 const HelpPage = lazy(() => import("./pages/help"));
+const AboutPage = lazy(() => import("./pages/about"));
 const later = (page: React.ReactNode) => <Suspense fallback={<p className="empty">Loading…</p>}>{page}</Suspense>;
 import "./styles.css";
 
@@ -32,6 +33,7 @@ const router = createBrowserRouter(
         { path: "insights", element: later(<InsightsPage />) },
         { path: "me", element: later(<MePage />) },
         { path: "help", element: later(<HelpPage />) },
+        { path: "about", element: later(<AboutPage />) },
       ],
     },
   ],

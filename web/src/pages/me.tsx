@@ -115,6 +115,7 @@ export default function MePage() {
           </Group>
 
           <SignInAs />
+          <p className="aboutlink"><Link to="/about">About ReBo<ArrowRight /></Link></p>
         </div>
       </div>
     </div>

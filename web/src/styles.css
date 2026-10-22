@@ -996,3 +996,40 @@ body::before { content: ""; position: fixed; inset: -10vmax; z-index: -1; pointe
   .whead h1 { font-size: 34px; }
   .rolegrid { grid-template-columns: 1fr; }
 }
+
+/* ---------- About: the app, reached from Help, You and the palette ---------- */
+.about { max-width: 980px; }
+.abouthero { margin: 18px 0 30px; padding: 34px 36px; border-radius: 30px; }
+.abouthero h1 { margin: 20px 0 10px; font: 750 40px/1.06 var(--display); letter-spacing: -0.035em; text-wrap: balance; max-width: 20ch; }
+.abouthero p { margin: 0; max-width: 62ch; color: var(--ink-2); font-size: 16.5px; line-height: 1.6; }
+.aboutsec { margin: 0 0 30px; }
+.aboutsec > h2 { margin: 0 0 14px 4px; font: 690 20px var(--display); letter-spacing: -0.015em; }
+.flow { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; counter-reset: none; }
+.flow li { display: grid; gap: 6px; align-content: start; padding: 16px; border-radius: 20px; background: var(--card); border: 0.5px solid var(--line); box-shadow: var(--card-shadow); }
+.flow .fnum { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font: 700 12.5px var(--font); color: var(--accent-ink); background: var(--accent); }
+.flow b { font: 680 16px var(--display); }
+.flow span:last-child { color: var(--ink-2); font-size: 14px; line-height: 1.45; }
+.nevergrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.card.never { display: grid; gap: 6px; padding: 16px; align-content: start; }
+.card.never svg { width: 20px; height: 20px; color: var(--danger); }
+.card.never b { font: 670 15.5px var(--display); }
+.card.never span { color: var(--ink-2); font-size: 14px; line-height: 1.45; }
+.aboutsec.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.aboutsec.two .card { padding: 20px 22px; }
+.aboutsec.two h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font: 680 17px var(--display); }
+.aboutsec.two h2 svg { width: 18px; height: 18px; color: var(--accent); }
+.aboutsec.two p { margin: 0 0 8px; color: var(--ink-2); font-size: 14.5px; line-height: 1.55; }
+.builtwith { margin: 0; padding-left: 18px; color: var(--ink-2); font-size: 14.5px; line-height: 1.7; }
+.madeby { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 10px 4px 40px; padding-top: 18px; border-top: 0.5px solid var(--line-2);
+  color: var(--ink-2); font-size: 14px; }
+.madeby svg { width: 16px; height: 16px; color: var(--ink-3); }
+.madeby a { color: var(--ink); font-weight: 600; }
+.madeby .cardlink { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 999px;
+  background: var(--glass-tint); border: 0.5px solid var(--glass-edge); color: var(--accent-text); }
+.madeby .cardlink:hover { text-decoration: none; background: var(--lens-pill); }
+.madeby .cardlink svg { color: inherit; }
+.aboutlink { margin: 4px 0 0 4px; font-size: 13.5px; }
+.aboutlink a { display: inline-flex; align-items: center; gap: 4px; color: var(--ink-2); }
+.aboutlink svg { width: 14px; height: 14px; }
+@media (max-width: 900px) { .flow, .nevergrid { grid-template-columns: 1fr 1fr; } .aboutsec.two { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .flow, .nevergrid { grid-template-columns: 1fr; } .abouthero { padding: 24px 20px; } .abouthero h1 { font-size: 30px; } }
