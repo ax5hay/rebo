@@ -37,6 +37,24 @@ services:
       interval: 2s
       retries: 30
 
+  # Orbitra Energy Systems: a made-up company (221 tables, ~2M synthetic rows) for testing ReBo at
+  # enterprise size, unrelated to JMS. fixtures/orbitra/build.py fills it; the bot reads as orbitra_ro.
+  #   docker compose up -d orbitra-db && uv run --extra synth python fixtures/orbitra/build.py
+  orbitra-db:
+    image: postgres:18.0
+    environment:
+      POSTGRES_USER: orbitra
+      POSTGRES_PASSWORD: orbitra
+      POSTGRES_DB: orbitra
+    ports: ["5434:5432"]
+    volumes:
+      - orbitradata:/var/lib/postgresql
+      - ./fixtures/orbitra/readonly-user.sql:/docker-entrypoint-initdb.d/01-readonly-user.sql:ro
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "orbitra"]
+      interval: 2s
+      retries: 30
+
   bot:
     build: .
     profiles: ["bot"]
@@ -57,6 +75,7 @@ services:
     ports: ["127.0.0.1:6006:6006"]
 
 volumes:
+  orbitradata:
   dbdata:
   botstate:
   statedata:

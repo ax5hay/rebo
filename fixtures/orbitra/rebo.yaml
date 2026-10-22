@@ -1,0 +1,8 @@
+# The whole configuration for Orbitra Energy Systems, a made-up company (fixtures/orbitra/build.py).
+# Compare with rebo.example.yaml: only the database and where the bot keeps its memory differ. Nothing
+# about meters, invoices or fiscal years is configured: the bot learns that from the database and people.
+database: postgresql+psycopg://orbitra_ro:orbitra_ro@127.0.0.1:5434/orbitra   # read-only login
+state_dir: data/orbitra
+models:
+  agent: openrouter:anthropic/claude-sonnet-5.5
+  fast: openrouter:anthropic/claude-haiku-5.5

@@ -1,0 +1,1368 @@
+{
+ "run": "2026-10-22",
+ "cases": 48,
+ "tables_in_db": 221,
+ "protected_columns": [
+  "api_key.api_token",
+  "app_user.password_hash",
+  "bank_account.account_number",
+  "customer_account.pan_number",
+  "employee.bank_account_no",
+  "employee.pan_number",
+  "supplier.bank_account_no",
+  "supplier.pan_number"
+ ],
+ "gold_queries_ok": "48/48",
+ "gold_query_ms_max": 28,
+ "retrieval_recall_at_8_mean": 0.845,
+ "retrieval_all_tables_found": "32/48",
+ "free_route_matches": "48/48",
+ "free_routes": [
+  "direct"
+ ],
+ "gold": [
+  {
+   "id": "or-01",
+   "ok": true,
+   "rows": 20,
+   "truncated": false,
+   "ms": 23
+  },
+  {
+   "id": "or-02",
+   "ok": true,
+   "rows": 16,
+   "truncated": false,
+   "ms": 7
+  },
+  {
+   "id": "or-03",
+   "ok": true,
+   "rows": 78,
+   "truncated": false,
+   "ms": 6
+  },
+  {
+   "id": "or-04",
+   "ok": true,
+   "rows": 12,
+   "truncated": false,
+   "ms": 8
+  },
+  {
+   "id": "or-05",
+   "ok": true,
+   "rows": 8,
+   "truncated": false,
+   "ms": 6
+  },
+  {
+   "id": "or-06",
+   "ok": true,
+   "rows": 31,
+   "truncated": false,
+   "ms": 8
+  },
+  {
+   "id": "or-07",
+   "ok": true,
+   "rows": 20,
+   "truncated": false,
+   "ms": 7
+  },
+  {
+   "id": "or-08",
+   "ok": true,
+   "rows": 12,
+   "truncated": false,
+   "ms": 10
+  },
+  {
+   "id": "or-09",
+   "ok": true,
+   "rows": 10,
+   "truncated": false,
+   "ms": 18
+  },
+  {
+   "id": "or-10",
+   "ok": true,
+   "rows": 271,
+   "truncated": false,
+   "ms": 6
+  },
+  {
+   "id": "or-11",
+   "ok": true,
+   "rows": 72,
+   "truncated": false,
+   "ms": 5
+  },
+  {
+   "id": "or-12",
+   "ok": true,
+   "rows": 11,
+   "truncated": false,
+   "ms": 9
+  },
+  {
+   "id": "or-13",
+   "ok": true,
+   "rows": 12,
+   "truncated": false,
+   "ms": 7
+  },
+  {
+   "id": "or-14",
+   "ok": true,
+   "rows": 6,
+   "truncated": false,
+   "ms": 5
+  },
+  {
+   "id": "or-15",
+   "ok": true,
+   "rows": 7,
+   "truncated": false,
+   "ms": 4
+  },
+  {
+   "id": "or-16",
+   "ok": true,
+   "rows": 15,
+   "truncated": false,
+   "ms": 10
+  },
+  {
+   "id": "or-17",
+   "ok": true,
+   "rows": 1,
+   "truncated": false,
+   "ms": 7
+  },
+  {
+   "id": "or-18",
+   "ok": true,
+   "rows": 10,
+   "truncated": false,
+   "ms": 28
+  },
+  {
+   "id": "or-19",
+   "ok": true,
+   "rows": 6,
+   "truncated": false,
+   "ms": 18
+  },
+  {
+   "id": "or-20",
+   "ok": true,
+   "rows": 317,
+   "truncated": false,
+   "ms": 7
+  },
+  {
+   "id": "or-21",
+   "ok": true,
+   "rows": 6,
+   "truncated": false,
+   "ms": 4
+  },
+  {
+   "id": "or-22",
+   "ok": true,
+   "rows": 460,
+   "truncated": false,
+   "ms": 7
+  },
+  {
+   "id": "or-23",
+   "ok": true,
+   "rows": 12,
+   "truncated": false,
+   "ms": 8
+  },
+  {
+   "id": "or-24",
+   "ok": true,
+   "rows": 19,
+   "truncated": false,
+   "ms": 5
+  },
+  {
+   "id": "or-25",
+   "ok": true,
+   "rows": 3,
+   "truncated": false,
+   "ms": 4
+  },
+  {
+   "id": "or-26",
+   "ok": true,
+   "rows": 7,
+   "truncated": false,
+   "ms": 8
+  },
+  {
+   "id": "or-27",
+   "ok": true,
+   "rows": 6,
+   "truncated": false,
+   "ms": 5
+  },
+  {
+   "id": "or-28",
+   "ok": true,
+   "rows": 16,
+   "truncated": false,
+   "ms": 5
+  },
+  {
+   "id": "or-29",
+   "ok": true,
+   "rows": 3,
+   "truncated": false,
+   "ms": 6
+  },
+  {
+   "id": "or-30",
+   "ok": true,
+   "rows": 12,
+   "truncated": false,
+   "ms": 9
+  },
+  {
+   "id": "or-31",
+   "ok": true,
+   "rows": 9,
+   "truncated": false,
+   "ms": 5
+  },
+  {
+   "id": "or-32",
+   "ok": true,
+   "rows": 11,
+   "truncated": false,
+   "ms": 7
+  },
+  {
+   "id": "or-33",
+   "ok": true,
+   "rows": 6,
+   "truncated": false,
+   "ms": 4
+  },
+  {
+   "id": "or-34",
+   "ok": true,
+   "rows": 20,
+   "truncated": false,
+   "ms": 9
+  },
+  {
+   "id": "or-35",
+   "ok": true,
+   "rows": 10,
+   "truncated": false,
+   "ms": 11
+  },
+  {
+   "id": "or-36",
+   "ok": true,
+   "rows": 14,
+   "truncated": false,
+   "ms": 9
+  },
+  {
+   "id": "or-37",
+   "ok": true,
+   "rows": 4,
+   "truncated": false,
+   "ms": 6
+  },
+  {
+   "id": "or-38",
+   "ok": true,
+   "rows": 6,
+   "truncated": false,
+   "ms": 8
+  },
+  {
+   "id": "or-39",
+   "ok": true,
+   "rows": 10,
+   "truncated": false,
+   "ms": 6
+  },
+  {
+   "id": "or-40",
+   "ok": true,
+   "rows": 155,
+   "truncated": false,
+   "ms": 6
+  },
+  {
+   "id": "or-41",
+   "ok": true,
+   "rows": 6,
+   "truncated": false,
+   "ms": 8
+  },
+  {
+   "id": "or-42",
+   "ok": true,
+   "rows": 100,
+   "truncated": false,
+   "ms": 5
+  },
+  {
+   "id": "or-43",
+   "ok": true,
+   "rows": 20,
+   "truncated": false,
+   "ms": 8
+  },
+  {
+   "id": "or-44",
+   "ok": true,
+   "rows": 8,
+   "truncated": false,
+   "ms": 8
+  },
+  {
+   "id": "or-45",
+   "ok": true,
+   "rows": 12,
+   "truncated": false,
+   "ms": 6
+  },
+  {
+   "id": "or-46",
+   "ok": true,
+   "rows": 2,
+   "truncated": false,
+   "ms": 4
+  },
+  {
+   "id": "or-47",
+   "ok": true,
+   "rows": 5,
+   "truncated": false,
+   "ms": 4
+  },
+  {
+   "id": "or-48",
+   "ok": true,
+   "rows": 82,
+   "truncated": false,
+   "ms": 5
+  }
+ ],
+ "retrieval": [
+  {
+   "id": "or-01",
+   "recall": 1.0,
+   "missing": [],
+   "likely": [
+    "employee",
+    "subscription",
+    "department",
+    "position",
+    "service_contract",
+    "customer_account",
+    "policy",
+    "product"
+   ]
+  },
+  {
+   "id": "or-02",
+   "recall": 1.0,
+   "missing": [],
+   "likely": [
+    "employee",
+    "office_location",
+    "position",
+    "emission_record",
+    "visitor_log",
+    "work_center",
+    "waste_record",
+    "facility_ticket"
+   ]
+  },
+  {
+   "id": "or-03",
+   "recall": 1.0,
+   "missing": [],
+   "likely": [
+    "exit_interview",
+    "employee",
+    "churn_reason",
+    "interview",
+    "compensation",
+    "leave_request",
+    "opportunity",
+    "opportunity_competitor"
+   ]
+  },
+  {
+   "id": "or-04",
+   "recall": 0.67,
+   "missing": [
+    "legal_entity"
+   ],
+   "likely": [
+    "payroll_run",
+    "fiscal_period",
+    "ap_payment",
+    "budget",
+    "performance_cycle",
+    "commission_payout",
+    "subscription_plan",
+    "payslip"
+   ]
+  },
+  {
+   "id": "or-05",
+   "recall": 1.0,
+   "missing": [],
+   "likely": [
+    "leave_request",
+    "leave_type",
+    "payment_term",
+    "change_request",
+    "budget",
+    "candidate",
+    "journal_entry"
+   ]
+  },
+  {
+   "id": "or-06",
+   "recall": 1.0,
+   "missing": [],
+   "likely": [
+    "training_enrollment",
+    "training_course",
+    "work_order",
+    "policy",
+    "data_subject_request",
+    "performance_review"
+   ]
+  },
+  {
+   "id": "or-07",
+   "recall": 0.5,
+   "missing": [
+    "department",
+    "employee"
+   ],
+   "likely": [
+    "performance_cycle",
+    "performance_review",
+    "fiscal_period",
+    "budget",
+    "supplier_rating",
+    "emission_record",
+    "depreciation_entry",
+    "subscription_plan"
+   ]
+  },
+  {
+   "id": "or-08",
+   "recall": 1.0,
+   "missing": [],
+   "likely": [
+    "purchase_order",
+    "subscription_plan",
+    "sales_order",
+    "fiscal_period",
+    "supplier_rating",
+    "performance_cycle",
+    "work_order",
+    "budget"
+   ]
+  },
+  {
+   "id": "or-09",
+   "recall": 0.33,
+   "missing": [
+    "product",
+    "sales_order_line"
+   ],
+   "likely": [
+    "sales_order",
+    "purchase_order",
+    "work_order",
+    "purchase_order_line",
+    "supplier_rating",
+    "budget",
+    "emission_record",
+    "sales_target"
+   ]
+  },
+  {
+   "id": "or-10",
+   "recall": 1.0,
+   "missing": [],
+   "likely": [
+    "customer_account",
+    "customer_site",
+    "legal_entity",
+    "supplier",
+    "gst_return",
+    "office_location",
+    "supplier_contact",
+    "product"
+   ]
+  },
+  {
+   "id": "or-11",
+   "recall": 1.0,
+   "missing": [],
+   "likely": [
+    "customer_account",
+    "customer_segment",
+    "contact",
+    "bank_account",
+    "customer_site",
+    "subscription"
+   ]
+  },
+  {
+   "id": "or-12",
+   "recall": 1.0,
+   "missing": [],
+   "likely": [
+    "customer_account",
+    "sales_territory",
+    "opportunity",
+    "opportunity_stage",
+    "sales_rep",
+    "sales_target",
+    "performance_cycle",
+    "sales_order"
+   ]
+  },
+  {
+   "id": "or-13",
+   "recall": 0.75,
+   "missing": [
+    "opportunity_stage"
+   ],
+   "likely": [
+    "competitor",
+    "supplier_rating",
+    "opportunity_competitor",
+    "sales_target",
+    "performance_cycle",
+    "opportunity",
+    "churn_reason",
+    "emission_record"
+   ]
+  },
+  {
+   "id": "or-14",
+   "recall": 1.0,
+   "missing": [],
+   "likely": [
+    "subscription_plan",
+    "subscription",
+    "csr_activity",
+    "sales_order",
+    "ar_invoice",
+    "subscription_event",
+    "customer_account",
+    "usage_record"
+   ]
+  },
+  {
+   "id": "or-15",
+   "recall": 1.0,
+   "missing": [],
+   "likely": [
+    "subscription",
+    "churn_reason",
+    "subscription_event",
+    "subscription_plan"
+   ]
+  },
+  {
+   "id": "or-16",
+   "recall": 0.67,
+   "missing": [
+    "employee"
+   ],
+   "likely": [
+    "sales_order",
+    "shipment",
+    "sales_order_line",
+    "sales_rep",
+    "device",
+    "work_order",
+    "sales_target"
+   ]
+  },
+  {
+   "id": "or-17",
+   "recall": 1.0,
+   "missing": [],
+   "likely": [
+    "ar_invoice",
+    "ap_invoice",
+    "sales_order",
+    "purchase_order"
+   ]
+  },
+  {
+   "id": "or-18",
+   "recall": 0.33,
+   "missing": [
+    "ar_receipt",
+    "customer_account"
+   ],
+   "likely": [
+    "ap_invoice",
+    "ar_invoice",
+    "stock_balance",
+    "ap_payment",
+    "gl_account"
+   ]
+  },
+  {
+   "id": "or-19",
+   "recall": 0.75,
+   "missing": [
+    "ar_receipt"
+   ],
+   "likely": [
+    "payment_term",
+    "customer_contract",
+    "ar_invoice",
+    "ap_invoice",
+    "customer_segment",
+    "customer_account",
+    "customer_site",
+    "sales_order"
+   ]
+  },
+  {
+   "id": "or-20",
+   "recall": 1.0,
+   "missing": [],
+   "likely": [
+    "price_list",
+    "ar_invoice",
+    "ap_invoice",
+    "customer_account",
+    "customer_contract",
+    "sales_order",
+    "holiday",
+    "purchase_order"
+   ]
+  },
+  {
+   "id": "or-21",
+   "recall": 1.0,
+   "missing": [],
+   "likely": [
+    "credit_note",
+    "emission_record",
+    "budget",
+    "depreciation_entry",
+    "fiscal_period",
+    "supplier_rating",
+    "material_issue",
+    "performance_cycle"
+   ]
+  },
+  {
+   "id": "or-22",
+   "recall": 1.0,
+   "missing": [],
+   "likely": [
+    "ar_invoice",
+    "ap_invoice",
+    "supplier",
+    "supplier_contact",
+    "credit_note",
+    "payment_term",
+    "supplier_rating"
+   ]
+  },
+  {
+   "id": "or-23",
+   "recall": 1.0,
+   "missing": [],
+   "likely": [
+    "purchase_order",
+    "supplier",
+    "supplier_rating",
+    "supplier_category",
+    "purchase_order_line",
+    "sales_order"
+   ]
+  },
+  {
+   "id": "or-24",
+   "recall": 0.5,
+   "missing": [
+    "department"
+   ],
+   "likely": [
+    "purchase_requisition",
+    "purchase_order",
+    "supplier",
+    "change_request",
+    "leave_request",
+    "job_requisition",
+    "warranty_claim",
+    "travel_request"
+   ]
+  },
+  {
+   "id": "or-25",
+   "recall": 1.0,
+   "missing": [],
+   "likely": [
+    "gst_return",
+    "customer_account",
+    "legal_entity",
+    "supplier",
+    "fiscal_period",
+    "emission_record",
+    "tax_code",
+    "depreciation_entry"
+   ]
+  },
+  {
+   "id": "or-26",
+   "recall": 1.0,
+   "missing": [],
+   "likely": [
+    "expense_claim",
+    "expense_line",
+    "legal_case",
+    "warranty_claim",
+    "ar_invoice",
+    "sales_order",
+    "fiscal_period",
+    "budget"
+   ]
+  },
+  {
+   "id": "or-27",
+   "recall": 1.0,
+   "missing": [],
+   "likely": [
+    "fixed_asset",
+    "depreciation_entry",
+    "asset_category",
+    "it_asset"
+   ]
+  },
+  {
+   "id": "or-28",
+   "recall": 1.0,
+   "missing": [],
+   "likely": [
+    "machine_downtime",
+    "work_center",
+    "machine",
+    "performance_cycle",
+    "fiscal_period",
+    "timesheet_entry",
+    "maintenance_order",
+    "budget"
+   ]
+  },
+  {
+   "id": "or-29",
+   "recall": 0.33,
+   "missing": [
+    "product",
+    "product_category"
+   ],
+   "likely": [
+    "work_order",
+    "purchase_order_line",
+    "movement_type",
+    "material_issue",
+    "bom_line",
+    "return_line",
+    "purchase_order",
+    "supplier_rating"
+   ]
+  },
+  {
+   "id": "or-30",
+   "recall": 1.0,
+   "missing": [],
+   "likely": [
+    "quality_inspection",
+    "defect",
+    "defect_type",
+    "legal_case"
+   ]
+  },
+  {
+   "id": "or-31",
+   "recall": 0.5,
+   "missing": [
+    "warehouse"
+   ],
+   "likely": [
+    "stock_balance",
+    "stock_movement",
+    "position",
+    "shipment",
+    "transfer_order",
+    "cycle_count"
+   ]
+  },
+  {
+   "id": "or-32",
+   "recall": 1.0,
+   "missing": [],
+   "likely": [
+    "shipment",
+    "purchase_order",
+    "shipment_event",
+    "carrier",
+    "journal_entry",
+    "sales_order"
+   ]
+  },
+  {
+   "id": "or-33",
+   "recall": 1.0,
+   "missing": [],
+   "likely": [
+    "return_reason",
+    "return_authorization",
+    "compensation",
+    "performance_cycle",
+    "supplier_rating",
+    "return_line",
+    "budget",
+    "travel_request"
+   ]
+  },
+  {
+   "id": "or-34",
+   "recall": 0.33,
+   "missing": [
+    "customer_account",
+    "customer_site"
+   ],
+   "likely": [
+    "device",
+    "subscription",
+    "ticket_category",
+    "subscription_plan",
+    "usage_record",
+    "legal_case",
+    "device_alert",
+    "service_contract"
+   ]
+  },
+  {
+   "id": "or-35",
+   "recall": 1.0,
+   "missing": [],
+   "likely": [
+    "charging_session",
+    "energy_consumption",
+    "marketing_event",
+    "lead",
+    "business_unit",
+    "page_view",
+    "campaign",
+    "subscription_plan"
+   ]
+  },
+  {
+   "id": "or-36",
+   "recall": 1.0,
+   "missing": [],
+   "likely": [
+    "charging_session",
+    "device",
+    "company_vehicle",
+    "lead",
+    "product_category",
+    "page_view",
+    "device_alert",
+    "visit_part_used"
+   ]
+  },
+  {
+   "id": "or-37",
+   "recall": 1.0,
+   "missing": [],
+   "likely": [
+    "support_ticket",
+    "escalation",
+    "ticket_priority",
+    "csat_response"
+   ]
+  },
+  {
+   "id": "or-38",
+   "recall": 1.0,
+   "missing": [],
+   "likely": [
+    "csat_response",
+    "support_channel",
+    "support_ticket",
+    "lead",
+    "training_enrollment",
+    "supplier_rating",
+    "campaign_channel"
+   ]
+  },
+  {
+   "id": "or-39",
+   "recall": 1.0,
+   "missing": [],
+   "likely": [
+    "service_request",
+    "service_contract",
+    "service_visit",
+    "maintenance_order",
+    "project_task",
+    "leave_request"
+   ]
+  },
+  {
+   "id": "or-40",
+   "recall": 0.67,
+   "missing": [
+    "employee"
+   ],
+   "likely": [
+    "service_visit",
+    "visit_part_used",
+    "maintenance_order",
+    "service_request",
+    "service_contract",
+    "technician",
+    "legal_case"
+   ]
+  },
+  {
+   "id": "or-41",
+   "recall": 0.75,
+   "missing": [
+    "device"
+   ],
+   "likely": [
+    "warranty_claim",
+    "product",
+    "product_category",
+    "warranty_policy",
+    "change_request",
+    "leave_request",
+    "expense_claim"
+   ]
+  },
+  {
+   "id": "or-42",
+   "recall": 0.33,
+   "missing": [
+    "customer_account",
+    "employee"
+   ],
+   "likely": [
+    "project",
+    "project_member",
+    "project_risk",
+    "rnd_project",
+    "project_task",
+    "service_contract"
+   ]
+  },
+  {
+   "id": "or-43",
+   "recall": 1.0,
+   "missing": [],
+   "likely": [
+    "legal_case",
+    "patent",
+    "visit_part_used",
+    "budget",
+    "project_task",
+    "timesheet_entry",
+    "project",
+    "price_list"
+   ]
+  },
+  {
+   "id": "or-44",
+   "recall": 1.0,
+   "missing": [],
+   "likely": [
+    "email_send",
+    "campaign_channel",
+    "campaign",
+    "contact",
+    "candidate",
+    "campaign_member",
+    "dunning_notice",
+    "form_submission"
+   ]
+  },
+  {
+   "id": "or-45",
+   "recall": 1.0,
+   "missing": [],
+   "likely": [
+    "web_session",
+    "visitor_log",
+    "charging_session",
+    "customer_account",
+    "travel_request",
+    "lead_source",
+    "marketing_event",
+    "contact"
+   ]
+  },
+  {
+   "id": "or-46",
+   "recall": 0.5,
+   "missing": [
+    "office_location"
+   ],
+   "likely": [
+    "project_type",
+    "lead",
+    "performance_cycle",
+    "energy_consumption",
+    "emission_record",
+    "budget",
+    "fiscal_period",
+    "business_unit"
+   ]
+  },
+  {
+   "id": "or-47",
+   "recall": 1.0,
+   "missing": [],
+   "likely": [
+    "csr_activity",
+    "budget",
+    "campaign",
+    "fiscal_period",
+    "emission_record",
+    "depreciation_entry",
+    "change_request",
+    "budget_line"
+   ]
+  },
+  {
+   "id": "or-48",
+   "recall": 0.67,
+   "missing": [
+    "employee"
+   ],
+   "likely": [
+    "audit_finding",
+    "internal_audit",
+    "audit_log",
+    "position",
+    "performance_review",
+    "lead",
+    "sales_target",
+    "maintenance_order"
+   ]
+  }
+ ],
+ "free": [
+  {
+   "id": "or-01",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-02",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-03",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-04",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-05",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-06",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-07",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-08",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-09",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-10",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-11",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-12",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-13",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-14",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-15",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-16",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-17",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-18",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-19",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-20",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-21",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-22",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-23",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-24",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-25",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-26",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-27",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-28",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-29",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-30",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-31",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-32",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-33",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-34",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-35",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-36",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-37",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-38",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-39",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-40",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-41",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-42",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-43",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-44",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-45",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-46",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-47",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  },
+  {
+   "id": "or-48",
+   "kind": "report",
+   "route": "direct",
+   "match": true
+  }
+ ]
+}

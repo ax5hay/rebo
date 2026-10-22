@@ -19,6 +19,7 @@ server, [OPERATIONS.md](../OPERATIONS.md); for changing the code, [CONTRIBUTING.
 | 10 | [API, UI and MCP](10-api-and-ui.md) | Identity headers, every route with payloads, UI screens, MCP, JMS host adapter |
 | 11 | [Evals and observability](11-evals-and-observability.md) | Eval format and evaluators, growing the eval set, offline tests, tracing |
 | 12 | [Local DB and synthetic data](12-local-db-and-synthetic-data.md) | Staging snapshot (aws-vault), privacy filter, Docker MySQL, generator algorithm |
+| – | [Orbitra: a made-up company](../fixtures/orbitra/README.md) | 221 tables, 3.1M synthetic rows (Indian and foreign), gold set, offline checks |
 | 13 | [Operations](13-operations.md) | Settings, CLI, setup on a new PC, backups, deployment, security checklist |
 | 14 | [Extraction ledger](14-extraction-ledger.md) | What was taken from the previous bots, what was dropped, and why |
 | 15 | [Roadmap](15-roadmap.md) | Built vs designed, next steps in order of value, known gaps |
