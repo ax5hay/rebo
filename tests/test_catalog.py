@@ -138,3 +138,17 @@ def test_compact_describe_keeps_the_facts_in_one_line_per_column(app):
     assert any("PROTECTED" in line for line in compact["columns"])        # password_hash stays marked
     import json
     assert len(json.dumps(compact)) < len(json.dumps(full))
+
+
+def test_protected_columns_are_secrets_not_ids_flags_or_customer_codes():
+    from rebo.catalog import _secret_column
+    col = lambda name, typ="varchar(80)": {"name": name, "type": typ}  # noqa: E731
+    assert _secret_column(col("password_hash"), [], [])
+    assert _secret_column(col("api_token"), [], [])
+    assert _secret_column(col("bank_account_no"), [], ["377568586860"])
+    assert _secret_column(col("pan_number"), [], ["ABCPE1234F"])
+    assert _secret_column(col("account_number"), [], ["50200019283746", "DE89370400440532013000"])   # bank accounts
+    assert not _secret_column(col("account_number"), [], ["CUS-000001", "CUS-000002"])             # customer codes
+    assert not _secret_column(col("api_key_id", "integer"), ["api_key_id"], [])                    # an identifier
+    assert not _secret_column(col("token_id", "integer"), [], [])
+    assert not _secret_column(col("mfa_enabled", "boolean"), [], [])                              # a yes/no flag

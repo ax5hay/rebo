@@ -25,11 +25,30 @@ log = logging.getLogger(__name__)
 # into prompts and the guard refuses any query that touches them.
 _SECRET_NAME = re.compile(
     r"(passw|secret|token|api_?key|private_?key|ssn|social_security|tax_?id|encrypt|cipher|"
-    r"hash|salt|otp|mfa|cvv|card_?num|iban|routing_?num|account_?num|session_?key|credential)",
+    r"hash|salt|otp|mfa|cvv|card_?num|iban|routing_?num|session_?key|credential|"
+    r"bank_?acc|aadhaa?r|passport|national_?id|pan_?(no|num)|^pan$)",
     re.I)
+# "account number" is a bank account in one schema and a customer code ("CUS-000123") in another:
+# protected only when the stored values look like bank account numbers (or nothing can be sampled).
+_ACCOUNT_NAME = re.compile(r"(account_?(num|no)|acct_?(num|no))", re.I)
+_BANKISH_VALUE = re.compile(r"^([0-9][0-9 -]{7,19}|[A-Z]{2}[0-9]{2}[A-Z0-9]{10,30})$")
+# Identifiers and yes/no flags are never secrets themselves (api_key_id, mfa_enabled, has_password).
+_NOT_SECRET = re.compile(r"(_id$|^id$|^(is|has)_|_(enabled|flag|required|count|at|on|date)$)", re.I)
 # Values that look like ciphertext or password hashes (Fernet, bcrypt, argon2, PGP, long base64).
 _SECRET_VALUE = re.compile(r"^(gAAAA[\w-]{20,}|\$2[aby]\$|\$argon2|-----BEGIN|[A-Za-z0-9+/=_-]{60,}$)")
 _IDISH = re.compile(r"(.+?)_?id$", re.I)
+
+
+def _secret_column(c: dict[str, Any], pk: list[str], values: list[str]) -> bool:
+    """Credentials and regulated identifiers, by name; account numbers only when they look like bank numbers."""
+    name, typ = c["name"], c["type"]
+    if name in pk or _NOT_SECRET.search(name) or "bool" in typ or typ.startswith(("tinyint(1)", "bit")):
+        return False
+    if _SECRET_NAME.search(name):
+        return True
+    if _ACCOUNT_NAME.search(name):
+        return not values or sum(bool(_BANKISH_VALUE.match(v)) for v in values) >= max(1, len(values) // 2)
+    return False
 _TEXTUAL = ("char", "text", "enum", "set", "string")
 
 
@@ -87,7 +106,7 @@ def bootstrap(target: TargetDB, store: Store, index: Index, *, allow: set[str] |
         for c in info["columns"]:
             vals = [str(v) for v in samples.get(c["name"], [])]
             looks_secret = bool(vals) and sum(bool(_SECRET_VALUE.match(v)) for v in vals) >= max(1, len(vals) // 2)
-            if _SECRET_NAME.search(c["name"]) or looks_secret or (deny and deny.search(f"{t}.{c['name']}")):
+            if _secret_column(c, info.get("pk") or [], vals) or looks_secret or (deny and deny.search(f"{t}.{c['name']}")):
                 sensitive.add((t, c["name"]))
 
     # Drafted descriptions survive re-bootstraps while a table's shape is unchanged, with or without --describe.

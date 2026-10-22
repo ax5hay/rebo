@@ -46,7 +46,17 @@ agent corrects itself instead of giving up.
 
 `catalog.bootstrap` marks a column `sensitive=1` when any of these is true:
 
-- Its name matches `passw|secret|token|api_key|private_key|ssn|social_security|tax_id|encrypt|cipher|hash|salt|otp|mfa|cvv|card_num|iban|routing_num|account_num|session_key|credential`.
+- Its name matches `passw|secret|token|api_key|private_key|ssn|social_security|tax_id|encrypt|cipher|hash|salt|otp|mfa|cvv|card_num|iban|routing_num|session_key|credential|bank_acc|aadhaar|passport|national_id|pan_no|pan`,
+  unless it is an identifier or a flag (`*_id`, the primary key, `is_*`, `has_*`, `*_enabled`,
+  booleans): `api_key_id` points at a secret but is not one.
+- Its name is an account number (`account_num`, `account_no`, `acct_no`) **and** the sampled values
+  look like bank account numbers (8–20 digits, or an IBAN), or nothing could be sampled. A customer
+  code such as `CUS-000123` in `customer_account.account_number` is not protected.
+
+  Measured on the Orbitra database (2026-10-22, `fixtures/orbitra`): the name-only rule protected
+  `api_key.api_key_id`, `app_user.mfa_enabled` and customer codes, and missed three bank account
+  numbers and three PAN columns; now exactly the 8 real secrets. On the JMS catalogue the change
+  only unprotects five `*_token_id` identifier columns; the demo is unchanged.
 - At least half of 25 sampled values look like ciphertext or hashes: Fernet (`gAAAA…`), bcrypt
   (`$2a$/$2b$/$2y$`), argon2, PEM blocks, or base64 of 60+ characters. Example: on JMS this catches
   `user_form_answer.text_answer` when it holds Fernet ciphertext; the 2026-09 workbook audit found
