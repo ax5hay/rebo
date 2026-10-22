@@ -107,3 +107,22 @@ def test_the_web_app_serves_its_pages_and_files(app, tmp_path, monkeypatch):
     asset = next((dist / "assets").glob("*.css")).name
     assert client.get(f"/app/assets/{asset}").headers["content-type"].startswith("text/css")
     assert client.get("/app/../pyproject.toml").text == index or client.get("/app/../pyproject.toml").status_code == 404
+
+
+def test_the_image_bakes_the_embedding_model_the_app_uses():
+    import re
+    from pathlib import Path
+
+    from rebo.retrieval import EMBED_MODEL
+    dockerfile = (Path(__file__).resolve().parents[1] / "Dockerfile").read_text(encoding="utf-8")
+    assert re.search(r"^ARG EMBED_MODEL=(\S+)$", dockerfile, re.M).group(1) == EMBED_MODEL
+
+
+def test_ci_browser_image_matches_the_playwright_version():
+    import json
+    import re
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    version = json.loads((root / "web" / "package.json").read_text(encoding="utf-8"))["devDependencies"]["@playwright/test"]
+    ci = (root / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    assert re.search(r"mcr\.microsoft\.com/playwright:v([\d.]+)-", ci).group(1) == version.lstrip("^~")

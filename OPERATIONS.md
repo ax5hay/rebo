@@ -69,3 +69,35 @@ the old version together.
 
 Point `models:` at LM Studio (`lmstudio:<model>`) and embeddings at a local model. Saved reports,
 repeat questions and schedules never call a model in any setup.
+
+## The image, and running on AWS
+
+The `Dockerfile` is built for fast rebuilds and fast, offline-capable starts (measured 2026-10-22 on
+an M-series Mac, Docker 28):
+
+| | Before | Now |
+|---|---|---|
+| Rebuild after a source change | 16 s, every dependency reinstalled | **7 s**; only the source layer (about 2.5 MB) changes |
+| What a deploy pushes to the registry after a code change | the 380 MB dependency layer again | about 2.5 MB |
+| Embedding model | downloaded by every new container at start-up (0.13 GB) | **baked in**: a container starts and searches with no network |
+| Runtime | root, with uv and build caches | non-root user `rebo`, no build tools, health check on `/api/health` |
+| Cold build, no cache | 23 s | 48 s (includes the model download, once per lock change) |
+| Image size | 781 MB | 1.13 GB (+134 MB model, +120 MB precompiled bytecode for faster starts) |
+
+Checked: with `--network none` the container bootstraps a database, searches with vectors and turns
+healthy. On AWS:
+
+- **Compute:** ECS Fargate (or App Runner) running the image; one task is enough to start, add tasks
+  behind the load balancer for more people. The health check is built in.
+- **The bot's memory:** `state_url` pointing at RDS PostgreSQL with the `vector` extension
+  (pgvector), so every task shares learned knowledge, conversations and vectors. Without it, mount
+  `/data` on EFS (single task only).
+- **The reported database:** a read-only login in `database:`, reachable from the task's subnet;
+  optionally `database_role: "{user}"` for row-level security (docs/07 §3b).
+- **Secrets:** model API keys and `REBO_JWT_SECRET` from Secrets Manager as environment variables;
+  never in `rebo.yaml`.
+- **Bootstrap:** run `rebo bootstrap` as a one-off task after deploys that change the database
+  schema. Re-bootstrap embeds only changed schema text (Orbitra, 221 tables: 13.1 s first, 3.1 s
+  unchanged).
+- **CI image builds:** use BuildKit with a registry cache (`--cache-from/--cache-to type=registry`) so
+  CodeBuild or GitHub Actions reuse the dependency and model layers between builds.

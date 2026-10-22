@@ -13,45 +13,48 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v10.3.0
+        with: {enable-cache: true}
       - run: uv sync --frozen --all-extras
       - run: uv run pytest -q
       - run: uvx ruff check src tests tools mocks --select F,E9,B --ignore E501,B008,B905
 
   test-postgres:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: pgvector/pgvector:0.8.7-pg18
-        env:
-          POSTGRES_USER: rebo
-          POSTGRES_PASSWORD: rebo
-          POSTGRES_DB: rebo
-        ports: ["5433:5432"]
-        options: >-
-          --health-cmd "pg_isready -U rebo" --health-interval 2s --health-retries 30
     env:
       REBO_TEST_STATE_URL: postgresql://rebo:rebo@127.0.0.1:5433/rebo
     steps:
       - uses: actions/checkout@v7
+      # A throwaway database: durability off (each test creates a schema and runs the migrations, and
+      # fsync per commit made this job 4.5 minutes). A service container cannot take these flags.
+      - run: >-
+          docker run -d --name pg -p 5433:5432 -e POSTGRES_USER=rebo -e POSTGRES_PASSWORD=rebo -e POSTGRES_DB=rebo
+          pgvector/pgvector:0.8.7-pg18 -c fsync=off -c synchronous_commit=off -c full_page_writes=off
       - uses: astral-sh/setup-uv@v10.3.0
+        with: {enable-cache: true}
       - run: uv sync --frozen --all-extras
+      - run: for i in $(seq 1 30); do docker exec pg pg_isready -U rebo && break; sleep 1; done
       - run: uv run pytest -q
 
   web:
     runs-on: ubuntu-latest
+    # Browsers and their system libraries come with the image (installing them took 7 minutes).
+    # Keep the tag equal to @playwright/test in web/package.json (tests/test_settings.py checks it).
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+      options: --user 1001
     defaults:
       run:
         working-directory: web
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v10.3.0
+        with: {enable-cache: true}
       - uses: actions/setup-node@v7
-        with: {node-version: 24}
+        with: {node-version: 24, cache: npm, cache-dependency-path: web/package-lock.json}
       - run: uv sync --frozen --all-extras
         working-directory: .
       - run: npm ci
       - run: npm run build
-      - run: npx playwright install --with-deps chromium webkit firefox
       - run: npx playwright test
         env:
           BROWSERS: all          # Chromium, WebKit (Safari's engine) and Firefox
