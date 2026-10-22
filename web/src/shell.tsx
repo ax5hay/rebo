@@ -77,6 +77,7 @@ export default function Shell() {
               <button className="iconbtn" aria-label="New question" title="New question" onClick={() => navigate("/")}><SquarePen /></button>
               <button className="iconbtn wide" aria-label="Search or ask (⌘K)" onClick={() => setPalette(true)}><Search /><span className="kbdhint">⌘K</span></button>
               <NavLink to="/help" className={({ isActive }) => `iconbtn${isActive ? " on" : ""}`} aria-label="Help (?)" title="Help (?)"><CircleHelp /></NavLink>
+              <Glass as={NavLink} to="/about" className="aboutpill" strength={18} aria-label="About ReBo" title="About ReBo"><Info /><span>About</span></Glass>
               <NavLink to="/me" className={({ isActive }) => `me${isActive ? " on" : ""}`} aria-label={`You: ${m?.id ?? ""}`} title="You: settings, reports, sign-in">
                 <span className="avatar">{(m?.id ?? "?").slice(0, 1)}</span>
               </NavLink>

@@ -3,6 +3,7 @@
 import { ArrowUpRight, Ban, Database, EyeOff, ShieldCheck, Sparkles, Wand2 } from "lucide-react";
 import { Link } from "react-router";
 import { Wordmark } from "../brand";
+import { DemoNotice, limits, scale, useDemo } from "../demo";
 import { Glass } from "../glass";
 
 const FLOW = [
@@ -21,6 +22,7 @@ const NEVER = [
 ];
 
 export default function AboutPage() {
+  const demo = useDemo();
   return (
     <div className="page about">
       <Glass as="section" className="abouthero" strength={36}>
@@ -42,10 +44,15 @@ export default function AboutPage() {
       </section>
 
       <section className="aboutsec two">
-        <div className="card">
-          <h2><Sparkles />If this is a demo</h2>
-          <p>The demo company, Orbitra Energy Systems, is invented: 221 tables and about three million rows of synthetic
-            Indian and international data. Ask it anything; nothing you do here touches a real business.</p>
+        <div className="card" id="demo">
+          <h2><Sparkles />{demo ? "This public demo" : "Your data"}</h2>
+          {demo ? (
+            <>
+              <p>{demo.note ?? "This is a public demo."}{scale(demo) ? ` The database has ${scale(demo)}.` : ""}</p>
+              <p>To keep it open to everyone, a few things are limited: {limits(demo).map((l) => l.text.toLowerCase()).join("; ")}.
+                Saved reports, re-runs and the Read as switches are always free.</p>
+            </>
+          ) : <p>ReBo reads your database with a read-only login and keeps what it learns in its own store, on your servers.</p>}
           <p><Link to="/help">How to use ReBo</Link></p>
         </div>
         <div className="card">

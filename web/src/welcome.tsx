@@ -1,11 +1,12 @@
 // The first screen, shown once on a machine without a company login: your name and your role. Each
 // role says what it unlocks, cumulatively, so the difference is visible at a glance. In production the
 // login proxy (or JWT) decides who you are and this screen never appears.
-import { ArrowRight, Check, Crown, Info, ShieldCheck, Sparkles, UserRound, type LucideIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ArrowRight, Check, Crown, Info, Lock, ShieldCheck, Sparkles, UserRound, type LucideIcon } from "lucide-react";
+import { useState } from "react";
 import { Label, Radio, RadioGroup } from "react-aria-components";
 import { setIdentity, type Identity } from "./api";
 import { Wordmark } from "./brand";
+import { DemoNotice, useDemo } from "./demo";
 import { Glass } from "./glass";
 
 const ROLES: { id: Identity["role"]; name: string; icon: LucideIcon; gist: string; base?: string; unlocks: string[] }[] = [
@@ -20,13 +21,9 @@ const ROLES: { id: Identity["role"]; name: string; icon: LucideIcon; gist: strin
 export function Welcome() {
   const [name, setName] = useState("");
   const [role, setRole] = useState<Identity["role"]>("user");
-  const [maxRole, setMaxRole] = useState<Identity["role"]>("owner");
-  useEffect(() => {  // a public demo offers no owner (auth.max_role); the server enforces it as well
-    fetch("/api/health").then((r) => r.json()).then((h) => h?.max_role && setMaxRole(h.max_role)).catch(() => {});
-  }, []);
-  const rank = { user: 0, admin: 1, owner: 2 } as const;
-  const roles = ROLES.filter((r) => rank[r.id] <= rank[maxRole]);
-  const ready = name.trim().length > 0;
+  const demo = useDemo();
+  const locked = (id: Identity["role"]) => id === "owner" && !!demo?.owner_locked;  // the server enforces it too
+  const ready = name.trim().length > 0 && !locked(role);
   return (
     <div className="welcome">
       <div className="aurora" aria-hidden><span /><span /><span /></div>
@@ -46,15 +43,16 @@ export function Welcome() {
 
           <RadioGroup className="roles" value={role} onChange={(v) => setRole(v as Identity["role"])} aria-label="Your role">
             <Label className="wlabel">How will you use it?</Label>
-            <div className={`rolegrid n${roles.length}`}>
-              {roles.map((r) => (
-                <Radio key={r.id} value={r.id} className="rolecard">
+            <div className="rolegrid">
+              {ROLES.map((r) => (
+                <Radio key={r.id} value={r.id} className={`rolecard${locked(r.id) ? " locked" : ""}`}>
                   {({ isSelected }) => (
                     <>
                       <span className="rtop">
                         <span className="ricon"><r.icon /></span>
                         <span className="rname">{r.name}</span>
-                        <span className={`rtick${isSelected ? " on" : ""}`} aria-hidden>{isSelected && <Check />}</span>
+                        {locked(r.id) ? <span className="rlock" title="Locked on this public demo"><Lock /></span>
+                          : <span className={`rtick${isSelected ? " on" : ""}`} aria-hidden>{isSelected && <Check />}</span>}
                       </span>
                       <span className="rgist">{r.gist}</span>
                       {r.base && <span className="rbase">{r.base}</span>}
@@ -66,11 +64,16 @@ export function Welcome() {
             </div>
           </RadioGroup>
 
+          {locked(role) && (
+            <p className="lockednote" role="status"><Lock />Owner is locked on this public demo. An owner changes how the whole
+              site runs for every visitor, so it stays closed here. Admin shows you everything else.</p>
+          )}
           <button className="btn primary wgo" type="submit" disabled={!ready}>
             {ready ? `Start as ${ROLES.find((r) => r.id === role)!.name.toLowerCase()}` : "Start"}<ArrowRight />
           </button>
         </form>
 
+        {demo && <DemoNotice demo={demo} variant="welcome" />}
         <p className="wnotice" role="note"><Info />This is a preview sign-in. In your company's setup you sign in with your usual
           work login, which decides your role, and this screen goes away.</p>
         <p className="wlearn"><Sparkles />Nothing about your business is configured: ReBo learns it from your data and from

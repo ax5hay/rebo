@@ -1048,3 +1048,33 @@ body::before { content: ""; position: fixed; inset: -10vmax; z-index: -1; pointe
 .aboutlink svg { width: 14px; height: 14px; }
 @media (max-width: 900px) { .flow, .nevergrid { grid-template-columns: 1fr 1fr; } .aboutsec.two { grid-template-columns: 1fr; } }
 @media (max-width: 560px) { .flow, .nevergrid { grid-template-columns: 1fr; } .abouthero { padding: 24px 20px; } .abouthero h1 { font-size: 30px; } }
+
+/* ---------- Public demo notice, locked Owner, About pill ---------- */
+.demonotice { display: grid; gap: 6px; padding: 14px 16px; border-radius: 18px; font-size: 13.5px; line-height: 1.5; color: var(--ink-2);
+  background: color-mix(in srgb, var(--brass-soft) 70%, transparent); border: 0.5px solid color-mix(in srgb, var(--brass) 28%, transparent); }
+.demonotice.on-page { margin: 0 0 22px; }
+.demonotice.on-welcome { margin-top: 20px; }
+.demonotice p, .demonotice ul { margin: 0; }
+.demonotice .dhead { display: flex; align-items: center; gap: 7px; font: 680 13.5px var(--font); color: var(--brass); }
+.demonotice .ddata { display: flex; gap: 8px; color: var(--ink); }
+.demonotice ul { list-style: none; padding: 0; display: grid; gap: 3px; }
+.demonotice li { display: flex; gap: 8px; align-items: flex-start; }
+.demonotice svg { width: 15px; height: 15px; flex: none; margin-top: 2px; color: var(--brass); }
+.demonotice .dfree { color: var(--ink-3); }
+.demonotice .dfree a { color: var(--ink-2); font-weight: 600; }
+.rolecard.locked { opacity: .82; }
+.rolecard.locked[data-selected] { box-shadow: 0 0 0 2px var(--brass), 0 12px 30px -10px color-mix(in srgb, var(--brass) 40%, transparent); }
+.rlock { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--brass-soft); color: var(--brass); }
+.rlock svg { width: 13px; height: 13px; }
+.lockednote { display: flex; gap: 10px; align-items: flex-start; margin: -4px 0 0; padding: 12px 14px; border-radius: 14px; font-size: 14px; line-height: 1.5;
+  color: var(--ink); background: var(--brass-soft); border: 0.5px solid color-mix(in srgb, var(--brass) 30%, transparent); animation: pop .3s var(--spring); }
+.lockednote svg { width: 16px; height: 16px; flex: none; margin-top: 2px; color: var(--brass); }
+/* About: a small glass pill inside the tools island, tinted so it reads as its own thing */
+.aboutpill { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px 0 10px; margin: 0 2px; border-radius: 999px;
+  font: 620 13px/1 var(--font); color: var(--accent-text);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent-soft) 80%, transparent), color-mix(in srgb, var(--brass-soft) 70%, transparent));
+  border: 0.5px solid color-mix(in srgb, var(--accent) 30%, transparent); }
+.aboutpill:hover { text-decoration: none; filter: brightness(1.04); }
+.aboutpill.active { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 45%, transparent); }
+.aboutpill svg { width: 16px; height: 16px; }
+@media (max-width: 640px) { .aboutpill span { display: none; } .aboutpill { padding: 0 9px; } }

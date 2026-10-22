@@ -11,3 +11,4 @@ limits:
   daily_budget_usd: 2
 auth:
   max_role: admin
+demo_note: "Orbitra Energy Systems is a made-up company: every person, customer, order and number in it is synthetic."

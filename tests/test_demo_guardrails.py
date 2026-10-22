@@ -14,7 +14,12 @@ def test_owner_is_capped_to_admin_when_max_role_is_admin(app):
     client = TestClient(create_app(app, with_ui=False))
     me = client.get("/api/me", headers={"X-User-Id": "eve", "X-User-Role": "owner"}).json()
     assert me["role"] == "admin" and not me["is_owner"]
-    assert client.get("/api/health").json()["max_role"] == "admin"   # the welcome screen hides Owner
+    health = client.get("/api/health").json()
+    assert health["max_role"] == "admin" and health["demo"]["owner_locked"]   # the welcome screen locks Owner
+
+
+def test_a_normal_install_is_not_a_demo(app):
+    assert TestClient(create_app(app, with_ui=False)).get("/api/health").json()["demo"] is None
 
 
 def test_a_visitor_is_limited_by_address_whatever_name_they_use(app):

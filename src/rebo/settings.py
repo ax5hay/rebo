@@ -36,6 +36,7 @@ _YAML_KEYS = {
     ("limits", "per_visitor_per_minute"): "per_visitor_per_minute",
     ("limits", "daily_budget_usd"): "daily_budget_usd",
     ("auth", "max_role"): "max_role",
+    ("demo_note",): "demo_note",
     ("allowed_tables",): "allow_tables",
     ("protected_columns",): "deny_columns",
     ("sharing", "threshold"): "share_threshold",
@@ -134,6 +135,7 @@ class Settings(BaseSettings):
     per_visitor_per_minute: int = 0  # 0 = no limit; questions per client address (public demos: names are free to invent)
     daily_budget_usd: float = 0.0    # 0 = no cap; model spend for the whole site per UTC day, then only free routes answer
     max_role: Literal["user", "admin", "owner"] = "owner"  # highest role a sign-in can claim (public demo: admin)
+    demo_note: str = ""  # one sentence a public demo shows about its data (e.g. that the company is made up)
     allow_tables: str = ""  # comma-separated allowlist; empty = every table the DB user can see
     deny_columns: str = ""  # regex on table.column, on top of auto-detected secrets
     # 5. Learning.

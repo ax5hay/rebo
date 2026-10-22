@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { askStream, call, get, when, type Step } from "../api";
 import { Question, TurnView, type Turn } from "../answer";
+import { DemoNotice, useDemo } from "../demo";
 import { Glass } from "../glass";
 import { useMe } from "../shell";
 
@@ -141,6 +142,7 @@ function Start({ ask, name }: { ask: (q: string) => void; name: string }) {
   const k = useQuery({ queryKey: ["knowledge"], queryFn: () => get<any>("/knowledge") });
   const pinned = (k.data?.mine ?? []).filter((i: any) => i.pinned && i.status !== "retired");
   const navigate = useNavigate();
+  const demo = useDemo();
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
   return (
@@ -150,6 +152,7 @@ function Start({ ask, name }: { ask: (q: string) => void; name: string }) {
         <p>Ask for any report in your own words. You get the rows, how your question was read, and where the
           answer came from. Each answer you confirm or correct makes the next one better.</p>
       </section>
+      {demo && <DemoNotice demo={demo} />}
       {(starters.data?.length ?? 0) > 0 && (
         <section className="block">
           <h2>Try a known report</h2>

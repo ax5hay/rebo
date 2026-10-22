@@ -112,7 +112,13 @@ limits:
   per_visitor_per_minute: 4    # by client address (Cloudflare's CF-Connecting-IP): new names do not get around it
 auth:
   max_role: admin              # nobody can sign in as owner, so the configuration cannot be changed
+demo_note: "Acme is a made-up company; all its data is synthetic."   # shown with the database's scale
 ```
+
+With any of these set, the welcome screen, the start page and About show a short "Public demo" notice:
+the note, the size of the database (tables and rows, from the catalog), what is limited and why. Owner
+stays visible on the welcome screen but locked, with one sentence on why. Serving the same database
+locally with the normal config needs no change: the limits live only in the public config.
 
 Saved reports, re-runs, drill-downs and the Read as switches keep working past the budget (no model).
 The welcome screen hides roles above `max_role`; the server enforces it too. Example:

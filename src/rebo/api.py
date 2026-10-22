@@ -214,7 +214,14 @@ def router(app: App) -> APIRouter:
 
     @r.get("/health")
     def health():
-        return {"ok": True, "bootstrapped_at": app.store.meta_get("bootstrapped_at"), "max_role": app.settings.max_role}
+        st = app.settings
+        public = st.max_role != "owner" or st.daily_budget_usd > 0 or st.per_visitor_per_minute > 0 or bool(st.demo_note)
+        size = app.store.one("SELECT COUNT(*) AS n, SUM(rows) AS r FROM cat_table") or {} if public else {}
+        return {"ok": True, "bootstrapped_at": app.store.meta_get("bootstrapped_at"), "max_role": st.max_role,
+                # a public demo says what it limits (the UI shows it); no amounts or internals are exposed
+                "demo": {"owner_locked": st.max_role != "owner", "daily_allowance": st.daily_budget_usd > 0,
+                         "paced": st.per_visitor_per_minute > 0 or st.per_user_per_minute > 0, "note": st.demo_note or None,
+                         "tables": size.get("n"), "rows": size.get("r")} if public else None}
 
     @r.get("/me")
     def me(user: User = Depends(current_user)):
