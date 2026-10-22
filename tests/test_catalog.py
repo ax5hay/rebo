@@ -178,3 +178,9 @@ def test_rebootstrap_embeds_only_schema_text_that_changed(app):
     app.bootstrap(progress=lambda *_: None)
     assert sum(seen) == 1
     assert app.store.one("SELECT ref FROM embedding WHERE ref='schema:dropped.col'") is None
+
+
+def test_likely_tables_add_the_tables_joined_to_the_best_matches(app):
+    """A question about orders also needs the customer it joins to, though no word names it."""
+    tables = app.likely_tables("order amounts", top=1, upto=3)
+    assert tables[0] == "orders" and "customer" in tables

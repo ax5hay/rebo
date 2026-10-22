@@ -275,10 +275,33 @@ class App:
                 return i
         return None
 
+    def likely_tables(self, text: str, top: int = 8, upto: int = 12) -> list[str]:
+        """Tables for the first request: the best `top` of the schema search, then tables joined to the
+        best three (declared or inferred joins), up to `upto`. Hub tables one join away
+        (employee, customer) are often what a question needs but not what its words match: on the
+        validated JMS questions recall of the needed tables went 0.52 -> 0.77, Orbitra 0.85 -> 0.93
+        (tools/context_recall.py; docs/08 "Likely tables"). Each table found here saves the agent a
+        lookup round-trip."""
+        ranked = list(dict.fromkeys(h["table"] for h in self.index.search_schema(text, top=40)))
+        rank = {t: i for i, t in enumerate(ranked)}
+        chosen = ranked[:top]
+        graph = self._join_graph()
+        extra = sorted({n for t in chosen[:3] for n in graph.get(t, ()) if n not in chosen}, key=lambda n: (rank.get(n, 999), n))
+        return chosen + extra[:max(0, upto - len(chosen))]
+
+    def _join_graph(self) -> dict[str, set[str]]:
+        stamp = self.store.meta_get("bootstrapped_at")
+        if getattr(self, "_graph", (None, None))[0] != stamp:
+            g: dict[str, set[str]] = {}
+            for j in self.store.all("SELECT from_table, to_table FROM cat_join"):
+                g.setdefault(j["from_table"], set()).add(j["to_table"])
+                g.setdefault(j["to_table"], set()).add(j["from_table"])
+            self._graph = (stamp, g)
+        return self._graph[1]
+
     def _context_block(self, user: User, text: str, items: list[dict[str, Any]] | None = None) -> str:
         items = self.knowledge.search(user, text, top=6) if items is None else items
-        hits = self.index.search_schema(text, top=20)
-        tables = list(dict.fromkeys(h["table"] for h in hits))[:8]
+        tables = self.likely_tables(text)
         values = self.index.search_values(text, top=8)
         parts = [f"<turn>Today is {dt.date.today().isoformat()}. The user is a {user.role} whose id in the host "
                  f"application is '{user.id}' (use it for 'my' / 'me' when a table stores that id).</turn>",

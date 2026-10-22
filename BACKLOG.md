@@ -464,3 +464,6 @@ result: 2026-10-22. Found on Orbitra: the name rule hid api_key_id, mfa_enabled 
 ### [ ] B-064 · Model runs on Orbitra
 needs: llm, human (the user starts the paid runs)
 do: `REBO_CONFIG=fixtures/orbitra/rebo.yaml uv run python tools/eval_run.py fixtures/orbitra/gold.jsonl fixtures/orbitra/eval_results_<model>.json`, then `tools/eval_conversations.py fixtures/orbitra/conversations.jsonl ...`. Compare with the offline retrieval misses (employee and customer_account are the hub tables most often outside the first 8).
+
+### [x] B-066 · Likely tables include what the best matches join to
+result: 2026-10-22. Recall of needed tables in the first request: JMS validated 0.52 -> 0.77, JMS reports 0.54 -> 0.64, Orbitra 0.85 -> 0.93, demo 1.0 (tools/context_recall.py, docs/08). eval pending: needs llm (answers, tool calls and tokens; run with B-064).

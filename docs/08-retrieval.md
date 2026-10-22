@@ -138,3 +138,25 @@ times). JMS catalogue: median 3,316 → 2,608 characters per table (−22 %). Sa
 input tokens 534k → 398k (−25 %), cost $0.392 → $0.373 (−5 %: most input is already cached since
 B-052). Demo gold 11/12 at $0.190 (was 10/12 at $0.254; within run-to-run variance, no harm).
 Files: `fixtures/jms_staging/eval_results_sonnet_compact6.json`, `fixtures/demo_property/eval_results_sonnet_compact.json`.
+
+## Likely tables: the best matches plus what they join to (2026-10-22, B-066)
+
+The first request names the tables the question probably needs (`App.likely_tables`). It used to be the
+first 8 tables of the schema search. The misses were mostly hub tables one join away from what the
+words match (employee for "technicians", customer for "who owes us"): no word names them, so search
+cannot rank them. Now: the first 8, plus tables joined (declared or inferred) to the first 3, up to 12.
+About four more one-line table names (~60 tokens); each needed table already named saves the agent a
+`search_schema`/`describe_table` round-trip, and every round-trip re-sends the turn so far.
+
+Recall of the needed tables (`tools/context_recall.py`, no model):
+
+| Questions | First 8 (before) | First 12 | First 8 + joined (now) |
+|---|---|---|---|
+| JMS, 18 validated | 0.518 (all needed: 4/18) | 0.593 (4/18) | **0.769 (8/18)** |
+| JMS, 79 human-built reports | 0.540 (24/79) | 0.616 (28/79) | **0.644 (32/79)** |
+| Orbitra, 48 gold | 0.852 (32/48) | 0.891 (34/48) | **0.925 (38/48)** |
+| Demo, 12 gold | 1.0 | 1.0 | 1.0 |
+
+The joined tables beat simply showing more search results. Files:
+`fixtures/jms_staging/context_recall_2026-10-22.json`, `fixtures/orbitra/context_recall_2026-10-22.json`.
+**Effect on answers, tokens and cost: not measured yet** (needs a model run, B-064).

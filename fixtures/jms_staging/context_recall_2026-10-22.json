@@ -1,0 +1,426 @@
+{
+ "run": "2026-10-22",
+ "cases": "fixtures/jms_staging/eval.jsonl",
+ "questions": 18,
+ "summary": {
+  "top8": {
+   "recall": 0.518,
+   "all_tables": "4/18",
+   "tables_shown": 8.0
+  },
+  "top12": {
+   "recall": 0.593,
+   "all_tables": "4/18",
+   "tables_shown": 12.0
+  },
+  "top8+joined": {
+   "recall": 0.769,
+   "all_tables": "8/18",
+   "tables_shown": 12.0
+  }
+ },
+ "rows": [
+  {
+   "id": "validated-01",
+   "gold": [
+    "contact",
+    "gc_case",
+    "status"
+   ],
+   "top8": {
+    "recall": 0.333,
+    "all": false,
+    "n": 8
+   },
+   "top12": {
+    "recall": 0.667,
+    "all": false,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 0.667,
+    "all": false,
+    "n": 12
+   }
+  },
+  {
+   "id": "validated-02",
+   "gold": [
+    "contact",
+    "ip_case",
+    "user_form"
+   ],
+   "top8": {
+    "recall": 0.333,
+    "all": false,
+    "n": 8
+   },
+   "top12": {
+    "recall": 0.333,
+    "all": false,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 0.333,
+    "all": false,
+    "n": 12
+   }
+  },
+  {
+   "id": "validated-03",
+   "gold": [
+    "admin",
+    "gc_case",
+    "ip_case"
+   ],
+   "top8": {
+    "recall": 0.667,
+    "all": false,
+    "n": 8
+   },
+   "top12": {
+    "recall": 0.667,
+    "all": false,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 0.667,
+    "all": false,
+    "n": 12
+   }
+  },
+  {
+   "id": "validated-04",
+   "gold": [
+    "activity_feed",
+    "gc_case",
+    "ip_case"
+   ],
+   "top8": {
+    "recall": 0.333,
+    "all": false,
+    "n": 8
+   },
+   "top12": {
+    "recall": 0.333,
+    "all": false,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 0.667,
+    "all": false,
+    "n": 12
+   }
+  },
+  {
+   "id": "validated-05",
+   "gold": [
+    "case_note"
+   ],
+   "top8": {
+    "recall": 1.0,
+    "all": true,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "validated-06",
+   "gold": [
+    "admin",
+    "case_task"
+   ],
+   "top8": {
+    "recall": 0.0,
+    "all": false,
+    "n": 8
+   },
+   "top12": {
+    "recall": 0.0,
+    "all": false,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 0.5,
+    "all": false,
+    "n": 12
+   }
+  },
+  {
+   "id": "validated-07",
+   "gold": [
+    "template",
+    "template_task"
+   ],
+   "top8": {
+    "recall": 1.0,
+    "all": true,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "validated-08",
+   "gold": [
+    "contact",
+    "form",
+    "user_form",
+    "user_form_answer"
+   ],
+   "top8": {
+    "recall": 0.25,
+    "all": false,
+    "n": 8
+   },
+   "top12": {
+    "recall": 0.75,
+    "all": false,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 0.75,
+    "all": false,
+    "n": 12
+   }
+  },
+  {
+   "id": "validated-09",
+   "gold": [
+    "contact",
+    "ed_profile"
+   ],
+   "top8": {
+    "recall": 0.5,
+    "all": false,
+    "n": 8
+   },
+   "top12": {
+    "recall": 0.5,
+    "all": false,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 0.5,
+    "all": false,
+    "n": 12
+   }
+  },
+  {
+   "id": "validated-10",
+   "gold": [
+    "contract_rel",
+    "hellosign"
+   ],
+   "top8": {
+    "recall": 0.5,
+    "all": false,
+    "n": 8
+   },
+   "top12": {
+    "recall": 0.5,
+    "all": false,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "validated-11",
+   "gold": [
+    "contact",
+    "user"
+   ],
+   "top8": {
+    "recall": 0.5,
+    "all": false,
+    "n": 8
+   },
+   "top12": {
+    "recall": 0.5,
+    "all": false,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 0.5,
+    "all": false,
+    "n": 12
+   }
+  },
+  {
+   "id": "validated-12",
+   "gold": [
+    "case_campaign",
+    "gc_case",
+    "ip_case"
+   ],
+   "top8": {
+    "recall": 0.667,
+    "all": false,
+    "n": 8
+   },
+   "top12": {
+    "recall": 0.667,
+    "all": false,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "validated-13",
+   "gold": [
+    "admin",
+    "case_task"
+   ],
+   "top8": {
+    "recall": 1.0,
+    "all": true,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "validated-14",
+   "gold": [
+    "contact"
+   ],
+   "top8": {
+    "recall": 1.0,
+    "all": true,
+    "n": 8
+   },
+   "top12": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "validated-15",
+   "gold": [
+    "contact",
+    "ed_profile"
+   ],
+   "top8": {
+    "recall": 0.5,
+    "all": false,
+    "n": 8
+   },
+   "top12": {
+    "recall": 0.5,
+    "all": false,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "validated-16",
+   "gold": [
+    "contact"
+   ],
+   "top8": {
+    "recall": 0.0,
+    "all": false,
+    "n": 8
+   },
+   "top12": {
+    "recall": 0.0,
+    "all": false,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 1.0,
+    "all": true,
+    "n": 12
+   }
+  },
+  {
+   "id": "validated-17",
+   "gold": [
+    "activity_feed",
+    "contact"
+   ],
+   "top8": {
+    "recall": 0.0,
+    "all": false,
+    "n": 8
+   },
+   "top12": {
+    "recall": 0.5,
+    "all": false,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 0.5,
+    "all": false,
+    "n": 12
+   }
+  },
+  {
+   "id": "validated-18",
+   "gold": [
+    "form",
+    "gc_case",
+    "ip_case",
+    "user_form"
+   ],
+   "top8": {
+    "recall": 0.75,
+    "all": false,
+    "n": 8
+   },
+   "top12": {
+    "recall": 0.75,
+    "all": false,
+    "n": 12
+   },
+   "top8+joined": {
+    "recall": 0.75,
+    "all": false,
+    "n": 12
+   }
+  }
+ ]
+}
