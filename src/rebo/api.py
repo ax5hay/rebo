@@ -164,19 +164,43 @@ def user_from_claims(claims: dict) -> User:
     return User(id=str(uid), role=role, team=str(team) if team is not None else None)
 
 
+_RANK = {"user": 0, "admin": 1, "owner": 2}
+
+
 def auth_dependency(app: App):
+    """The identity of a request, with its role capped at auth.max_role (a public demo offers no owner)."""
+    cap = app.settings.max_role
+
+    def capped(u: User) -> User:
+        return u if _RANK.get(u.role, 0) <= _RANK[cap] else User(id=u.id, role=cap, team=u.team)  # type: ignore[arg-type]
+
     if app.settings.auth_mode == "jwt":
         def user_from_jwt(authorization: str = Header(...)) -> User:
             if not authorization.startswith("Bearer "):
                 raise HTTPException(401, "Missing Bearer token")
-            return user_from_claims(decode_jwt(authorization.removeprefix("Bearer ").strip(), app.settings))
+            return capped(user_from_claims(decode_jwt(authorization.removeprefix("Bearer ").strip(), app.settings)))
         return user_from_jwt
-    return user_from_headers
+
+    def user_from_headers_capped(user: User = Depends(user_from_headers)) -> User:
+        return capped(user)
+    return user_from_headers_capped
+
+
+def client_address(request: Request) -> str:
+    """The visitor's address: Cloudflare's CF-Connecting-IP, else the first X-Forwarded-For, else the peer."""
+    fwd = request.headers.get("cf-connecting-ip") or (request.headers.get("x-forwarded-for") or "").split(",")[0].strip()
+    return fwd or (request.client.host if request.client else "")
 
 
 def router(app: App) -> APIRouter:
     r = APIRouter(prefix="/api")
     current_user = auth_dependency(app)
+
+    def visitor(request: Request) -> None:
+        try:
+            app.check_visitor(client_address(request))
+        except RateLimited as e:
+            raise HTTPException(429, str(e)) from e
 
     def guard_errors(fn):
         try:
@@ -190,7 +214,7 @@ def router(app: App) -> APIRouter:
 
     @r.get("/health")
     def health():
-        return {"ok": True, "bootstrapped_at": app.store.meta_get("bootstrapped_at")}
+        return {"ok": True, "bootstrapped_at": app.store.meta_get("bootstrapped_at"), "max_role": app.settings.max_role}
 
     @r.get("/me")
     def me(user: User = Depends(current_user)):
@@ -224,7 +248,7 @@ def router(app: App) -> APIRouter:
     def insights(days: int = 90, user: User = Depends(current_user)):
         return guard_errors(lambda: app.insights(user, days))
 
-    @r.post("/ask")
+    @r.post("/ask", dependencies=[Depends(visitor)])
     async def ask(body: AskIn, user: User = Depends(current_user)):
         try:
             return await app.ask(user, body.text, body.conversation_id)
@@ -233,7 +257,7 @@ def router(app: App) -> APIRouter:
         except RateLimited as e:
             raise HTTPException(429, str(e)) from e
 
-    @r.post("/jobs")
+    @r.post("/jobs", dependencies=[Depends(visitor)])
     def ask_later(body: JobIn, user: User = Depends(current_user)):
         """Answer in the background (durable job); poll GET /api/jobs/{id} or receive report_ready."""
         return {"job_id": app.jobs.enqueue("ask", user, {"text": body.text, "conversation_id": body.conversation_id})}
@@ -254,7 +278,7 @@ def router(app: App) -> APIRouter:
     def unschedule(schedule_id: str, user: User = Depends(current_user)):
         return guard_errors(lambda: app.jobs.unschedule(user, schedule_id) or {"ok": True})
 
-    @r.post("/agui")
+    @r.post("/agui", dependencies=[Depends(visitor)])
     async def agui(request: Request, user: User = Depends(current_user)):
         """AG-UI stream of one turn (B-029): RUN_STARTED, a STEP_STARTED/STEP_FINISHED pair per tool step
         as it happens, the answer as a text message, CUSTOM "rebo.result" with the same payload

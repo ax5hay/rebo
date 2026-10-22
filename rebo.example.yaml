@@ -24,6 +24,7 @@ limits:
   tool_calls: 25                           # per user turn
   cost_per_turn_usd: 0                     # stop a turn that would cost more (list prices); 0 = no cap
   per_user_per_minute: 0                   # questions per person per minute; 0 = no limit
+# public demo guardrails (off by default): limits.daily_budget_usd, limits.per_visitor_per_minute, auth.max_role
 # checks:
 #   agreement: false                       # true: 2 extra queries from the fast model check unsure new reports
 #   shape: false                           # true: offer saved reports whose query has the same shape

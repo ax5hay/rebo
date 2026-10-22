@@ -1,6 +1,6 @@
 // About ReBo: what the app is, how a question becomes a report, what it never does, and what it is
 // built with. Reached from Help, You and the command palette rather than the main tabs.
-import { ArrowUpRight, Ban, Database, EyeOff, MessageSquareText, ShieldCheck, Sparkles, Wand2 } from "lucide-react";
+import { ArrowUpRight, Ban, Database, EyeOff, ShieldCheck, Sparkles, Wand2 } from "lucide-react";
 import { Link } from "react-router";
 import { Wordmark } from "../brand";
 import { Glass } from "../glass";
@@ -59,11 +59,17 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <footer className="madeby">
-        <MessageSquareText />
-        <span>Designed and built by <a href="https://akshaybajpai.com" target="_blank" rel="noopener">Akshay Bajpai</a>.</span>
+      <div className="creditwrap">
+      <span className="creditglow" aria-hidden />
+      <Glass as="footer" className="credit" strength={60}>
+        <span className="cmark" aria-hidden>AB</span>
+        <span className="cwho">
+          <small>Designed and built by</small>
+          <a href="https://akshaybajpai.com" target="_blank" rel="noopener">Akshay Bajpai</a>
+        </span>
         <a className="cardlink" href="https://akshaybajpai.com/card" target="_blank" rel="noopener">Say hello<ArrowUpRight /></a>
-      </footer>
+      </Glass>
+      </div>
     </div>
   );
 }

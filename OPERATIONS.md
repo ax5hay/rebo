@@ -101,3 +101,19 @@ healthy. On AWS:
   unchanged).
 - **CI image builds:** use BuildKit with a registry cache (`--cache-from/--cache-to type=registry`) so
   CodeBuild or GitHub Actions reuse the dependency and model layers between builds.
+
+## A public demo
+
+For a demo anyone can open (no company login), three settings keep it safe and its bill bounded:
+
+```yaml
+limits:
+  daily_budget_usd: 2          # model spend for the whole site per UTC day; after that only free routes answer
+  per_visitor_per_minute: 4    # by client address (Cloudflare's CF-Connecting-IP): new names do not get around it
+auth:
+  max_role: admin              # nobody can sign in as owner, so the configuration cannot be changed
+```
+
+Saved reports, re-runs, drill-downs and the Read as switches keep working past the budget (no model).
+The welcome screen hides roles above `max_role`; the server enforces it too. Example:
+`fixtures/orbitra/rebo.public.yaml`.

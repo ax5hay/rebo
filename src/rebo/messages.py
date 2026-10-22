@@ -15,6 +15,8 @@ MESSAGES: dict[str, str] = {
     "review_concern": "Check: {concern}",
     "agreement_other": "Check: another reading gives a different result: {reading} If that is what you meant, say so.",
     "agreement_two_ways": "Check: this can be read two ways. 1) {first} 2) {second} This report uses the first.",
+    "daily_budget": ("This demo's allowance for new questions is used up for today. Saved reports, re-runs and "
+                     "the Read as switches still work; new questions open again at midnight UTC."),
     "rate_limited": "You've asked {n} questions in the last minute. Please wait a moment and ask again.",
     # progress while a turn runs (Ask page, /api/agui steps)
     "progress_start": "Reading your question…",

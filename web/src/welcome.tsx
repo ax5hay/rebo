@@ -2,7 +2,7 @@
 // role says what it unlocks, cumulatively, so the difference is visible at a glance. In production the
 // login proxy (or JWT) decides who you are and this screen never appears.
 import { ArrowRight, Check, Crown, Info, ShieldCheck, Sparkles, UserRound, type LucideIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Label, Radio, RadioGroup } from "react-aria-components";
 import { setIdentity, type Identity } from "./api";
 import { Wordmark } from "./brand";
@@ -20,6 +20,12 @@ const ROLES: { id: Identity["role"]; name: string; icon: LucideIcon; gist: strin
 export function Welcome() {
   const [name, setName] = useState("");
   const [role, setRole] = useState<Identity["role"]>("user");
+  const [maxRole, setMaxRole] = useState<Identity["role"]>("owner");
+  useEffect(() => {  // a public demo offers no owner (auth.max_role); the server enforces it as well
+    fetch("/api/health").then((r) => r.json()).then((h) => h?.max_role && setMaxRole(h.max_role)).catch(() => {});
+  }, []);
+  const rank = { user: 0, admin: 1, owner: 2 } as const;
+  const roles = ROLES.filter((r) => rank[r.id] <= rank[maxRole]);
   const ready = name.trim().length > 0;
   return (
     <div className="welcome">
@@ -40,8 +46,8 @@ export function Welcome() {
 
           <RadioGroup className="roles" value={role} onChange={(v) => setRole(v as Identity["role"])} aria-label="Your role">
             <Label className="wlabel">How will you use it?</Label>
-            <div className="rolegrid">
-              {ROLES.map((r) => (
+            <div className={`rolegrid n${roles.length}`}>
+              {roles.map((r) => (
                 <Radio key={r.id} value={r.id} className="rolecard">
                   {({ isSelected }) => (
                     <>

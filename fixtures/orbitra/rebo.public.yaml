@@ -1,0 +1,13 @@
+# Orbitra served publicly as a demo (rebo-oes.ghosthub.in): the same as rebo.yaml plus guardrails.
+database: postgresql+psycopg://orbitra_ro:orbitra_ro@127.0.0.1:5434/orbitra   # read-only login
+state_dir: data/orbitra-public
+models:
+  agent: openrouter:anthropic/claude-sonnet-5.5
+  fast: openrouter:anthropic/claude-haiku-5.5
+limits:
+  cost_per_turn_usd: 0.25
+  per_user_per_minute: 4
+  per_visitor_per_minute: 4
+  daily_budget_usd: 2
+auth:
+  max_role: admin

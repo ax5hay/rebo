@@ -404,6 +404,9 @@ class App:
         reuse = self._reuse_match(user, text, items)
         if reuse and (filled := await self._param_answer(user, conv_id, text, history, reuse)):
             return filled
+        if self._over_budget():  # public demo cap: free routes above still answered; the model is not asked
+            return self._record(turn_id, conv_id, user, text, "answer", {"text": msg.say("daily_budget"), "cites": [],
+                                                                       "suggestions": []}, deps)
         reuse = reuse if self.settings.fast_model != self.settings.model else None
         first_model, first_name = (self.fast_agent_model, self.settings.fast_model) if reuse else (None, self.settings.model)
         limits = self._limits(first_name)
@@ -675,6 +678,35 @@ class App:
     def _limits(self, model_spec: str) -> UsageLimits:
         tool_calls = round(self.settings.max_tool_calls * profile(model_spec).tool_call_factor)
         return turn_limits(model_spec, tool_calls=tool_calls, cost_cap_usd=self.settings.cost_per_turn_usd)
+
+    def check_visitor(self, key: str) -> None:
+        """per_visitor_per_minute: the same sliding window, keyed by client address, for public demos where
+        anyone can sign in under a new name."""
+        cap = self.settings.per_visitor_per_minute
+        if cap <= 0 or not key:
+            return
+        window = self._recent.setdefault(f"ip:{key}", deque())
+        t = time.monotonic()
+        while window and t - window[0] > 60:
+            window.popleft()
+        if len(window) >= cap:
+            raise RateLimited(msg.say("rate_limited", n=cap))
+        window.append(t)
+
+    def spent_today(self) -> float:
+        """Model spend of every turn since UTC midnight, at list prices (llm.cost); cached for 30 s."""
+        cached = getattr(self, "_spent", None)
+        if cached and time.monotonic() - cached[0] < 30:
+            return cached[1]
+        midnight = dt.datetime.now(dt.timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+        total = sum(cost(json.loads(r["usage"])) or 0.0
+                    for r in self.store.all("SELECT usage FROM turn WHERE created_at >= ? AND usage IS NOT NULL", (midnight,)))
+        self._spent = (time.monotonic(), total)
+        return total
+
+    def _over_budget(self) -> bool:
+        cap = self.settings.daily_budget_usd
+        return cap > 0 and self.spent_today() >= cap
 
     def _check_rate(self, user: User) -> None:
         """per_user_per_minute: a sliding one-minute window per person (in this process)."""
