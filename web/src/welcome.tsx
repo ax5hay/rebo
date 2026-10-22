@@ -4,7 +4,7 @@
 import { ArrowRight, Check, Crown, Info, Lock, ShieldCheck, Sparkles, UserRound, type LucideIcon } from "lucide-react";
 import { useState } from "react";
 import { Label, Radio, RadioGroup } from "react-aria-components";
-import { setIdentity, type Identity } from "./api";
+import { personId, setIdentity, type Identity } from "./api";
 import { Wordmark } from "./brand";
 import { DemoNotice, useDemo } from "./demo";
 import { Glass } from "./glass";
@@ -35,7 +35,7 @@ export function Welcome() {
             where the answer came from, and it <b>gets sharper every time you confirm or correct it</b>.</p>
         </header>
 
-        <form onSubmit={(e) => { e.preventDefault(); if (ready) setIdentity({ user: name.trim(), role }); }}>
+        <form onSubmit={(e) => { e.preventDefault(); if (ready) setIdentity({ user: personId(name, !!demo), role }); }}>
           <label className="wfield">
             <span>What should ReBo call you?</span>
             <input className="winput" autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" aria-label="Your name" />

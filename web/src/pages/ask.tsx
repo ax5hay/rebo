@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowDown, ArrowRight, ArrowUp, Check, CircleHelp, History, Pin, Sparkle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
-import { askStream, call, get, when, type Step } from "../api";
+import { askStream, call, displayName, get, when, type Step } from "../api";
 import { Question, TurnView, type Turn } from "../answer";
 import { DemoNotice, useDemo } from "../demo";
 import { Glass } from "../glass";
@@ -84,7 +84,7 @@ export default function AskPage() {
 
   return (
     <>
-      {empty ? <Start ask={ask} name={me?.id ?? ""} /> : (
+      {empty ? <Start ask={ask} name={displayName(me?.id)} /> : (
         <div className="thread">
           {turns.map((t, i) => t.r.kind === "pending" ? (
             <div key={t.key} className="turn">

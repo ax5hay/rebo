@@ -117,3 +117,25 @@ export function when(ts?: number | null) {
 }
 
 export const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+
+// Public demo: a name is not a secret, so two visitors who type the same name must not become one
+// person. Each browser keeps a short random tag, added to the id as "name#tag" (yours stays the same,
+// so you return to your own sessions in this browser). Shown everywhere without the tag.
+const TAG_KEY = "rebo.tag";
+
+export function personId(name: string, publicDemo: boolean): string {
+  const base = name.trim().split("#")[0];
+  if (!publicDemo) return base;
+  let tag = "";
+  try {
+    tag = localStorage.getItem(TAG_KEY) || "";
+    if (!tag) {
+      tag = Math.random().toString(36).slice(2, 7);
+      localStorage.setItem(TAG_KEY, tag);
+    }
+  } catch { /* private mode: a fresh tag each time, still never someone else's */ tag = Math.random().toString(36).slice(2, 7); }
+  return `${base}#${tag}`;
+}
+
+export const displayName = (id: string | null | undefined) => (id ?? "").split("#")[0];

@@ -120,6 +120,11 @@ the note, the size of the database (tables and rows, from the catalog), what is 
 stays visible on the welcome screen but locked, with one sentence on why. Serving the same database
 locally with the normal config needs no change: the limits live only in the public config.
 
+On a public demo a name is not a secret, so each browser keeps a short random tag added to the name
+("Priya#k3f9"; shown as "Priya"): two visitors who type the same name are different people, and you
+return to your own conversations in the same browser. Other devices start as a new person. Everyone
+still shares one ReBo: shared knowledge, the admin review queue and Insights cover all visitors.
+
 Saved reports, re-runs, drill-downs and the Read as switches keep working past the budget (no model).
 The welcome screen hides roles above `max_role`; the server enforces it too. Example:
 `fixtures/orbitra/rebo.public.yaml`.

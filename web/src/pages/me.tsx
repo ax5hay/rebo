@@ -8,7 +8,8 @@ import {
 import { useEffect, useState } from "react";
 import { Switch, ToggleButton, ToggleButtonGroup } from "react-aria-components";
 import { Link, useNavigate } from "react-router";
-import { get, identity, setIdentity, when, type Identity } from "../api";
+import { displayName, get, identity, personId, setIdentity, when, type Identity } from "../api";
+import { useDemo } from "../demo";
 import { Glass } from "../glass";
 import { setPrefs, usePrefs, type Prefs } from "../prefs";
 import { ROLE, useMe } from "../shell";
@@ -50,7 +51,7 @@ export default function MePage() {
       <Glass as="section" className="idcard" aria-label="Your profile" strength={34}>
         <span className="halo" aria-hidden><span className="avatar xl">{me.id.slice(0, 1)}</span></span>
         <div className="who">
-          <h1>{me.id}</h1>
+          <h1>{displayName(me.id)}</h1>
           <p><span className="rolechip">{ROLE[me.role]}</span>{me.team ? <span className="muted">team {me.team}</span> : null}</p>
         </div>
         <div className="quick">
@@ -192,11 +193,12 @@ function Keys({ k }: { k: string[] }) {
 function SignInAs() {
   const current = identity();
   const me = useMe();
-  const [user, setUser] = useState(current?.user ?? me?.id ?? "alice");
+  const demo = useDemo();
+  const [user, setUser] = useState(displayName(current?.user ?? me?.id ?? "alice"));
   const [role, setRole] = useState<Identity["role"]>(current?.role ?? me?.role ?? "user");
   return (
     <Group id="sign-in" title="Signed in as" note="For trying ReBo on your own machine. Behind your company's sign-in this is decided there and has no effect.">
-      <form className="grow-row signin" onSubmit={(e) => { e.preventDefault(); setIdentity({ user: user.trim() || "alice", role }); }}>
+      <form className="grow-row signin" onSubmit={(e) => { e.preventDefault(); setIdentity({ user: personId(user.trim() || "alice", !!demo), role }); }}>
         <input className="input" aria-label="Name" value={user} onChange={(e) => setUser(e.target.value)} />
         <ToggleButtonGroup aria-label="Role" selectionMode="single" disallowEmptySelection className="segmented" selectedKeys={[role]}
                            onSelectionChange={(k) => setRole(String([...k][0]) as Identity["role"])}>
