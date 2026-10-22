@@ -152,3 +152,29 @@ def test_protected_columns_are_secrets_not_ids_flags_or_customer_codes():
     assert not _secret_column(col("api_key_id", "integer"), ["api_key_id"], [])                    # an identifier
     assert not _secret_column(col("token_id", "integer"), [], [])
     assert not _secret_column(col("mfa_enabled", "boolean"), [], [])                              # a yes/no flag
+
+
+def test_rebootstrap_embeds_only_schema_text_that_changed(app):
+    """B-065: unchanged schema documents keep their vectors; only new or changed text is embedded."""
+    import numpy as np
+    seen = []
+
+    class Counting:
+        available, model_name = True, "fake-embed"
+
+        def embed(self, texts, kind="passage"):
+            seen.append(len(texts))
+            return np.ones((len(texts), 4), dtype=np.float32)
+    app.index.embedder = Counting()
+    app.bootstrap(progress=lambda *_: None)
+    first = sum(seen)
+    assert first > 0
+    seen.clear()
+    app.bootstrap(progress=lambda *_: None)
+    assert sum(seen) == 0                                     # nothing changed, nothing embedded
+    with app.store.tx() as db:                                # a stale vector and one that is gone
+        db.execute("UPDATE embedding SET text_hash='old' WHERE ref='schema:customer.status'")
+        db.execute("INSERT INTO embedding(ref, vector, text_hash) VALUES('schema:dropped.col', ?, 'x')", (b"\0" * 16,))
+    app.bootstrap(progress=lambda *_: None)
+    assert sum(seen) == 1
+    assert app.store.one("SELECT ref FROM embedding WHERE ref='schema:dropped.col'") is None

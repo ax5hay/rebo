@@ -185,8 +185,7 @@ def bootstrap(target: TargetDB, store: Store, index: Index, *, allow: set[str] |
         for r in store.all("SELECT table_name, column_name, text FROM schema_fts"):
             refs.append(f"schema:{r['table_name']}.{r['column_name'] or ''}")
             texts.append(r["text"][:1000])
-        index.drop_vectors("schema:")
-        index.put_vectors(refs, texts)
+        index.sync_vectors("schema:", refs, texts)
 
     store.meta_set("bootstrapped_at", now())
     store.meta_set("dialect", target.dialect)

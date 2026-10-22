@@ -170,6 +170,26 @@ class Index:
                                [(r, v.tobytes()) for r, v in zip(refs, vecs)])
         self._matrix.clear()
 
+    def sync_vectors(self, prefix: str, refs: list[str], texts: list[str]) -> dict[str, int]:
+        """Make the vectors under `prefix` match these documents: embed only new or changed text
+        (by hash), delete vectors of documents that are gone. Returns counts for the progress line."""
+        if not self.embedder.available:
+            return {"embedded": 0, "kept": 0, "removed": 0}
+        import hashlib
+        hashes = [hashlib.sha1(f"{self.embedder.model_name}\n{t}".encode()).hexdigest() for t in texts]
+        have = {r["ref"]: r["text_hash"] for r in self.store.all("SELECT ref, text_hash FROM embedding WHERE ref LIKE ?", (prefix + "%",))}
+        todo = [(r, t, h) for r, t, h in zip(refs, texts, hashes) if have.get(r) != h]
+        gone = sorted(set(have) - set(refs))
+        if todo:
+            self.put_vectors([r for r, _, _ in todo], [t for _, t, _ in todo])
+            with self.store.tx() as db:
+                db.executemany("UPDATE embedding SET text_hash=? WHERE ref=?", [(h, r) for r, _, h in todo])
+        if gone:
+            with self.store.tx() as db:
+                db.executemany("DELETE FROM embedding WHERE ref=?", [(r,) for r in gone])
+        self._matrix.clear()
+        return {"embedded": len(todo), "kept": len(refs) - len(todo), "removed": len(gone)}
+
     def drop_vectors(self, prefix: str) -> None:
         with self.store.tx() as db:
             db.execute("DELETE FROM embedding WHERE ref LIKE ?", (prefix + "%",))
