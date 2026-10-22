@@ -517,13 +517,19 @@ def create_app(app: App, *, with_ui: bool = True, with_worker: bool = False) -> 
         def web_root():
             return RedirectResponse("/app/")
 
+        from fastapi.responses import HTMLResponse
+
         @api.get("/app/{path:path}", include_in_schema=False)
-        def web_page(path: str):
-            """Files of the built app, and index.html for its pages (so /app/insights can be reloaded)."""
+        def web_page(path: str, request: Request):
+            """Files of the built app, and index.html for its pages (so /app/insights can be reloaded).
+            Link previews (Open Graph) need absolute URLs, so %ORIGIN% in index.html becomes the address
+            this request came to (behind Cloudflare or a proxy: X-Forwarded-Proto and Host)."""
             target = (web / path).resolve()
             if path and target.is_file() and web.resolve() in target.parents:
                 return FileResponse(target)
-            return FileResponse(web / "index.html")
+            proto = (request.headers.get("x-forwarded-proto") or request.url.scheme).split(",")[0].strip()
+            origin = f"{proto}://{request.headers.get('host') or request.url.netloc}"
+            return HTMLResponse((web / "index.html").read_text(encoding="utf-8").replace("%ORIGIN%", origin))
     if with_ui:
         from .ui import mount_ui
         mount_ui(api, app)

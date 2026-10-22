@@ -44,3 +44,12 @@ async def test_over_the_daily_budget_new_questions_are_not_sent_to_the_model(app
     app.__dict__.update(agent=NoModel())
     r = await app.ask(User("ada"), "something new nobody saved")
     assert r["kind"] == "answer" and "allowance" in r["text"]
+
+
+def test_link_previews_get_absolute_urls_for_the_address_they_came_to(app):
+    from rebo.api import web_built
+    if not web_built():
+        return
+    client = TestClient(create_app(app, with_ui=False))
+    html = client.get("/app/", headers={"Host": "rebo-oes.example.org", "X-Forwarded-Proto": "https"}).text
+    assert '<meta property="og:image" content="https://rebo-oes.example.org/app/og.png"' in html and "%ORIGIN%" not in html
