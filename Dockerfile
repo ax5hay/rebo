@@ -17,7 +17,7 @@ COPY web ./
 RUN npm run build
 
 # ---- Python dependencies only (no project): changes only with uv.lock ----
-FROM python:3.13-slim AS deps
+FROM python:3.15-slim AS deps
 COPY --from=ghcr.io/astral-sh/uv:0.13 /uv /usr/local/bin/uv
 ENV UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=never UV_COMPILE_BYTECODE=1
 WORKDIR /app
@@ -32,7 +32,7 @@ RUN /app/.venv/bin/python -c "from fastembed import TextEmbedding; TextEmbedding
  && chmod -R a+rX /opt/models
 
 # ---- runtime ----
-FROM python:3.13-slim
+FROM python:3.15-slim
 RUN useradd --create-home --uid 10001 rebo && mkdir -p /data && chown rebo /data \
  && printf '#!/bin/sh\nexec python -m rebo.cli "$@"\n' > /usr/local/bin/rebo && chmod +x /usr/local/bin/rebo
 WORKDIR /app
