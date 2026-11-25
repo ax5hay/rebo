@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10.3.0
+      - uses: astral-sh/setup-uv@v10.4.0
         with: {enable-cache: true}
       - run: uv sync --frozen --all-extras
       - run: uv run pytest -q
@@ -29,7 +29,7 @@ jobs:
       - run: >-
           docker run -d --name pg -p 5433:5432 -e POSTGRES_USER=rebo -e POSTGRES_PASSWORD=rebo -e POSTGRES_DB=rebo
           pgvector/pgvector:0.8.7-pg18 -c fsync=off -c synchronous_commit=off -c full_page_writes=off
-      - uses: astral-sh/setup-uv@v10.3.0
+      - uses: astral-sh/setup-uv@v10.4.0
         with: {enable-cache: true}
       - run: uv sync --frozen --all-extras
       - run: for i in $(seq 1 30); do docker exec pg pg_isready -U rebo && break; sleep 1; done
@@ -47,7 +47,7 @@ jobs:
         working-directory: web
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10.3.0
+      - uses: astral-sh/setup-uv@v10.4.0
         with: {enable-cache: true}
       - uses: actions/setup-node@v7
         with: {node-version: 24, cache: npm, cache-dependency-path: web/package-lock.json}
@@ -63,7 +63,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10.3.0
+      - uses: astral-sh/setup-uv@v10.4.0
       - uses: actions/setup-node@v7
         with: {node-version: 24}
       - run: uv export --frozen --all-extras --no-hashes --no-emit-project > requirements-audit.txt
